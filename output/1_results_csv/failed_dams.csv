@@ -1,0 +1,8 @@
+dam_id,dam_name,reason,detail,valley_width_m,valley_ratio,channel_slope,mean_catchment_slope
+id_20072,Liyah,bad_fill_auto,bad_fill_auto: Volume fraction 0.13 < 0.20 (~1.3 vs 10.0 MCM); fill too small,357.70717867275005,19.872621037375,0.005479025240229893,0.1715238243341446
+id_30012,Al-Ghab,bad_fill_auto,"bad_fill_auto: Flood centroid ratio 2.58 > 2.5 (cdist=69 px, n_px=711); fill displaced",500.9085179994661,56.28185595499619,0.025449549472731495,0.23464559018611908
+id_60001,Al-Hilali,bad_fill_auto,"bad_fill_auto: Flood centroid ratio 4.06 > 2.5 (cdist=125 px, n_px=948); fill displaced",115.0735019834175,38.3578339944725,0.001698314901285914,0.03163151815533638
+id_120005,Qasi,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",3890.438412710306,172.90837389823582,0.005967227876384217,0.045153651386499405
+id_130016,(Surum) Halal,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",240.87609974153568,20.07300831179464,0.07999998580636782,0.35931405425071716
+id_40015,Al-Rummah,fit_failed,Power-law fit returned NaN (n_pixels=1157),,,,
+id_40016,Marid,fit_failed,Power-law fit returned NaN (n_pixels=1690),,,,

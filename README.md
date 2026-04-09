@@ -56,7 +56,7 @@ Automated quality gates detect displaced flood centroids and negligible fill vol
 ### Full run (compute EAV curves + plots + regionalization)
 
 ```bash
-conda activate eaves    # or: conda activate rush
+conda activate eaves
 python run_eaves.py
 ```
 

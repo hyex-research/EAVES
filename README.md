@@ -58,7 +58,6 @@ Automated quality gates detect displaced flood centroids and negligible fill vol
 
 ```bash
 conda activate eaves    # or: conda activate rush
-cd assets/virtual_bathymetry
 python run_eaves.py
 ```
 
@@ -71,7 +70,7 @@ python run_eaves.py --plot-only
 ### Process specific dams
 
 ```bash
-python run_eaves.py --only 13_Bish 14_Al-Marwani
+python run_eaves.py --only id_120000 id_020017
 ```
 
 ### Force recalculation when combined with plot-only
@@ -99,13 +98,12 @@ python run_eaves.py --plot-only --rerun
 │   └── workers.py               # Multiprocessing workers
 │
 ├── input/                       # Input data
-│   ├── GRDL/                    # GRDL reference curves (Baysh, Hali, Rabigh)
-│   └── dam_placement_overrides.csv
+│   └── GRDL/                    # GRDL reference curves (Baish, Hali, Rabigh)
 │
 ├── output/                      # Generated outputs
 │   ├── 0_check_dam_flood/       # Per-dam flood QC maps (100 DPI)
 │   ├── 1_results_csv/           # Summary CSVs, EAV tables, failed dams
-│   │   └── eav_tables/          # Individual dam EAV curves ({csv_id}_eav.csv)
+│   │   └── eav_tables/          # Individual dam EAV curves ({dam_id}_eav.csv)
 │   └── 2_results_plots/         # Analysis figures (300 DPI)
 │
 ├── environment.yml              # Conda environment specification
@@ -120,12 +118,10 @@ python run_eaves.py --plot-only --rerun
 | File | Description |
 |------|-------------|
 | `eaves_summary.csv` | One row per successfully processed dam: fitted $c$, $b$, $R^2$, footprint area, quality grade, placement method |
-| `eaves_params.csv` | Final EAV parameters for **all** dams (SRTM-direct + regionalized + Baysh sonar override) |
+| `eaves_params.csv` | Final EAV parameters for **all** dams (SRTM-direct + regionalized + Baish sonar override) |
 | `failed_dams.csv` | Dams that failed placement or QC, with failure reason |
 | `threshold_analysis.csv` | Capacity-threshold sweep for reliability classification |
-| `baysh_validation.csv` | Baysh sonar vs SRTM comparison data |
-| `stage_*.csv` | Per-placement-stage dam lists |
-| `param_source_*.csv` | Dams grouped by parameter source (srtm_direct, regional_median, baysh_sonar) |
+| `baish_validation.csv` | Baish sonar vs SRTM comparison data |
 
 ### Analysis plots (`output/2_results_plots/`)
 
@@ -133,29 +129,30 @@ python run_eaves.py --plot-only --rerun
 |------|--------|-------------|
 | `exponent_diagnostics.png` | a, b, c | Histogram of $b$, exponent vs dam height, spatial map |
 | `threshold_analysis.png` | a, b | Quality grade scatter, reliability fraction vs threshold |
-| `baysh_validation.png` | a, b | Sonar bathymetry vs SRTM: area–volume and elevation–area |
-| `grdl_comparison.png` | a–f | GRDL reference vs SRTM for Baysh, Hali, Rabigh |
+| `baish_validation.png` | a, b | Sonar bathymetry vs SRTM: area–volume and elevation–area |
+| `grdl_comparison.png` | a–f | GRDL reference vs SRTM for Baish, Hali, Rabigh |
 | `regression_diagnostics.png` | a, b, c | LOO predictions, feature importances, residuals (if regression $R^2 \geq 0.25$) |
 
 ### Flood QC maps (`output/0_check_dam_flood/`)
 
-One PNG per dam showing the DEM, flood footprint, river network overlay, and dam marker. Named by the dam's original identifier (e.g., `ID_120000_flood.png`).
+One PNG per dam showing the DEM, flood footprint, river network overlay, and dam marker. Named by dam ID (e.g., `id_120000_flood.png`).
 
 ## 📥 **Data Dependencies**
 
 ### Included in this repository
 
 - GRDL reference EAV curves (`input/GRDL/`)
-- Dam placement overrides CSV (`input/dam_placement_overrides.csv`)
 
 ### External (referenced by path in `config.py`)
 
 | Dataset | Source | Purpose |
 |---------|--------|---------|
-| **SRTM 1-arcsec** (`.hgt` tiles) | [USGS EarthExplorer](https://earthexplorer.usgs.gov/) | Pre-dam valley topography |
+| **SRTM GL1 v003** (1 arc-second, ~30 m) | [NASA/USGS SRTMGL1](https://lpdaac.usgs.gov/products/srtmgl1v003/) — tiles mirrored at [ESA STEP](https://step.esa.int/auxdata/dem/SRTMGL1/) | Pre-dam valley topography |
 | **RUSH domain GeoJSON** (`gdf_dams_subset_snapped.geojson`) | RUSH `A01_domain_input.py` | Dam locations, attributes, river network |
-| **Baysh sonar bathymetry** | Field survey (2025) | Ground-truth validation |
+| **Baish sonar bathymetry** | Field survey (2025) | Ground-truth validation |
 | **Satellite water extent** (filtered time series) | RUSH `A03_dam_input.py` | Empirical area estimates for regionalization |
+
+> **Note on SRTM data:** EAVES uses `.hgt` tiles from the Shuttle Radar Topography Mission Global 1 arc-second dataset (SRTMGL1 v003), acquired in February 2000. Tiles can be downloaded from [USGS EarthExplorer](https://earthexplorer.usgs.gov/) or the [ESA STEP mirror](https://step.esa.int/auxdata/dem/SRTMGL1/). The dam catalogue used in this study is not publicly available.
 
 ## 🎛️ **Key Parameters**
 
@@ -185,9 +182,7 @@ Key dependencies: `numpy`, `scipy`, `pandas`, `geopandas`, `rasterio`, `pyproj`,
 
 EAVES is part of the RUSH modelling framework, accompanying the manuscript:
 
-> **"Large-sample hydrology without stream gauges: lessons from 80 Saudi reservoirs to accelerate hyper-arid hydrology"**
->
-> Ivanović, N., Dash, S.S., Bangalath, H.K., Abbas, A., Alharbi, R., Hancock, G.R., & Beck, H.E.
+> Ivanović et al. (2026). *Title TBD.* Nature Water.
 
 ## 📜 **License**
 

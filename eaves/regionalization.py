@@ -11,7 +11,7 @@ from .config import (
     CSV_DIR,
     PLOT_DIR,
     A01_DIR,
-    A03_FILTERED_DIR,
+    WATER_EXTENT_DIR,
     BAYSH_EAV_CSV,
 )
 from .utils import fit_power_law
@@ -266,12 +266,12 @@ def run_regionalization(summary_df, failures, dam_data_list):
             b_val = row_r["b"]
             A_cap_m2 = np.nan
 
-            sat_path = os.path.join(A03_FILTERED_DIR, f"{dam_id_r}_filtered.csv")
+            sat_path = os.path.join(WATER_EXTENT_DIR, f"{dam_id_r}_ts_filtered.csv")
             if os.path.isfile(sat_path):
                 try:
                     sat_df = pd.read_csv(sat_path)
-                    if "water_extent_km2" in sat_df.columns:
-                        areas = sat_df["water_extent_km2"].dropna()
+                    if "water_area_km2" in sat_df.columns:
+                        areas = sat_df["water_area_km2"].dropna()
                         if len(areas) > 5:
                             A_cap_km2 = float(areas.quantile(0.95))
                             A_cap_m2 = A_cap_km2 * 1e6

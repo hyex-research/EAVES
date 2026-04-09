@@ -84,8 +84,9 @@ EAV_DIR = os.path.join(CSV_DIR, "eav_tables")
 PLOT_DIR = os.path.join(OUTPUT_DIR, "2_results_plots")
 
 PLACEMENT_OVERRIDES_CSV = os.path.join(INPUT_DIR, "dam_placement_overrides.csv")
-A03_FILTERED_DIR = os.path.join(
-    os.path.dirname(A01_DIR), "A03_dam_input", "filtered_timeseries"
+WATER_EXTENT_DIR = (
+    "/home/ivanovn/ws_local/projects/KSA_flash_flood_model_experiment"
+    "/assets/water_extent_ts"
 )
 
 # ---------------------------------------------------------------------------

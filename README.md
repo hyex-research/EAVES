@@ -4,10 +4,9 @@
 
 ---
 
-[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](environment.yml)
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/license-CC_BY--NC_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
-[![Domain](https://img.shields.io/badge/domain-reservoir%20bathymetry-4682B4.svg)](#-overview)
-[![KAUST](https://img.shields.io/badge/KAUST-HYEX-red.svg)](https://hylkebeck.com/)
+[![Python](https://img.shields.io/badge/python-3.14-blue.svg)](environment.yml)
+[![DOI](https://img.shields.io/badge/DOI-pending-yellow.svg)](#)
+[![KAUST](https://img.shields.io/badge/KAUST-HYEX-red.svg)](https://github.com/hyex-research)
 
 ---
 

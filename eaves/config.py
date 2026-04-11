@@ -61,7 +61,7 @@ GRADE_COLORS = {
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-A01_DIR = "/home/ivanovn/ws_local/temp/RUSH/ksa/mswep/A01_domain_input"
+A02_DIR = "/home/ivanovn/ws_local/temp/RUSH/ksa/mswep/A02_dam_setup"
 SRTM_DIR = "/mnt/datawaha/hyex/ivanovn/download/SRTM/1_unzipped"
 
 REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

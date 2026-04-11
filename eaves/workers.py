@@ -42,10 +42,9 @@ class DamRow:
 def _process_dam_worker(dam_data, gdf_rivers_data):
     _cfg._srtm_cache = {}
 
-    csv_id = dam_data["csv_id"]
-    dam_id = dam_data.get("dam_id", csv_id)
+    dam_id = dam_data.get("dam_id", "")
     dam_name_latin = dam_data.get("dam_name_latin", "")
-    ov_early = _get_placement_override(csv_id)
+    ov_early = _get_placement_override(dam_id)
     if _ov_bool(ov_early, "mark_placement_failed"):
         return None, {
             "dam_id": dam_id,

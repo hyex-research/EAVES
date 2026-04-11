@@ -14,7 +14,7 @@ import geopandas as gpd
 from tqdm import tqdm
 
 from .config import (
-    A01_DIR,
+    A02_DIR,
     CSV_DIR,
     PLOT_DIR,
     EAV_DIR,
@@ -56,8 +56,8 @@ def _build_dam_data_list(gdf_dams, translit_map):
         dam_dict["_snapped_lat"] = dam.geometry.y
         dam_dict["_snapped_lon"] = dam.geometry.x
 
-        gj_id = str(dam.get("id", "")).strip()
-        dam_id = gj_id.lower() if gj_id else dam_dict.get("csv_id", "")
+        gj_id = str(dam.get("dam_id") or dam.get("id") or "").strip()
+        dam_id = gj_id.lower() if gj_id else ""
         dam_dict["dam_id"] = dam_id
         dam_dict["dam_name_latin"] = translit_map.get(dam_id, "")
         dam_data_list.append(dam_dict)
@@ -129,7 +129,7 @@ def main():
 
     translit_map = _load_translit_map()
 
-    geojson_path = os.path.join(A01_DIR, "gdf_dams_subset_snapped.geojson")
+    geojson_path = os.path.join(A02_DIR, "gdf_dams_subset_snapped.geojson")
     gdf_dams = gpd.read_file(geojson_path)
 
     # ------------------------------------------------------------------
@@ -215,7 +215,7 @@ def main():
             print("No dams to process after --only filter; exiting.")
             return
 
-    rivers_path = os.path.join(A01_DIR, "gdf_rivers_subset_split.geojson")
+    rivers_path = os.path.join(A02_DIR, "gdf_rivers_subset_split.geojson")
     if os.path.isfile(rivers_path):
         gdf_rivers = gpd.read_file(rivers_path)
     else:

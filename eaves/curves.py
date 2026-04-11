@@ -49,8 +49,8 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 override_lat=None, override_lon=None):
     from pyproj import Transformer
 
-    csv_id = dam_row_data["csv_id"]
-    ov = _get_placement_override(csv_id)
+    dam_id = dam_row_data["dam_id"]
+    ov = _get_placement_override(dam_id)
     if override_lat is not None and override_lon is not None:
         dam_lat, dam_lon = override_lat, override_lon
     else:
@@ -74,7 +74,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     sh_ov = _ov_float(ov, "spillway_height_m")
     if sh_ov is not None and sh_ov > 0:
         spillway_height = sh_ov
-    construction_year = int(dam_row_data["construction_year_gregorian"])
+    construction_year = int(dam_row_data.get("construction_year", 0) or 0)
 
     target_epsg = utm_epsg_from_lon(dam_lon)
     radius = buffer_deg_for_dam(capacity_m3, dam_height)
@@ -454,7 +454,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         raise ValueError("bad_fill_auto: " + "; ".join(_qc_reasons))
 
     return {
-        "csv_id": csv_id,
+        "dam_id": dam_id,
         "construction_year": construction_year,
         "dam_height_m": dam_height,
         "spillway_height_m": spillway_height,

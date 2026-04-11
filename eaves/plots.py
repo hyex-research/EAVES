@@ -312,7 +312,7 @@ _QC_RC = {
 
 
 def save_flood_map(result, flood_dir, dam_id=None, dam_name=None):
-    file_label = dam_id if dam_id else result.get("csv_id", "unknown")
+    file_label = dam_id if dam_id else result.get("dam_id", "unknown")
     dem = result["dem_utm"]
     fp = result["footprint"]
     dam_r, dam_c = result["dam_rc"]

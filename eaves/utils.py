@@ -22,7 +22,7 @@ import eaves.config as _cfg
 # ---------------------------------------------------------------------------
 
 def _load_placement_overrides():
-    """Load ``dam_placement_overrides.csv`` once; keyed by csv_id."""
+    """Load ``dam_placement_overrides.csv`` once; keyed by dam_id."""
     if _cfg._placement_overrides_cache is not None:
         return _cfg._placement_overrides_cache
     _cfg._placement_overrides_cache = {}
@@ -33,18 +33,19 @@ def _load_placement_overrides():
     except Exception:
         return _cfg._placement_overrides_cache
     df.columns = [str(c).strip() for c in df.columns]
-    if "csv_id" not in df.columns:
+    id_col = "dam_id" if "dam_id" in df.columns else "csv_id"
+    if id_col not in df.columns:
         return _cfg._placement_overrides_cache
     for _, row in df.iterrows():
-        cid = str(row["csv_id"]).strip()
+        cid = str(row[id_col]).strip()
         if not cid or cid.lower() in ("nan", "none"):
             continue
         _cfg._placement_overrides_cache[cid] = row.to_dict()
     return _cfg._placement_overrides_cache
 
 
-def _get_placement_override(csv_id):
-    return _load_placement_overrides().get(str(csv_id).strip(), {})
+def _get_placement_override(dam_id):
+    return _load_placement_overrides().get(str(dam_id).strip(), {})
 
 
 def _ov_float(ov, key, default=None):

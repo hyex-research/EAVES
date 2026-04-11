@@ -10,7 +10,6 @@ import pandas as pd
 from .config import (
     CSV_DIR,
     PLOT_DIR,
-    A01_DIR,
     WATER_EXTENT_DIR,
     BAYSH_EAV_CSV,
 )
@@ -334,7 +333,6 @@ def run_regionalization(summary_df, failures, dam_data_list):
     # --- Save ---
     params_path = os.path.join(CSV_DIR, "eaves_params.csv")
     params_df.to_csv(params_path, index=False)
-    params_df.to_csv(os.path.join(A01_DIR, "eaves_params.csv"), index=False)
 
     print(f"\n  Parameter assignment complete:")
     print(f"    Total dams with parameters: {len(params_df)}")

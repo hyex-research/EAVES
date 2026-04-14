@@ -9,7 +9,6 @@ import pandas as pd
 import geopandas as gpd
 from rasterio.transform import rowcol
 
-from .config import EAV_DIR, FLOOD_DIR
 import eaves.config as _cfg
 from .utils import (
     _get_placement_override,
@@ -133,10 +132,10 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
                 "area_m2": result["area_m2"],
                 "volume_m3": result["vol_m3"],
             })
-            eav_df.to_csv(os.path.join(EAV_DIR, f"{dam_id}_eav.csv"), index=False)
+            eav_df.to_csv(os.path.join(_cfg.EAV_DIR, f"{dam_id}_eav.csv"), index=False)
 
             try:
-                save_flood_map(result, FLOOD_DIR,
+                save_flood_map(result, _cfg.FLOOD_DIR,
                                dam_id=dam_id, dam_name=dam_name_latin)
             except Exception:
                 pass

@@ -13,15 +13,8 @@ import pandas as pd
 import geopandas as gpd
 from tqdm import tqdm
 
-from .config import (
-    A02_DIR,
-    CSV_DIR,
-    PLOT_DIR,
-    EAV_DIR,
-    FLOOD_DIR,
-    TRANSLIT_CSV,
-)
 import eaves.config as _cfg
+from .config import configure
 from .plots import baish_validation, grdl_comparison, make_diagnostic_plots
 from .regionalization import assign_quality, run_regionalization
 from .workers import _worker_indexed
@@ -30,8 +23,8 @@ from .workers import _worker_indexed
 def _load_translit_map():
     """Build dam_id (lowercase) -> dam_name (Latin) from the transliterated CSV."""
     mapping = {}
-    if os.path.isfile(TRANSLIT_CSV):
-        df = pd.read_csv(TRANSLIT_CSV)
+    if os.path.isfile(_cfg.TRANSLIT_CSV):
+        df = pd.read_csv(_cfg.TRANSLIT_CSV)
         for _, row in df.iterrows():
             did = str(row["dam_id"]).strip()
             dname = str(row["dam_name"]).strip()
@@ -67,14 +60,14 @@ def _build_dam_data_list(gdf_dams, translit_map):
 def _run_plots_and_regionalization(summary_df, failures, dam_data_list, baish_result=None):
     """Generate all analysis plots and run regionalization on existing results."""
     if baish_result is not None:
-        baish_validation(baish_result, PLOT_DIR)
+        baish_validation(baish_result, _cfg.PLOT_DIR)
 
     if len(summary_df) > 0:
-        grdl_comparison(summary_df, PLOT_DIR)
+        grdl_comparison(summary_df, _cfg.PLOT_DIR)
 
     if len(summary_df) > 0:
         print("\nGenerating diagnostic plots...")
-        make_diagnostic_plots(summary_df, PLOT_DIR)
+        make_diagnostic_plots(summary_df, _cfg.PLOT_DIR)
 
     run_regionalization(summary_df, failures, dam_data_list)
 
@@ -104,7 +97,29 @@ def main():
         action="store_true",
         help="Force re-calculation even when --plot-only is also specified.",
     )
+    parser.add_argument(
+        "--a02-dir",
+        default=None,
+        help="Override A02_DIR: folder with gdf_dams_subset_snapped.geojson.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Override OUTPUT_DIR: root for 0_check_dam_flood/, 1_results_csv/, 2_results_plots/.",
+    )
+    parser.add_argument(
+        "--srtm-dir",
+        default=None,
+        help="Override SRTM_DIR: folder with unzipped .hgt tiles.",
+    )
     args = parser.parse_args()
+
+    if args.a02_dir or args.output_dir or args.srtm_dir:
+        configure(
+            a02_dir=args.a02_dir,
+            output_dir=args.output_dir,
+            srtm_dir=args.srtm_dir,
+        )
 
     only_ids = None
     if args.only:
@@ -122,21 +137,21 @@ def main():
                 expanded.append(c)
         only_ids = {x for x in expanded if x}
 
-    os.makedirs(EAV_DIR, exist_ok=True)
-    os.makedirs(CSV_DIR, exist_ok=True)
-    os.makedirs(PLOT_DIR, exist_ok=True)
-    os.makedirs(FLOOD_DIR, exist_ok=True)
+    os.makedirs(_cfg.EAV_DIR, exist_ok=True)
+    os.makedirs(_cfg.CSV_DIR, exist_ok=True)
+    os.makedirs(_cfg.PLOT_DIR, exist_ok=True)
+    os.makedirs(_cfg.FLOOD_DIR, exist_ok=True)
 
     translit_map = _load_translit_map()
 
-    geojson_path = os.path.join(A02_DIR, "gdf_dams_subset_snapped.geojson")
+    geojson_path = os.path.join(_cfg.A02_DIR, "gdf_dams_subset_snapped.geojson")
     gdf_dams = gpd.read_file(geojson_path)
 
     # ------------------------------------------------------------------
     # --plot-only: reload existing CSVs and skip to plots/regionalization
     # ------------------------------------------------------------------
-    summary_path = os.path.join(CSV_DIR, "eaves_summary.csv")
-    fail_path = os.path.join(CSV_DIR, "failed_dams.csv")
+    summary_path = os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")
+    fail_path = os.path.join(_cfg.CSV_DIR, "failed_dams.csv")
 
     if args.plot_only and not args.rerun:
         if not os.path.isfile(summary_path):
@@ -150,7 +165,7 @@ def main():
             if "srtm_max_vol_mcm" not in summary_df.columns:
                 max_vols = []
                 for _, row in summary_df.iterrows():
-                    eav_p = os.path.join(EAV_DIR, f"{row['dam_id']}_eav.csv")
+                    eav_p = os.path.join(_cfg.EAV_DIR, f"{row['dam_id']}_eav.csv")
                     if os.path.exists(eav_p):
                         eav = pd.read_csv(eav_p)
                         max_vols.append(eav["volume_m3"].max() / 1e6)
@@ -179,7 +194,7 @@ def main():
 
         baish_result = None
         baish_row = summary_df[summary_df["dam_id"].str.contains("120000", na=False)]
-        baish_eav = os.path.join(EAV_DIR, "id_120000_eav.csv")
+        baish_eav = os.path.join(_cfg.EAV_DIR, "id_120000_eav.csv")
         if not baish_row.empty and os.path.isfile(baish_eav):
             eav = pd.read_csv(baish_eav)
             row = baish_row.iloc[0]
@@ -215,7 +230,7 @@ def main():
             print("No dams to process after --only filter; exiting.")
             return
 
-    rivers_path = os.path.join(A02_DIR, "gdf_rivers_subset_split.geojson")
+    rivers_path = os.path.join(_cfg.A02_DIR, "gdf_rivers_subset_split.geojson")
     if os.path.isfile(rivers_path):
         gdf_rivers = gpd.read_file(rivers_path)
     else:
@@ -262,13 +277,13 @@ def main():
             failures.append(failure)
             if dam_id:
                 try:
-                    eav_path = os.path.join(EAV_DIR, f"{dam_id}_eav.csv")
+                    eav_path = os.path.join(_cfg.EAV_DIR, f"{dam_id}_eav.csv")
                     if os.path.exists(eav_path):
                         os.remove(eav_path)
                 except Exception:
                     pass
                 try:
-                    flood_path = os.path.join(FLOOD_DIR, f"{dam_id}_flood.png")
+                    flood_path = os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_flood.png")
                     if os.path.exists(flood_path):
                         os.remove(flood_path)
                 except Exception:
@@ -311,7 +326,7 @@ def main():
     if len(summary_df) > 0:
         max_vols = []
         for _, row in summary_df.iterrows():
-            eav_path = os.path.join(EAV_DIR, f"{row['dam_id']}_eav.csv")
+            eav_path = os.path.join(_cfg.EAV_DIR, f"{row['dam_id']}_eav.csv")
             if os.path.exists(eav_path):
                 eav = pd.read_csv(eav_path)
                 max_vols.append(eav["volume_m3"].max() / 1e6)

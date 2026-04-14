@@ -122,3 +122,42 @@ GRDL_NAME_MAP = {
 # ---------------------------------------------------------------------------
 _srtm_cache: dict = {}
 _placement_overrides_cache = None
+
+
+# ---------------------------------------------------------------------------
+# Runtime reconfiguration (for programmatic / CLI overrides)
+# ---------------------------------------------------------------------------
+def configure(
+    *,
+    a02_dir: str | None = None,
+    output_dir: str | None = None,
+    srtm_dir: str | None = None,
+    translit_csv: str | None = None,
+    water_extent_dir: str | None = None,
+    baysh_eav_csv: str | None = None,
+) -> None:
+    """Override path variables after import.
+
+    All modules that use configurable paths must reference them via
+    ``eaves.config.X`` (i.e. ``_cfg.X``) rather than locally-bound names
+    so that changes made here are visible everywhere.
+    """
+    import eaves.config as _self
+
+    if a02_dir is not None:
+        _self.A02_DIR = a02_dir
+    if srtm_dir is not None:
+        _self.SRTM_DIR = srtm_dir
+    if translit_csv is not None:
+        _self.TRANSLIT_CSV = translit_csv
+    if water_extent_dir is not None:
+        _self.WATER_EXTENT_DIR = water_extent_dir
+    if baysh_eav_csv is not None:
+        _self.BAYSH_EAV_CSV = baysh_eav_csv
+
+    if output_dir is not None:
+        _self.OUTPUT_DIR = output_dir
+        _self.FLOOD_DIR = os.path.join(output_dir, "0_check_dam_flood")
+        _self.CSV_DIR = os.path.join(output_dir, "1_results_csv")
+        _self.EAV_DIR = os.path.join(_self.CSV_DIR, "eav_tables")
+        _self.PLOT_DIR = os.path.join(output_dir, "2_results_plots")

@@ -16,12 +16,8 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import eaves.config as _cfg
 from .config import (
-    CSV_DIR,
-    EAV_DIR,
-    GRDL_DIR,
-    GRDL_NAME_MAP,
-    BAYSH_EAV_CSV,
     _BASE_FS,
     FIG_SINGLE_COL,
     FIG_DOUBLE_COL,
@@ -62,10 +58,10 @@ def _label_panel(ax, label):
 # ---------------------------------------------------------------------------
 
 def baish_validation(summary, output_dir):
-    if not os.path.isfile(BAYSH_EAV_CSV):
+    if not os.path.isfile(_cfg.BAYSH_EAV_CSV):
         return
 
-    bathy = pd.read_csv(BAYSH_EAV_CSV)
+    bathy = pd.read_csv(_cfg.BAYSH_EAV_CSV)
     elev_bathy = bathy["elevation_m"].values
     area_bathy = bathy["area_m2_integrated_dem"].values
     vol_bathy = bathy["volume_m3_integrated_dem"].values
@@ -94,7 +90,7 @@ def baish_validation(summary, output_dir):
         "area_srtm_m2": pad(area_srtm, max_len),
         "vol_srtm_m3": pad(vol_srtm, max_len),
     })
-    val_df.to_csv(os.path.join(CSV_DIR, "baish_validation.csv"), index=False)
+    val_df.to_csv(os.path.join(_cfg.CSV_DIR, "baish_validation.csv"), index=False)
 
     with mpl.rc_context(_ANALYSIS_RC):
         fig, axes = plt.subplots(1, 2, figsize=(14.0, 5.0), tight_layout=True)
@@ -195,18 +191,18 @@ def make_diagnostic_plots(summary_df, output_dir):
 # ---------------------------------------------------------------------------
 
 def grdl_comparison(summary_df, output_dir):
-    if not os.path.isdir(GRDL_DIR):
+    if not os.path.isdir(_cfg.GRDL_DIR):
         return
 
     import glob as _glob
-    grdl_files = sorted(_glob.glob(os.path.join(GRDL_DIR, "*.csv")))
+    grdl_files = sorted(_glob.glob(os.path.join(_cfg.GRDL_DIR, "*.csv")))
     if not grdl_files:
         return
 
     comparisons = []
     for gf in grdl_files:
         stem = os.path.splitext(os.path.basename(gf))[0].lower()
-        mapped_id = GRDL_NAME_MAP.get(stem)
+        mapped_id = _cfg.GRDL_NAME_MAP.get(stem)
         if mapped_id is None:
             continue
 
@@ -233,7 +229,7 @@ def grdl_comparison(summary_df, output_dir):
         c_grdl, b_grdl, r2_grdl = fit_power_law(grdl_area_m2, grdl_vol_m3)
 
         our_row = summary_df[summary_df["dam_id"] == mapped_id]
-        eav_path = os.path.join(EAV_DIR, f"{mapped_id}_eav.csv")
+        eav_path = os.path.join(_cfg.EAV_DIR, f"{mapped_id}_eav.csv")
         if not os.path.exists(eav_path) or our_row.empty:
             continue
 

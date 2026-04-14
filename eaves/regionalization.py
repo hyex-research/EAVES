@@ -7,12 +7,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from .config import (
-    CSV_DIR,
-    PLOT_DIR,
-    WATER_EXTENT_DIR,
-    BAYSH_EAV_CSV,
-)
+import eaves.config as _cfg
 from .utils import fit_power_law
 from .plots import plot_threshold_analysis, plot_regression_diagnostics
 
@@ -99,9 +94,9 @@ def run_regionalization(summary_df, failures, dam_data_list):
             print("  [WARN] Could not determine optimal threshold, using 5 MCM default.")
 
     print(f"\n  Chosen reliability threshold: {chosen_threshold:.1f} MCM")
-    threshold_df.to_csv(os.path.join(CSV_DIR, "threshold_analysis.csv"), index=False)
+    threshold_df.to_csv(os.path.join(_cfg.CSV_DIR, "threshold_analysis.csv"), index=False)
 
-    plot_threshold_analysis(summary_df, threshold_df, chosen_threshold, PLOT_DIR)
+    plot_threshold_analysis(summary_df, threshold_df, chosen_threshold, _cfg.PLOT_DIR)
 
     # --- Step C: Fit regression for b ---
     features = ["valley_ratio", "channel_slope", "mean_catchment_slope", "dam_height_m"]
@@ -166,7 +161,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
 
             plot_regression_diagnostics(
                 y, best_preds, train_clean, features, importances,
-                best_model_name, best_r2_val, PLOT_DIR,
+                best_model_name, best_r2_val, _cfg.PLOT_DIR,
             )
         else:
             print("  Both models below R\u00b2=0.25, falling back to regional median b.")
@@ -265,7 +260,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
             b_val = row_r["b"]
             A_cap_m2 = np.nan
 
-            sat_path = os.path.join(WATER_EXTENT_DIR, f"{dam_id_r}_ts_filtered.csv")
+            sat_path = os.path.join(_cfg.WATER_EXTENT_DIR, f"{dam_id_r}_ts_filtered.csv")
             if os.path.isfile(sat_path):
                 try:
                     sat_df = pd.read_csv(sat_path)
@@ -314,8 +309,8 @@ def run_regionalization(summary_df, failures, dam_data_list):
 
     # --- Override Baish with sonar bathymetry ---
     params_df = pd.DataFrame(param_rows)
-    if os.path.isfile(BAYSH_EAV_CSV) and len(params_df) > 0:
-        bathy = pd.read_csv(BAYSH_EAV_CSV)
+    if os.path.isfile(_cfg.BAYSH_EAV_CSV) and len(params_df) > 0:
+        bathy = pd.read_csv(_cfg.BAYSH_EAV_CSV)
         c_bathy, b_bathy, _ = fit_power_law(
             bathy["area_m2_integrated_dem"].values,
             bathy["volume_m3_integrated_dem"].values,
@@ -331,7 +326,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
     params_df["b"] = params_df["b"].clip(1.1, 2.0)
 
     # --- Save ---
-    params_path = os.path.join(CSV_DIR, "eaves_params.csv")
+    params_path = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
     params_df.to_csv(params_path, index=False)
 
     print(f"\n  Parameter assignment complete:")

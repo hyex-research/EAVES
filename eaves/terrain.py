@@ -10,9 +10,8 @@ from rasterio.merge import merge as rio_merge
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 from rasterio.transform import rowcol
 
-from .config import SRTM_DIR, _srtm_cache
-from .utils import srtm_tile_name
 import eaves.config as _cfg
+from .utils import srtm_tile_name
 
 
 # ---------------------------------------------------------------------------
@@ -29,7 +28,7 @@ def load_srtm_tiles(lat, lon, buffer_deg=0.15):
     for la in np.arange(lat_min, lat_max + 1):
         for lo in np.arange(lon_min, lon_max + 1):
             name = srtm_tile_name(la, lo)
-            path = os.path.join(SRTM_DIR, name)
+            path = os.path.join(_cfg.SRTM_DIR, name)
             if not os.path.isfile(path):
                 continue
             if name not in _cfg._srtm_cache:

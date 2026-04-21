@@ -1,6 +1,23 @@
 dam_id,dam_name,reason,detail,valley_width_m,valley_ratio,channel_slope,mean_catchment_slope
+id_010007,Al-Anbari,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",764.5394091625869,127.42323486043115,0.013282489657202513,0.05302128940820694
+id_010016,Mazwiyah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",3256.6789820328663,542.779830338811,0.00544119745174726,0.0686907023191452
+id_010058,Hadijah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",648.6658921504779,129.7331784300956,0.008547051533803989,0.11686654388904572
 id_010064,Thadiq,bad_fill_auto,"bad_fill_auto: Flood centroid ratio 2.97 > 2.5 (cdist=105 px, n_px=1239); fill displaced",352.7909564845636,88.1977391211409,0.004192091387354009,0.0779508650302887
+id_010084,Al-Halifah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",1470.637919804954,147.0637919804954,0.020199878055543942,0.04079049080610275
 id_020058,Wadi Fatimah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",624.8771352973155,41.6584756864877,0.014824015093958889,0.2246866375207901
+id_020066,Hawajiz Al-Dab'ah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",59.76233019871482,14.940582549678705,0.05695391812711335,0.25794410705566406
+id_030037,Qusayba' Al-Tad'imi,bad_fill_auto,"bad_fill_auto: Flood centroid ratio 2.90 > 2.5 (cdist=48 px, n_px=278); fill displaced",147.14319818564425,36.78579954641106,0.0011827651213428014,0.07365524768829346
+id_030039,Al-Aqul Al-Hajari,bad_fill_auto,bad_fill_auto: Volume fraction 0.00 < 0.20 (~0.1 vs 17.0 MCM); fill too small,265.48178804225887,88.49392934741962,0.030856871998743332,0.13885389268398285
+id_070075,Sarabah,bad_fill_auto,bad_fill_auto: Volume fraction 0.12 < 0.20 (~0.1 vs 1.0 MCM); fill too small,240.15946928048027,16.010631285365353,0.06056534693077032,0.12772667407989502
+id_070078,Anam,bad_fill_auto,bad_fill_auto: Volume fraction 0.17 < 0.20 (~0.3 vs 2.0 MCM); fill too small,240.6857633438464,13.371431296880354,0.03390613973806138,0.27382928133010864
+id_080026,Al-Aja'idah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",119.76833231970325,11.976833231970325,0.07174634851671743,0.16323445737361908
+id_080035,Al-Haliyah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",119.81504573849074,39.93834857949691,0.2804202590703238,0.42452263832092285
+id_080047,Dabdab,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",149.60229001052323,14.960229001052323,0.04681036919432841,0.23630830645561218
+id_080049,Al-Afarah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",89.88109290517701,17.976218581035404,0.0607508164361019,0.35827958583831787
+id_090004,Al-Ratiq,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",145.95380831523576,15.363558770024817,0.008164632757244295,0.21803419291973114
+id_090008,Al-Mudih,bad_fill_auto,"bad_fill_auto: Flood centroid ratio 3.06 > 2.5 (cdist=24 px, n_px=63); fill displaced",146.25700198272725,48.75233399424241,0.006064398309071539,0.1077394038438797
+id_090031,Al-Shaqiq,bad_fill_auto,bad_fill_auto: Volume fraction 0.03 < 0.20 (~0.1 vs 2.0 MCM); fill too small,292.0335991179378,73.00839977948445,0.011281924643089981,0.18491382896900177
 id_120005,Qasi,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",2472.9910435135844,109.9107130450482,0.006361547751882665,0.045036111027002335
+id_120014,Shahdan,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",,,0.006040986060948378,0.05813930928707123
 id_130016,(Surum) Halal,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",240.87623099051373,20.073019249209477,0.02516970668029154,0.35915711522102356
 id_040015,Al-Rummah,fit_failed,Power-law fit returned NaN (n_pixels=1157),,,,

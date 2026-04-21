@@ -1,6 +1,6 @@
 # 🏔️💧 **EAVES — Elevation–Area–Volume Estimation from SRTM**
 
-*Reconstructing reservoir bathymetry for Saudi dams from pre-impoundment SRTM topography.*
+*Reconstructing reservoir bathymetry for ungaged arid-basin dams from pre-impoundment SRTM topography.*
 
 ---
 
@@ -12,7 +12,7 @@
 
 ## 🗺️ **Overview**
 
-Reservoir storage dynamics are central to the **RUSH** hydrological model, yet bathymetric surveys are unavailable for the vast majority of Saudi dams. **EAVES** reconstructs **Elevation–Area–Volume (EAV) curves** from the **Shuttle Radar Topography Mission (SRTM)** digital elevation model, exploiting the fact that SRTM was acquired in February 2000 — before many dams were constructed or filled.
+Reservoir bathymetry is the missing link between remotely sensed water extent and storage. In arid and hyper-arid **ungaged basins**, bathymetric surveys are almost never available — so the Elevation–Area–Volume (EAV) relationship that ties surface area to volume has to be inferred. **EAVES** reconstructs it from the **Shuttle Radar Topography Mission (SRTM)** digital elevation model, exploiting the fact that SRTM was acquired in February 2000 — before many dams were constructed or filled, so the pre-impoundment valley topography is preserved in the DEM.
 
 For each dam the pipeline:
 
@@ -22,7 +22,9 @@ For each dam the pipeline:
 4. **Fits** a power-law model $V = c \cdot A^b$ to parameterise the area–volume relationship
 5. **Regionalises** the fitted exponent $b$ so that dams with unreliable SRTM fills still receive physically plausible parameters
 
-The resulting `eaves_params.csv` provides the area–volume relationship for every dam in the RUSH domain, enabling satellite-observed water extent to be converted into storage estimates for model calibration.
+The resulting `eaves_params.csv` provides the area–volume relationship for every dam in the study domain, enabling satellite-observed water extent to be converted into storage estimates for downstream hydrological modelling.
+
+> **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia**. The codebase is region-agnostic — it can be applied to any country for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalogue, and satellite water-extent time series) are available.
 
 ## ⚙️ **Method**
 
@@ -53,57 +55,88 @@ Automated quality gates detect displaced flood centroids and negligible fill vol
 
 ## 🔁 **Usage**
 
-### Full run (compute EAV curves + plots + regionalization)
+EAVES is configured via a JSON settings file that points to the input catalogues, external rasters/shapefiles, and the output directory. Reference deployments live in `settings/`:
+
+- `settings/<country>.json` — full regional run
+- `settings/test.json` — 9-dam example fixture under `test/`
+
+### Full run
 
 ```bash
 conda activate eaves
-python run_eaves.py
+python run_eaves.py --settings settings/<country>.json
 ```
 
-### Plot-only mode (skip calculation, regenerate plots from existing results)
+### Test run (9 example dams, ~5 min end-to-end)
 
 ```bash
-python run_eaves.py --plot-only
+python run_eaves.py --settings settings/test.json
 ```
 
-### Process specific dams
+### Other flags
 
-```bash
-python run_eaves.py --only id_120000 id_020017
-```
+| Flag | Effect |
+|------|--------|
+| `--plot-only` | Skip per-dam calculation and regenerate plots from existing results |
+| `--only id_120000 id_020017 ...` | Process only the listed dam IDs |
+| `--rebuild-domain` | Rebuild the preprocessing cache (MERIT clip + segment split + dam snap) instead of loading from `<domain_dir>/` |
 
-### Force recalculation when combined with plot-only
+### Settings file
 
-```bash
-python run_eaves.py --plot-only --rerun
-```
+A settings file is a flat JSON object with any subset of the keys accepted by `eaves.config.configure`. Typical fields:
+
+| Key | Purpose |
+|-----|---------|
+| `output_dir`, `srtm_dir`, `dams_csv`, `water_extent_dir`, `domain_dir` | Paths to local inputs / outputs |
+| `merit_rivers_shp`, `merit_basins_shp`, `country_shp` | External shapefiles for preprocessing |
+| `target_country`, `country_name_col` | Country filter applied to `country_shp` |
+| `max_seg_len_m`, `max_snap_distance_m` | Preprocessing knobs |
+
+Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rather than silently reverting to defaults.
 
 ## 🗂️ **Repository Structure**
 
 ```text
 .
-├── run_eaves.py                 # Thin CLI wrapper
+├── run_eaves.py                 # Thin CLI wrapper (delegates to eaves.__main__)
 │
 ├── eaves/                       # Core Python package
 │   ├── __init__.py              # Package metadata
-│   ├── __main__.py              # CLI entry point (argparse, multiprocessing, CSV I/O)
-│   ├── config.py                # Paths, constants, caches, matplotlib rcParams
+│   ├── __main__.py              # python -m eaves entry point
+│   ├── cli.py                   # Command-line interface: argparse + main()
+│   ├── config.py                # Paths, algorithm constants, runtime reconfiguration
+│   ├── settings.py              # JSON settings loader -> config.configure()
+│   ├── preprocess.py            # MERIT -> country-clipped river network + dam snapping
 │   ├── utils.py                 # Math helpers, override loaders, SRTM/UTM utilities
-│   ├── terrain.py               # DEM loading, clipping, reprojection, flow direction
-│   ├── placement.py             # Wall search, flood fill, upstream walk (6 stages)
-│   ├── curves.py                # Per-dam EAV curve construction (process_dam)
-│   ├── regionalization.py       # Reliability tagging, threshold analysis, parameter assignment
-│   ├── plots.py                 # All plotting functions (analysis-style + QC flood maps)
-│   └── workers.py               # Multiprocessing workers
+│   │
+│   ├── pipeline/                # Per-dam EAV computation (runs in workers)
+│   │   ├── terrain.py           # DEM loading, clipping, reprojection, flow direction
+│   │   ├── placement.py         # Wall search, flood fill, upstream walk (6 stages)
+│   │   ├── curves.py            # Per-dam EAV curve construction (process_dam)
+│   │   └── workers.py           # Multiprocessing worker wrappers
+│   │
+│   └── postprocess/             # After all dams processed
+│       ├── plots.py             # Diagnostic + validation plots, QC flood maps
+│       └── regionalization.py   # Reliability tagging, threshold analysis, parameter assignment
 │
-├── input/                       # Input data
-│   └── GRDL/                    # GRDL reference curves (Baish, Hali, Rabigh)
+├── settings/                    # Reference deployment configurations
+│   ├── <country>.json           # Full regional run
+│   └── test.json                # 9-dam example fixture
 │
-├── output/                      # Generated outputs
-│   ├── 0_check_dam_flood/       # Per-dam flood QC maps (100 DPI)
+├── input/                       # Deployment inputs (gitignored; licensed data)
+│   ├── <country>_dams/          # Dam catalogue CSV, water-extent time series
+│   ├── grdl/                    # Reference EAV curves for validation dams
+│   └── domain_inputs/           # Preprocessing cache (rivers_split, dams_snapped)
+│
+├── output/                      # Generated outputs (gitignored)
+│   ├── 0_check_dams/            # Per-dam flood QC maps (100 DPI)
 │   ├── 1_results_csv/           # Summary CSVs, EAV tables, failed dams
 │   │   └── eav_tables/          # Individual dam EAV curves ({dam_id}_eav.csv)
 │   └── 2_results_plots/         # Analysis figures (300 DPI)
+│
+├── test/                        # 9-dam example fixture (committed)
+│   ├── input/                   # Dams subset + water-extent TS + preprocessing cache
+│   └── output/                  # Expected outputs after running settings/test.json
 │
 ├── environment.yml              # Conda environment specification
 ├── LICENSE                      # CC BY-NC 4.0
@@ -117,10 +150,10 @@ python run_eaves.py --plot-only --rerun
 | File | Description |
 |------|-------------|
 | `eaves_summary.csv` | One row per successfully processed dam: fitted $c$, $b$, $R^2$, footprint area, quality grade, placement method |
-| `eaves_params.csv` | Final EAV parameters for **all** dams (SRTM-direct + regionalized + Baish sonar override) |
+| `eaves_params.csv` | Final EAV parameters for **all** dams (SRTM-direct + regionalized fallback) |
 | `failed_dams.csv` | Dams that failed placement or QC, with failure reason |
 | `threshold_analysis.csv` | Capacity-threshold sweep for reliability classification |
-| `baish_validation.csv` | Baish sonar vs SRTM comparison data |
+| `bathymetry_validation.csv` | Sonar bathymetry vs SRTM comparison data |
 
 ### Analysis plots (`output/2_results_plots/`)
 
@@ -128,43 +161,35 @@ python run_eaves.py --plot-only --rerun
 |------|--------|-------------|
 | `exponent_diagnostics.png` | a, b, c | Histogram of $b$, exponent vs dam height, spatial map |
 | `threshold_analysis.png` | a, b | Quality grade scatter, reliability fraction vs threshold |
-| `baish_validation.png` | a, b | Sonar bathymetry vs SRTM: area–volume and elevation–area |
-| `grdl_comparison.png` | a–f | GRDL reference vs SRTM for Baish, Hali, Rabigh |
+| `bathymetry_validation.png` | a, b | Sonar bathymetry vs SRTM: area–volume and elevation–area |
+| `grdl_validation.png` | a–d | GRDL reference vs SRTM (area–volume and elevation–area panels) |
 | `regression_diagnostics.png` | a, b, c | LOO predictions, feature importances, residuals (if regression $R^2 \geq 0.25$) |
 
-### Flood QC maps (`output/0_check_dam_flood/`)
+### Flood QC maps (`output/0_check_dams/`)
 
 One PNG per dam showing the DEM, flood footprint, river network overlay, and dam marker. Named by dam ID (e.g., `id_120000_flood.png`).
 
-## 📥 **Data Dependencies**
+## 📥 **Data dependencies**
+
+EAVES runs standalone — all preprocessing (country clip, segment split, dam snap) is done inside the package. The settings file points to the external rasters and shapefiles; licensed or bulky data is not redistributed.
 
 ### Included in this repository
 
-- GRDL reference EAV curves (`input/GRDL/`)
+- 9-dam example fixture (`test/input/`) — dams CSV subset + water-extent time series + preprocessing cache
+- GRDL reference EAV curves (`input/grdl/` — user-provided)
 
-### External (referenced by path in `config.py`)
+### External (referenced by path in the settings file)
 
 | Dataset | Source | Purpose |
 |---------|--------|---------|
 | **SRTM GL1 v003** (1 arc-second, ~30 m) | [NASA/USGS SRTMGL1](https://lpdaac.usgs.gov/products/srtmgl1v003/) — tiles mirrored at [ESA STEP](https://step.esa.int/auxdata/dem/SRTMGL1/) | Pre-dam valley topography |
-| **RUSH domain GeoJSON** (`gdf_dams_subset_snapped.geojson`) | RUSH `A01_domain_input.py` | Dam locations, attributes, river network |
-| **Baish sonar bathymetry** | Field survey (2025) | Ground-truth validation |
-| **Satellite water extent** (filtered time series) | RUSH `A03_dam_input.py` | Empirical area estimates for regionalization |
+| **MERIT Hydro v0.7** (pfaf_level_1) | [Yamazaki et al. 2019](https://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_Hydro/) | River network + basins (clipped to country during preprocessing) |
+| **Natural Earth admin boundaries** (10 m, lakes-cut) | [naturalearthdata.com](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/) | Country polygon for clipping MERIT |
+| **Dam catalogue** (e.g. `<country>_dams.csv`) | User-provided | Dam locations, attributes, capacities |
+| **Filtered satellite water extent** | User-provided | Empirical area estimates for regionalization |
+| **Sonar bathymetry** (optional) | Field survey | Ground-truth validation for one or more reservoirs |
 
-> **Note on SRTM data:** EAVES uses `.hgt` tiles from the Shuttle Radar Topography Mission Global 1 arc-second dataset (SRTMGL1 v003), acquired in February 2000. Tiles can be downloaded from [USGS EarthExplorer](https://earthexplorer.usgs.gov/) or the [ESA STEP mirror](https://step.esa.int/auxdata/dem/SRTMGL1/). The dam catalogue used in this study is not publicly available.
-
-## 🎛️ **Key Parameters**
-
-Processing parameters are defined in `eaves/config.py`:
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `BIN_Z` | 0.5 m | Elevation bin spacing for EAV integration |
-| `WALL_THICKNESS` | 3 px | Virtual dam wall thickness |
-| `UPSTREAM_MAX_SHIFT_PX` | 100 px | Maximum upstream walk distance |
-| `MAX_CREST_FLOW_DOT` | 0.74 | Flow-alignment filter for wall orientation |
-| `TERRAIN_WALL_TOP_K` | 18 | Number of candidate wall angles to evaluate |
-| `_PLACEMENT_BUDGET_S` | 300 s | Per-dam time budget for placement search |
+> **Note on SRTM data:** EAVES uses `.hgt` tiles from the Shuttle Radar Topography Mission Global 1 arc-second dataset (SRTMGL1 v003), acquired in February 2000. Tiles can be downloaded from [USGS EarthExplorer](https://earthexplorer.usgs.gov/) or the [ESA STEP mirror](https://step.esa.int/auxdata/dem/SRTMGL1/). The Saudi dam catalogue used in this study is not publicly available.
 
 ## 📦 **Installation**
 
@@ -173,15 +198,7 @@ conda env create -f environment.yml
 conda activate eaves
 ```
 
-Alternatively, EAVES runs within the parent RUSH conda environment (`conda activate rush`) if already installed.
-
 Key dependencies: `numpy`, `scipy`, `pandas`, `geopandas`, `rasterio`, `pyproj`, `matplotlib`, `scikit-learn`, `tqdm`.
-
-## 📄 **Related Manuscript**
-
-EAVES is part of the RUSH modelling framework, accompanying the manuscript:
-
-> Ivanović et al. (2026). *Title TBD.* Nature Water.
 
 ## 📜 **License**
 

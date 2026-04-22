@@ -102,7 +102,7 @@ A settings file is a flat JSON object with any subset of the keys accepted by `e
 | `merit_rivers_shp`, `merit_basins_shp`, `country_shp` | External shapefiles for preprocessing |
 | `target_country`, `country_name_col` | Country filter applied to `country_shp` |
 | `bathymetry_eav_csv` *(optional)* | Sonar EAV table for validation plots |
-| `grdl_dir` *(optional)* | Folder of GRDL reference curves for validation plots |
+| `grdl_dir` *(optional)* | Folder of GRDL reference curves ([Hao et al. 2024](https://doi.org/10.1029/2023WR035781)) for validation plots |
 | `sedimentation_dir` *(optional)* | Folder with `sedimentation_yield.csv` + `owe_annual_mean.csv` to merge into `eaves_summary.csv` (currently KSA-specific, see [Dash et al. 2025](https://doi.org/10.1016/j.jenvman.2025.127199)) |
 | `max_seg_len_m`, `max_snap_distance_m` | Preprocessing knobs |
 
@@ -204,6 +204,7 @@ EAVES runs standalone — all preprocessing (country clip, segment split, dam sn
 | **Natural Earth admin boundaries** (10 m, lakes-cut) | [naturalearthdata.com](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/) | Country polygon for clipping MERIT |
 | **Dam catalogue** (e.g. `<country>_dams.csv`) | User-provided | Dam locations, attributes, capacities |
 | **Filtered satellite water extent** | User-provided | Empirical area estimates for regionalization |
+| **GRDL reference curves** (optional) | [Hao et al. 2024](https://doi.org/10.1029/2023WR035781) | Deep-learning-derived global area–storage–depth reference set used for cross-validation plots (`grdl_validation.png`) |
 | **Sonar bathymetry** (optional) | Field survey | Ground-truth validation for one or more reservoirs |
 | **Sedimentation & evaporation** (optional, KSA-specific) | [Dash et al. 2025](https://doi.org/10.1016/j.jenvman.2025.127199) | Per-dam sediment yield (t ha⁻¹ yr⁻¹), upstream catchment area (km²), and open-water evaporation (mm yr⁻¹), merged into `eaves_summary.csv` when `sedimentation_dir` is set |
 

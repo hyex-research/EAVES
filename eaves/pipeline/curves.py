@@ -191,7 +191,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         **crest_kw,
     )
     if nominal is not None:
-        footprint, n_pixels, footprint_area_km2, dam_r, dam_c, dam_elev_out = nominal
+        footprint, n_pixels, footprint_area_km2, dam_r, dam_c, dam_elev_out, wall_vec, eff_length_m = nominal
         placement_upstream_shift_m = 0.0
         placement_method = "stage_1_fast_path"
     else:
@@ -204,7 +204,8 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
             deadline=_deadline,
             **crest_kw,
         )
-        footprint, n_pixels, footprint_area_km2, dam_r, dam_c, dam_elev_out, placement_upstream_shift_m = out
+        (footprint, n_pixels, footprint_area_km2, dam_r, dam_c,
+         dam_elev_out, placement_upstream_shift_m, wall_vec, eff_length_m) = out
         if footprint is not None:
             placement_method = "stage_2_upstream_walk"
 
@@ -233,7 +234,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 deadline=_deadline,
                 **crest_kw,
             )
-            fp2, n2, a2, dr2, dc2, de2, up_m2 = out2
+            fp2, n2, a2, dr2, dc2, de2, up_m2, wv2, el2 = out2
             if fp2 is not None:
                 ds2 = get_downstream_direction_from_dem(dem_utm, dr2, dc2)
                 bad2 = _pool_downstream_skewed(fp2, dr2, dc2, ds2)
@@ -253,6 +254,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                     footprint, n_pixels, footprint_area_km2 = fp2, n2, a2
                     dam_r, dam_c, dam_elev_out = dr2, dc2, de2
                     placement_upstream_shift_m = up_m2
+                    wall_vec, eff_length_m = wv2, el2
                     placement_method = "stage_3_quality_recovery"
 
     # --- Stage 4: river-direction retry ---
@@ -291,7 +293,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                         **crest_kw,
                     )
                     if _res is not None:
-                        _rfp, _rn_px, _ra, _rdr, _rdc, _rde = _res
+                        _rfp, _rn_px, _ra, _rdr, _rdc, _rde, _rwv, _rel = _res
                         _rrR, _ccR = np.where(_rfp)
                         _cdistR = float(np.hypot(np.mean(_rrR) - _rdr, np.mean(_ccR) - _rdc))
                         _scaleR = max(1.0, np.sqrt(float(_rn_px)))
@@ -304,6 +306,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                             footprint, n_pixels, footprint_area_km2 = _rfp, _rn_px, _ra
                             dam_r, dam_c, dam_elev_out = _rdr, _rdc, _rde
                             placement_upstream_shift_m = float(_off_px) * pixel_size
+                            wall_vec, eff_length_m = _rwv, _rel
                             placement_method = "stage_4_river_retry"
                             break
 
@@ -321,7 +324,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
             **_relax_kw,
         )
         if relax_nom is not None:
-            footprint, n_pixels, footprint_area_km2, dam_r, dam_c, dam_elev_out = relax_nom
+            footprint, n_pixels, footprint_area_km2, dam_r, dam_c, dam_elev_out, wall_vec, eff_length_m = relax_nom
             placement_upstream_shift_m = 0.0
             placement_method = "stage_5_relaxed_alignment"
         elif time.time() < _deadline:
@@ -333,11 +336,12 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 deadline=_deadline,
                 **_relax_kw,
             )
-            fp_r, n_r, a_r, dr_r, dc_r, de_r, up_r = out_r
+            fp_r, n_r, a_r, dr_r, dc_r, de_r, up_r, wv_r, el_r = out_r
             if fp_r is not None:
                 footprint, n_pixels, footprint_area_km2 = fp_r, n_r, a_r
                 dam_r, dam_c, dam_elev_out = dr_r, dc_r, de_r
                 placement_upstream_shift_m = up_r
+                wall_vec, eff_length_m = wv_r, el_r
                 placement_method = "stage_5_relaxed_alignment"
 
     # --- Stage 6: fallback ---
@@ -348,12 +352,13 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
             dam_r, dam_c, dam_elev = _snap_dam_elev(dem_utm, dam_r, dam_c)
         z_spillway = dam_elev + spillway_height
         z_wall = dam_elev + dam_height
-        footprint, n_pixels, footprint_area_km2 = fallback_multidirection_fill(
+        footprint, n_pixels, footprint_area_km2, wall_vec = fallback_multidirection_fill(
             dem_utm, dem_tf, dam_r, dam_c, dam_elev, z_spillway, z_wall,
             spillway_height, dam_height, capacity_m3, pixel_area,
             wall_thickness, seed_dist, area_cap_km2,
             flow_dir_px=flow_dir_px,
         )
+        eff_length_m = dam_length_m
         if footprint is None:
             raise ValueError(
                 "placement_failed: no valid flood fill after extension, "
@@ -489,4 +494,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         ),
         "placement_method": placement_method,
         "flood_river_overlay": flood_river_overlay,
+        "wall_vec": wall_vec,
+        "eff_length_m": eff_length_m,
+        "pixel_size": pixel_size,
     }

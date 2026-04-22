@@ -20,6 +20,8 @@ from .settings import load_settings
 from .pipeline.workers import _worker_indexed
 from .postprocess.plots import bathymetry_validation, grdl_validation, make_diagnostic_plots
 from .postprocess.regionalization import assign_quality, run_regionalization
+from .postprocess.reliability import add_uncertainty_flags, print_flag_tally
+from .postprocess.external_data import add_sedimentation_columns
 
 
 def _load_translit_map():
@@ -72,6 +74,33 @@ def _run_plots_and_regionalization(summary_df, failures, dam_data_list, bathy_re
         make_diagnostic_plots(summary_df, _cfg.PLOT_DIR)
 
     run_regionalization(summary_df, failures, dam_data_list)
+    _rename_flood_plots_by_source()
+
+
+_SOURCE_SUFFIX = {
+    "srtm_derived": "srtm",
+    "regr_derived": "regr",
+    "regi_derived": "regi",
+}
+
+
+def _rename_flood_plots_by_source():
+    """Rename ``{dam_id}_flood.png`` -> ``{dam_id}_{srtm|regr|regi}.png``
+    based on the ``source`` column of ``eaves_params.csv``.
+    """
+    params_path = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
+    if not os.path.isfile(params_path):
+        return
+    params_df = pd.read_csv(params_path)
+    for _, row in params_df.iterrows():
+        dam_id = str(row["dam_id"]).strip()
+        suffix = _SOURCE_SUFFIX.get(str(row.get("source", "")).strip())
+        if not dam_id or suffix is None:
+            continue
+        src = os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_flood.png")
+        dst = os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_{suffix}.png")
+        if os.path.isfile(src):
+            os.replace(src, dst)
 
 
 def main():
@@ -200,6 +229,11 @@ def main():
                     / summary_df["spillway_height_m"].replace(0, np.nan)
                 )
             summary_df["quality"] = summary_df.apply(assign_quality, axis=1)
+
+        if len(summary_df) > 0:
+            add_uncertainty_flags(summary_df)
+            summary_df = add_sedimentation_columns(summary_df, getattr(_cfg, "SEDIMENTATION_DIR", None))
+            summary_df.to_csv(summary_path, index=False)
 
         failures = []
         if os.path.isfile(fail_path):
@@ -355,6 +389,8 @@ def main():
             summary_df["z_range"] / summary_df["spillway_height_m"].replace(0, np.nan)
         )
         summary_df["quality"] = summary_df.apply(assign_quality, axis=1)
+        add_uncertainty_flags(summary_df)
+        summary_df = add_sedimentation_columns(summary_df, getattr(_cfg, "SEDIMENTATION_DIR", None))
 
     processed_ids = {str(d.get("dam_id", "")).strip() for d in dam_data_list}
     processed_ids.discard("")
@@ -375,6 +411,7 @@ def main():
         if "capped" in summary_df.columns:
             n_capped = summary_df["capped"].sum()
             print(f"  Capacity-capped: {n_capped} dams")
+        print_flag_tally(summary_df)
 
     for s in summaries:
         if np.isnan(s.get("b", np.nan)) or np.isnan(s.get("c", np.nan)):

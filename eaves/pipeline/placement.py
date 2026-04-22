@@ -570,7 +570,7 @@ def _try_terrain_placement_once(
     deadline=None,
 ):
     """One terrain wall + flood-fill + acceptance check.
-    Returns (fp, n_px, area_km2, dam_r, dam_c, dam_elev) or None.
+    Returns (fp, n_px, area_km2, dam_r, dam_c, dam_elev, wall_vec, eff_length) or None.
     """
     if eff_length <= 0:
         return None
@@ -630,7 +630,8 @@ def _try_terrain_placement_once(
             approx_vol = _approx_cone_volume_m3(n_px, pixel_area, spillway_height)
             vol_err = abs(np.log(max(approx_vol, 1.0) / max(capacity_m3, 1.0)))
             area_km2 = n_px * pixel_area / 1e6
-            candidate = (fp, n_px, area_km2, dam_r, dam_c, dam_elev)
+            wv_tuple = (float(wall_vec[0]), float(wall_vec[1]))
+            candidate = (fp, n_px, area_km2, dam_r, dam_c, dam_elev, wv_tuple, float(eff_length))
 
             if is_upstream:
                 if vol_err < best_up_err:
@@ -712,8 +713,8 @@ def search_terrain_wall_extended_upstream(
                 deadline=deadline,
             )
             if res is not None:
-                fp, n_px, area_km2, _dr, _dc, _de = res
-                return fp, n_px, area_km2, _dr, _dc, _de, 0.0
+                fp, n_px, area_km2, _dr, _dc, _de, wv, el = res
+                return fp, n_px, area_km2, _dr, _dc, _de, 0.0, wv, el
 
     # Phase 1: base crest length
     for upstream_m, dam_r, dam_c in walked:
@@ -733,8 +734,8 @@ def search_terrain_wall_extended_upstream(
             deadline=deadline,
         )
         if res is not None:
-            fp, n_px, area_km2, dr, dc, delev = res
-            return fp, n_px, area_km2, dr, dc, delev, upstream_m
+            fp, n_px, area_km2, dr, dc, delev, wv, el = res
+            return fp, n_px, area_km2, dr, dc, delev, upstream_m, wv, el
 
     # Phase 2: lengthen crest
     for upstream_m, dam_r, dam_c in walked:
@@ -759,10 +760,10 @@ def search_terrain_wall_extended_upstream(
             )
             if res is None:
                 continue
-            fp, n_px, area_km2, dr, dc, delev = res
-            return fp, n_px, area_km2, dr, dc, delev, upstream_m
+            fp, n_px, area_km2, dr, dc, delev, wv, el = res
+            return fp, n_px, area_km2, dr, dc, delev, upstream_m, wv, el
 
-    return None, 0, 0.0, dam_r0, dam_c0, np.nan, np.nan
+    return None, 0, 0.0, dam_r0, dam_c0, np.nan, np.nan, None, np.nan
 
 
 # ---------------------------------------------------------------------------
@@ -826,13 +827,13 @@ def fallback_multidirection_fill(
                 continue
 
             fp_area_km2 = n_px * pixel_area / 1e6
-            valid_fills.append((n_px, fp_area_km2, fp, cand_idx, is_upstream))
+            valid_fills.append((n_px, fp_area_km2, fp, cand_idx, is_upstream, perp_px))
 
     if not valid_fills:
-        return None, 0, 0.0
+        return None, 0, 0.0, None
 
     MIN_PIXELS = 10
-    within_cap = [(n, a, fp, ci, up) for n, a, fp, ci, up in valid_fills
+    within_cap = [(n, a, fp, ci, up, wv) for n, a, fp, ci, up, wv in valid_fills
                   if a <= area_cap_km2 and n >= MIN_PIXELS]
     pool = within_cap if within_cap else valid_fills
 
@@ -848,5 +849,6 @@ def fallback_multidirection_fill(
     else:
         pool_sorted = sorted(pool, key=lambda x: x[0], reverse=True)
         best = pool_sorted[0]
-    n_pixels, footprint_area_km2, footprint, _, _ = best
-    return footprint, n_pixels, footprint_area_km2
+    n_pixels, footprint_area_km2, footprint, _, _, perp_best = best
+    wall_vec_out = (float(perp_best[0]), float(perp_best[1]))
+    return footprint, n_pixels, footprint_area_km2, wall_vec_out

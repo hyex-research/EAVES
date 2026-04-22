@@ -194,7 +194,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
             "dam_name": row.get("dam_name", ""),
             "c": row["c"],
             "b": row["b"],
-            "source": "srtm_direct",
+            "source": "srtm_derived",
             "capacity_mcm": row["capacity_mcm"],
             "r_squared": row["r_squared"],
         })
@@ -254,10 +254,10 @@ def run_regionalization(summary_df, failures, dam_data_list):
             X_predict = region_df[features].values
             b_predicted = best_model.predict(X_predict)
             region_df["b"] = np.clip(b_predicted, 1.1, 2.0)
-            region_df["source"] = "regression"
+            region_df["source"] = "regr_derived"
         else:
             region_df["b"] = regional_median_b
-            region_df["source"] = "regional_median"
+            region_df["source"] = "regi_derived"
 
         for idx_r, row_r in region_df.iterrows():
             dam_id_r = row_r["dam_id"]
@@ -292,12 +292,12 @@ def run_regionalization(summary_df, failures, dam_data_list):
                 if v_check <= 0 or v_check > 2.0 * capacity_m3_r or v_check < 0.5 * capacity_m3_r:
                     c_val = regional_median_c
                     region_df.at[idx_r, "b"] = regional_median_b
-                    region_df.at[idx_r, "source"] = "regional_median"
+                    region_df.at[idx_r, "source"] = "regi_derived"
 
             if np.isnan(c_val) or c_val <= 0:
                 c_val = regional_median_c
                 region_df.at[idx_r, "b"] = regional_median_b
-                region_df.at[idx_r, "source"] = "regional_median"
+                region_df.at[idx_r, "source"] = "regi_derived"
 
             region_df.at[idx_r, "c"] = c_val
 
@@ -330,10 +330,10 @@ def run_regionalization(summary_df, failures, dam_data_list):
     print(f"    Total dams with parameters: {len(params_df)}")
     for src_name, count in params_df["source"].value_counts().items():
         print(f"    {src_name}: {count} dams")
-    direct = params_df[params_df["source"] == "srtm_direct"]
-    other = params_df[params_df["source"] != "srtm_direct"]
+    direct = params_df[params_df["source"] == "srtm_derived"]
+    other = params_df[params_df["source"] != "srtm_derived"]
     if len(direct) > 0:
-        print(f"    Median b (SRTM direct): {direct['b'].median():.4f}")
+        print(f"    Median b (SRTM-derived): {direct['b'].median():.4f}")
     if len(other) > 0:
         print(f"    Median b (regionalized): {other['b'].median():.4f}")
     print(f"\n  Saved: eaves_params.csv ({len(params_df)} dams)")

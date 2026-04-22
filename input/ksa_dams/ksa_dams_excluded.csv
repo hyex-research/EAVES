@@ -1,0 +1,48 @@
+dam_id,dam_name,reason
+id_010009,Abu Rukhab,no_water_extent
+id_010013,Al-Khur'iyah,no_water_extent
+id_010032,Anan,no_water_extent
+id_010047,Al-Manhanah,no_water_extent
+id_010048,Al-Sha'arah,no_water_extent
+id_010089,Al-Thumaylah,no_water_extent
+id_010101,Raghbah,no_water_extent
+id_010109,Al-Shu'bah,no_water_extent
+id_010111,Al-Nabah,no_water_extent
+id_020006,Mathawab 1,zero_capacity
+id_020007,Mathawab 2,zero_capacity
+id_020008,Qawas 1,zero_capacity
+id_020009,Qawas 2,zero_capacity
+id_020010,Qawas 3,zero_capacity
+id_020011,Ghalil Al-Janubi,zero_capacity
+id_020012,Am Al-Khir,zero_capacity
+id_020013,Al-Samir,zero_capacity
+id_020014,Al-Ahtirazi,zero_capacity
+id_020016,Turabah Al-Jawfi,groundwater_dam
+id_020022,Al-Lith Al-Jawfi,groundwater_dam
+id_030013,Al-Is,non_existing
+id_040007,Al-Madhnib,no_water_extent
+id_040011,Nasifat Aban Al-Ahmar,non_existing
+id_060010,Fihan,non_existing
+id_060011,Mahitah,no_water_extent
+id_070011,Marbah Al-Jawfi,groundwater_dam
+id_070015,King Fahad Al-Jawfi,groundwater_dam
+id_070032,Jash (Al-Riyadh),no_water_extent
+id_070062,Jawf Al-Ma'mar,no_water_extent
+id_070071,Sharaqib,non_existing
+id_070073,Hajla,no_water_extent
+id_070115,Tahallul,non_existing
+id_080000,Mamana Al-Jawfi,groundwater_dam
+id_080001,Dawaqat Al-Abd Al-Hamid,non_existing
+id_080004,Alib Al-Jawfi,groundwater_dam
+id_080006,Al-Ahsabah Al-Jawfi,groundwater_dam
+id_080008,Thurad Al-Jawfi,groundwater_dam
+id_080011,Ardah Al-Jawfi,groundwater_dam
+id_080014,Daqah Al-Jawfi,groundwater_dam
+id_090014,Al-Azim,no_water_extent
+id_090030,Al-Mustajidah,no_water_extent
+id_100023,Tarim,zero_dam_length
+id_110001,Zalawam,non_existing
+id_110003,Al-Ma'arik,non_existing
+id_120001,Baish Al-Jawfi,groundwater_dam
+id_120004,Damad Al-Jawfi,groundwater_dam
+id_130001,Najran Al-Jawfi,groundwater_dam

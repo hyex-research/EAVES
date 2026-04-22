@@ -328,6 +328,19 @@ def save_flood_map(result, flood_dir, dam_id=None, dam_name=None):
         ax.plot(dam_c, dam_r, "v", color="red", markersize=10, markeredgecolor="k",
                 markeredgewidth=0.8, zorder=10)
 
+        wall_vec = result.get("wall_vec")
+        eff_length_m = result.get("eff_length_m")
+        pixel_size = result.get("pixel_size")
+        if wall_vec is not None and eff_length_m and pixel_size:
+            half_len_px = (float(eff_length_m) / float(pixel_size)) / 2.0
+            wr, wc = wall_vec
+            r1 = dam_r - wr * half_len_px
+            c1 = dam_c - wc * half_len_px
+            r2 = dam_r + wr * half_len_px
+            c2 = dam_c + wc * half_len_px
+            ax.plot([c1, c2], [r1, r2], color="darkorange", lw=2.2, alpha=0.95,
+                    solid_capstyle="round", zorder=9)
+
         river = result.get("flood_river_overlay")
         if river is not None:
             lc, lr = river["line_cc"], river["line_rr"]

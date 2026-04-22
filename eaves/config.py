@@ -105,6 +105,10 @@ _PLACEMENT_BUDGET_S = 300.0
 # Preprocessing (MERIT clip + segment split + dam snap).
 MAX_SEG_LEN_M = 2000.0
 MAX_SNAP_DISTANCE_M = 1000.0
+# Buffer (degrees) applied around each dam when clipping the MERIT network.
+# A tight box keeps the rivers file small while leaving plenty of room for
+# upstream walks and per-dam local clipping at runtime.
+DAM_BBOX_BUFFER_DEG = 0.3
 
 GRDL_NAME_MAP = {
     "baish": "id_120000",
@@ -136,6 +140,7 @@ def configure(
     country_name_col: str | None = None,
     bathymetry_eav_csv: str | None = None,
     grdl_dir: str | None = None,
+    sedimentation_dir: str | None = None,
     max_seg_len_m: float | None = None,
     max_snap_distance_m: float | None = None,
 ) -> None:
@@ -169,6 +174,8 @@ def configure(
         _self.BATHYMETRY_EAV_CSV = bathymetry_eav_csv
     if grdl_dir is not None:
         _self.GRDL_DIR = grdl_dir
+    if sedimentation_dir is not None:
+        _self.SEDIMENTATION_DIR = sedimentation_dir
     if max_seg_len_m is not None:
         _self.MAX_SEG_LEN_M = float(max_seg_len_m)
     if max_snap_distance_m is not None:

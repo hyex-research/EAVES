@@ -32,6 +32,7 @@ _ALLOWED_KEYS = {
     "country_name_col",
     "bathymetry_eav_csv",
     "grdl_dir",
+    "sedimentation_dir",
     "max_seg_len_m",
     "max_snap_distance_m",
 }

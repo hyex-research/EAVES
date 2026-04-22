@@ -22,7 +22,8 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Point, LineString
+from shapely.geometry import Point, LineString, box as shapely_box
+from shapely.ops import unary_union
 
 import eaves.config as _cfg
 
@@ -248,14 +249,24 @@ def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
     gdf_rivers_sub = gdf_rivers[gdf_rivers.geometry.intersects(country_geom)].copy()
     gdf_rivers_sub["lengthm"] = gdf_rivers_sub["lengthkm"] * 1000.0
 
-    print(f"  Splitting segments longer than {_cfg.MAX_SEG_LEN_M:.0f} m...")
-    gdf_split = _split_long_segments(gdf_rivers_sub, max_seg_len_m=_cfg.MAX_SEG_LEN_M)
-    print(f"    {len(gdf_rivers_sub)} -> {len(gdf_split)} segments after split.")
-
     # --- Dam catalogue ---
     print(f"  Loading dam catalogue from {_cfg.DAMS_CSV}...")
     df_dams = pd.read_csv(_cfg.DAMS_CSV)
     print(f"    {len(df_dams)} dams (catalogue assumed pre-cleaned).")
+
+    buf = _cfg.DAM_BBOX_BUFFER_DEG
+    dam_mask = unary_union([
+        shapely_box(lon - buf, lat - buf, lon + buf, lat + buf)
+        for lon, lat in zip(df_dams["longitude"], df_dams["latitude"])
+    ])
+    print(f"  Clipping rivers to {buf:.2f}° bbox around {len(df_dams)} dams...")
+    n_before_box = len(gdf_rivers_sub)
+    gdf_rivers_sub = gdf_rivers_sub[gdf_rivers_sub.geometry.intersects(dam_mask)].copy()
+    print(f"    {n_before_box} -> {len(gdf_rivers_sub)} segments after dam-bbox clip.")
+
+    print(f"  Splitting segments longer than {_cfg.MAX_SEG_LEN_M:.0f} m...")
+    gdf_split = _split_long_segments(gdf_rivers_sub, max_seg_len_m=_cfg.MAX_SEG_LEN_M)
+    print(f"    {len(gdf_rivers_sub)} -> {len(gdf_split)} segments after split.")
 
     # --- Snap ---
     gdf_dams = gpd.GeoDataFrame(

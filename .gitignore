@@ -2,10 +2,3 @@ __pycache__/
 *.pyc
 *.nbc
 *.nbi
-
-# Input/output data cannot be shared due to licensing restrictions. Please contact the authors for access.
-/input/
-/output/
-
-# No settings file for the KSA
-/settings/ksa.json

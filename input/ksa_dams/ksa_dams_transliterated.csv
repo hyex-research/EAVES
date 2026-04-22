@@ -1,0 +1,528 @@
+dam_id,dam_name,dam_name_arabic,latitude,longitude,region,governorate,watershed_basin,watershed_basin_2,dam_type,status,primary_purpose,current_purpose,dam_length_m,dam_height_m,spillway_height_m,storage_capacity_m3,construction_year
+id_010000,Al-Hariqah,الحريقه,24.757882,46.527667,Riyadh,Al-Diriyah,Eastern Region Basin,,earthfill,completed,recharge,protection,190.0,6.0,4.0,80000,1970
+id_010001,Tamir,تمير,25.710225,45.827694,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,230.0,5.5,4.0,61523,2011
+id_010002,Shi'b Al-Qasr Al-Asfal,شعب القصر الاسفل,25.153833,46.267694,Riyadh,Huraymila,Eastern Region Basin,,concrete,completed,recharge,protection,164.0,6.5,5.0,91170,2008
+id_010003,Al-Manih,المانح,25.067531,45.450892,Riyadh,Marat,Eastern Region Basin,,earthfill,completed,recharge,protection,100.0,6.0,4.0,100000,1980
+id_010004,Qabiban,قبيبان,23.483889,45.536389,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,recharge,protection,630.0,5.0,3.0,128442,2012
+id_010005,Al-Ashr,العشر,25.240986,45.211788,Riyadh,Shaqra,Eastern Region Basin,,earthfill,completed,recharge,protection,173.0,6.5,5.0,101387,2013
+id_010006,Al-Dahinah,الداهنة,25.608753,45.290367,Riyadh,Shaqra,Eastern Region Basin,,concrete,completed,recharge,protection,70.0,11.0,9.0,116640,2009
+id_010007,Al-Anbari,العنبرى,25.195278,45.277333,Riyadh,Shaqra,Eastern Region Basin,,concrete,completed,recharge,protection,50.0,8.0,6.0,110000,1982
+id_010008,Al-Ghadir,الغدير,25.22936,45.226406,Riyadh,Shaqra,Eastern Region Basin,,earthfill,completed,recharge,protection,161.0,6.0,4.0,119000,2010
+id_010010,Al-Khalif,الخليف,25.28749,45.174242,Riyadh,Shaqra,Eastern Region Basin,,earthfill,completed,recharge,protection,152.0,7.0,5.0,147368,2012
+id_010011,Al-Mahdiyah,المهديه,24.662778,46.427778,Riyadh,Riyadh,Eastern Region Basin,,earthfill,completed,recharge,protection,102.0,12.0,10.0,150000,2003
+id_010012,Al-Fawarah,الفوارة,23.280191,45.236743,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,recharge,protection,370.0,5.0,3.0,164000,2012
+id_010014,Al-Hafirah,الحفيره,22.824444,44.954722,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,400.0,8.0,6.0,170000,2003
+id_010015,Malham,ملهم,25.143333,46.240556,Riyadh,Huraymila,Eastern Region Basin,,rockfill,completed,recharge,protection,100.0,5.0,4.0,200000,1970
+id_010016,Mazwiyah,مزوى,23.25,44.65,Riyadh,Al-Rain,Wadi Hanifah Basin,,concrete,completed,recharge,protection,50.0,8.0,6.0,45800,1985
+id_010017,Halifah Al-Musa'id,حليفه المساعد,25.126667,45.371556,Riyadh,Marat,Eastern Region Basin,,concrete,completed,recharge,protection,50.0,5.0,3.0,200000,1985
+id_010018,Mahiraqah,محيرقة,23.951111,45.075833,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,166.0,6.0,4.0,202838,2008
+id_010019,Marqan,مرقان,24.074167,44.937778,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,222.0,8.0,6.0,219537,2013
+id_010020,Al-Shahmah,الشحمة,26.112187,45.808843,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,105.0,7.5,6.0,219617,2011
+id_010021,Al-Ruwaydah,الرويضة,23.737759,44.801521,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,307.0,5.5,4.0,148570,2010
+id_010022,Athitiyah,اثيثيه,25.158056,45.368056,Riyadh,Marat,Eastern Region Basin,,earthfill,completed,recharge,protection,230.0,4.0,3.0,250000,1982
+id_010023,Al-Qaltah,القلتة,24.053611,45.014444,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,concrete,completed,recharge,recharge,115.0,9.5,8.0,135540,2010
+id_010024,Marat,مرات,25.049528,45.467333,Riyadh,Marat,Eastern Region Basin,,concrete,completed,recharge,protection,110.0,12.0,10.0,400000,1977
+id_010025,Sudus,سدوس,25.005833,46.1475,Riyadh,Al-Diriyah,Eastern Region Basin,,earthfill,completed,recharge,protection,520.0,7.0,6.0,400000,1979
+id_010026,Al-Raziwah,الرزيوة,22.586019,44.953615,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,473.0,6.0,4.0,441675,2013
+id_010027,Al-Bair,البير,25.269934,45.970554,Riyadh,Thadiq,Eastern Region Basin,,earthfill,completed,recharge,protection,523.0,6.0,4.0,441906,2009
+id_010028,Haradah,حراضه,22.792778,46.199167,Riyadh,Al-Aflaj,Wadi Al Sahba Basin,,earthfill,completed,recharge,protection,276.0,8.0,6.0,447800,2007
+id_010029,Al-Jazar,الجزر,25.697671,45.435457,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,370.0,6.0,4.0,40365,2011
+id_010030,Bawdah,بوضه,25.819128,45.673748,Riyadh,Al-Majamah,Eastern Region Basin,,rockfill,completed,recharge,protection,100.0,8.0,6.0,130000,1985
+id_010031,Tamrah,تمره,20.344295,45.373186,Riyadh,Al-Salil,Wadi Al-Dawasir Basin,,earthfill,completed,recharge,protection,160.0,6.0,4.0,473520,2009
+id_010033,Al-Artawiyah,الارطاوية,26.455253,45.299936,Riyadh,Al-Majamah,Eastern Region Basin,,concrete,completed,recharge,protection,128.0,10.0,8.0,607143,2012
+id_010034,Al-Khaniqiyah,الخنيقية,24.273056,45.059444,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,concrete,completed,recharge,recharge,189.0,8.0,6.0,678200,2011
+id_010035,Khanqat 'Arwah,خنقة عروى,23.968821,44.909614,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,278.0,6.5,5.0,680143,2011
+id_010036,Al-Hadar,الهدار,21.921389,45.934167,Riyadh,Al-Aflaj,Wadi Al-Dawasir Basin,,earthfill,completed,recharge,protection,400.0,10.0,8.0,1900000,2010
+id_010037,Al-Jufir,الجفير,23.985878,46.247886,Riyadh,Al-Muzahimiyah,Wadi Al Sahba Basin,,earthfill,completed,recharge,protection,578.0,5.5,4.0,575625,2011
+id_010038,Al-Fahihal,الفحيحيل,25.7775,45.265833,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,228.0,6.0,4.0,801985,2010
+id_010039,Al-Rayn Bin 'Asaylan,الرين بعسيلان,23.666615,45.375946,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,125.0,10.0,8.0,826156,2011
+id_010040,Warat,وراط,25.511667,45.519167,Riyadh,Shaqra,Eastern Region Basin,,earthfill,completed,recharge,protection,328.0,8.0,6.0,881307,2012
+id_010041,Salabawakh,صلبوخ,25.074095,46.336166,Riyadh,Huraymila,Eastern Region Basin,,earthfill,completed,recharge,protection,125.0,12.0,10.0,931200,2008
+id_010042,Al-'Afaj,العفج,23.564587,45.614631,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,1309.0,6.0,4.0,963524,2013
+id_010043,Al-'Ayinah,العيينه,24.944444,46.345833,Riyadh,Al-Diriyah,Eastern Region Basin,,earthfill,completed,recharge,protection,400.0,5.0,3.0,100000,1968
+id_010044,Al-Ghat,الغاط,25.967778,45.035278,Riyadh,Al-Ghat,Eastern Region Basin,,earthfill,completed,recharge,protection,180.0,10.5,9.0,1000000,1975
+id_010045,Hawatah Sadir,حوطة سدير,25.590158,45.585831,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,500.0,14.0,12.0,1000000,1981
+id_010046,Al-Wasi'ah,الوسيعه,25.986667,45.014167,Riyadh,Al-Ghat,Eastern Region Basin,,earthfill,completed,recharge,protection,180.0,6.5,4.0,100000,1981
+id_010049,Al-Maliyah,المليه,25.126667,46.164444,Riyadh,Huraymila,Eastern Region Basin,,earthfill,completed,recharge,protection,300.0,8.0,6.0,61000,1982
+id_010050,Al-Ha'ir Bin Al-Majma'ah,الحائر بالمجمعة,25.786674,45.368297,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,220.0,11.0,9.0,1000000,1985
+id_010051,Al-Hariq Bin Al-Washam,الحريق بالوشم,25.478943,45.378394,Riyadh,Shaqra,Eastern Region Basin,,earthfill,completed,recharge,protection,400.0,6.0,4.0,500000,1985
+id_010052,Namar,نمار,24.5745,46.686333,Riyadh,Riyadh,Eastern Region Basin,,rockfill,completed,recharge,protection,400.0,8.0,6.0,1500000,1959
+id_010053,Hanifah,حنيفه,24.657778,46.609167,Riyadh,Riyadh,Eastern Region Basin,,earthfill,completed,recharge,protection,390.0,8.0,6.0,1400000,1960
+id_010054,Al-Shamam,الشمام,24.005556,45.010278,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,100.0,6.0,4.0,1500000,1981
+id_010055,Al-Nasaq,النسق,23.995111,45.012222,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,concrete,completed,recharge,recharge,100.0,10.0,8.0,1500000,1981
+id_010056,Dharmah,ضرماء,24.679167,46.107778,Riyadh,Durma,Eastern Region Basin,,earthfill,completed,recharge,protection,1450.0,6.0,4.0,1500000,1982
+id_010057,Al-Qawi'ah,القويعية,24.040833,45.231333,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,250.0,9.0,7.0,1500000,1982
+id_010058,Hadijah,حديجه,24.547867,43.248611,Riyadh,Al-Dawadimi,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,350.0,7.0,5.0,1200000,1984
+id_010059,Al-Muzayri'ah,المزيرعيه,24.781583,46.336556,Riyadh,Al-Diriyah,Eastern Region Basin,,concrete,completed,recharge,protection,580.0,4.0,3.0,390000,1985
+id_010060,Lasad,لصاد,23.626667,46.6325,Riyadh,Al-Hariq,Wadi Al Sahba Basin,,earthfill,completed,recharge,protection,275.0,13.9,11.0,1500000,1986
+id_010061,Jalajil,جلاجل,25.651115,45.420007,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,360.0,12.0,10.0,1750000,1975
+id_010062,Al-Khanqah,الخنقه,24.049167,44.968611,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,196.0,12.0,10.0,1932500,2007
+id_010063,Laban,لبن,24.621139,46.605278,Riyadh,Riyadh,Eastern Region Basin,,rockfill,completed,recharge,protection,500.0,12.0,10.0,2000000,1959
+id_010064,Thadiq,ثادق,25.276489,45.875899,Riyadh,Thadiq,Eastern Region Basin,,earthfill,completed,recharge,protection,850.0,6.0,4.0,2000000,1976
+id_010065,Al-Ahmar,الاحمر,22.370833,46.116667,Riyadh,Al-Aflaj,Wadi Al Sahba Basin,,earthfill,completed,recharge,protection,1045.0,8.0,6.0,2394450,2008
+id_010066,Harimilah,حريملاء,25.098889,46.080556,Riyadh,Huraymila,Eastern Region Basin,,earthfill,completed,recharge,protection,1250.0,6.0,5.0,1500000,1970
+id_010067,Al-Matirafi'ah,المطيرفية,24.746333,46.390722,Riyadh,Al-Diriyah,Eastern Region Basin,,earthfill,completed,recharge,protection,875.0,5.0,4.0,140000,1985
+id_010068,Al-Rawdah,الروضه,25.609444,45.510278,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,554.0,14.0,12.0,3000000,1976
+id_010069,Al-Hanabij,الحنابج,23.99162,43.332023,Riyadh,Afif,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,700.0,8.0,6.0,1500000,1978
+id_010070,Hawtat Bani Tamim,حوطة بني تميم,23.525,46.793306,Riyadh,Hawtat Bani Tamim,Wadi Al Sahba Basin,,earthfill,completed,recharge,protection,770.0,13.0,11.0,9056604,1984
+id_010071,Al-Ha'ir,الحائر,24.419556,46.813167,Riyadh,Riyadh,Eastern Region Basin,,concrete,completed,recharge,protection,400.0,14.0,12.0,3800000,1976
+id_010072,Al-Hariq,الحريق,23.671156,46.426503,Riyadh,Al-Hariq,Wadi Al Sahba Basin,,earthfill,completed,recharge,protection,1700.0,10.0,8.0,6000000,1983
+id_010073,Al-Halwah,الحلوه,23.451103,46.690972,Riyadh,Al-Hariq,Wadi Al Sahba Basin,,earthfill,completed,recharge,protection,700.0,15.0,13.0,10000000,2001
+id_010074,Ghubaira,غبيره,24.748333,46.543889,Riyadh,Al-Diriyah,Eastern Region Basin,,earthfill,completed,flood_control,protection,170.0,6.0,4.0,90000,1970
+id_010075,Al-Jafnah,الجفنه,24.157675,43.449883,Riyadh,Al-Dawadimi,Wadi Hanifah Basin,,concrete,completed,flood_control,recharge,220.0,6.0,4.0,100000,1982
+id_010076,Isam,عصام,24.720461,43.610381,Riyadh,Al-Dawadimi,Wadi Hanifah Basin,,concrete,completed,flood_control,recharge,180.0,6.0,4.0,126000,1982
+id_010077,Al-Ma'idhar,المعيذر,25.879722,45.349167,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,flood_control,protection,173.0,6.5,5.0,187701,2012
+id_010078,Al-Rimah,الريمه,25.262201,45.199849,Riyadh,Shaqra,Eastern Region Basin,,earthfill,completed,flood_control,protection,95.0,11.0,9.0,200000,1975
+id_010079,Al-Buq,البوق,22.766667,44.8675,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,flood_control,recharge,359.0,5.0,4.0,221459,2017
+id_010080,Al-Tamriyah,التمريه,25.663353,45.906617,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,flood_control,protection,360.0,6.0,4.0,241922,1982
+id_010081,Hajilah,حجيلا,23.851395,45.396239,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,concrete,completed,flood_control,recharge,150.0,6.5,5.0,197000,1982
+id_010082,Safar,صفار,24.726056,46.551944,Riyadh,Al-Diriyah,Eastern Region Basin,,earthfill,completed,flood_control,protection,325.0,4.0,3.0,300000,1970
+id_010083,Ashirah,عشيره,25.634444,45.693889,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,flood_control,protection,300.0,5.0,3.0,300000,1977
+id_010084,Al-Halifah,الحليفه,25.128333,45.386944,Riyadh,Marat,Eastern Region Basin,,concrete,completed,flood_control,protection,110.0,12.0,10.0,400000,1982
+id_010085,Al-Sadarih,السدريه,23.741944,45.151389,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,flood_control,recharge,150.0,4.0,4.0,300000,1982
+id_010086,Al-Sadirah Am Nakhlah,السديرية ام نخلة,26.070556,44.966944,Riyadh,Al-Ghat,Eastern Region Basin,,concrete,completed,flood_control,protection,150.0,6.5,5.0,216000,1982
+id_010087,Al-Haysiyah,الحيسيه,24.917222,46.180833,Riyadh,Al-Diriyah,Eastern Region Basin,,earthfill,completed,flood_control,protection,383.0,7.0,5.0,436460,2009
+id_010088,Sh'ib Al-Isar,شعيب الايسر,20.340036,45.395295,Riyadh,Al-Salil,Wadi Al-Dawasir Basin,,earthfill,completed,flood_control,protection,130.0,9.0,7.0,719462,2015
+id_010090,Al-Barah,البره,24.94801,45.897367,Riyadh,Huraymila,Eastern Region Basin,,earthfill,completed,flood_control,protection,750.0,6.5,5.0,600000,1982
+id_010091,Al-Majma'ah,المجمعة,25.863889,45.282222,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,flood_control,protection,360.0,8.0,6.0,1300000,1969
+id_010092,Al-Safrat,الصفرات,25.275316,46.025063,Riyadh,Thadiq,Eastern Region Basin,,earthfill,completed,flood_control,protection,490.0,13.0,11.0,935000,1977
+id_010093,Samnan,سمنان,26.267931,44.881722,Riyadh,Al-Zulfi,Eastern Region Basin,,rockfill,completed,flood_control,protection,150.0,21.0,19.0,1500000,1979
+id_010094,Al-Ghil,الغيل,22.600798,46.459552,Riyadh,Al-Aflaj,Wadi Al Sahba Basin,,concrete,completed,flood_control,protection,126.0,12.0,10.0,2500000,1984
+id_010095,Al-Alab,العلب,24.774639,46.530889,Riyadh,Al-Diriyah,Eastern Region Basin,,concrete,completed,flood_control,protection,200.0,10.0,8.0,3000000,1974
+id_010096,Al-Mushaqar,المشقر,25.863889,45.282222,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,flood_control,protection,400.0,15.0,13.0,5579200,2008
+id_010097,Ari'ah Al-Janubi,عريعرة الجنوبي,26.336944,44.844444,Riyadh,Al-Zulfi,Eastern Region Basin,,concrete,completed,recharge,protection,93.0,10.5,8.0,50582,2011
+id_010098,Abaraqih,ابراقية,24.183789,42.869732,Riyadh,Afif,Wadi Al-Rumah Basin,,earthfill,completed,recharge,protection,753.0,3.5,1.5,133792,2011
+id_010099,Jawi,جوي,18.212241,43.168404,Riyadh,Al-Majamah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,protection,338.0,6.0,3.5,138033,2011
+id_010100,Al-Ananiyah,العنانية,25.551695,45.574323,Riyadh,Al-Majamah,Eastern Region Basin,,rockfill,completed,recharge,protection,200.0,8.0,6.5,300000,1964
+id_010102,Al-Kalbi,الكلبي,25.946111,45.253889,Riyadh,Al-Majamah,Eastern Region Basin,,earthfill,completed,recharge,protection,541.0,7.0,3.5,595591,2011
+id_010103,Khaim,خيم,22.753504,44.918774,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,completed,recharge,recharge,480.0,7.0,4.0,569546,2018
+id_010104,Ba'ij,باعج,26.020773,45.018252,Riyadh,Al-Ghat,Eastern Region Basin,,earthfill,completed,recharge,protection,207.0,8.0,4.0,140030,2017
+id_010105,Ari'ah Al-Shamali,عريعرة الشمالي,26.339944,44.841094,Riyadh,Al-Zulfi,Eastern Region Basin,,concrete,completed,flood_control,protection,71.0,10.5,8.0,37740,2011
+id_010106,Ruwaighib,رويغب,25.670833,46.384722,Riyadh,Thadiq,Eastern Region Basin,,earthfill,completed,protection,protection,236.0,7.0,4.0,140030,2017
+id_010107,Malih,مليح,26.130556,44.946111,Riyadh,Al-Ghat,Eastern Region Basin,,concrete,under_construction,protection,protection,219.0,10.5,0.0,226040,2014
+id_010108,Aba Al-Lasf,اباللصف,23.471111,46.853333,Riyadh,Hawtat Bani Tamim,Wadi Al Sahba Basin,,earthfill,completed,recharge,protection,285.0,9.0,0.0,700330,2017
+id_010110,Wadi Asimar,وادي أسيمر,20.55081,45.439544,Riyadh,Al-Salil,Wadi Al-Dawasir Basin,,earthfill,completed,recharge,protection,174.0,12.0,0.0,726465,2017
+id_010112,Al-Khadar,الخضر,24.189444,45.092778,Riyadh,Al-Qawiyah,Wadi Hanifah Basin,,earthfill,completed,recharge,protection,135.0,8.5,0.0,265139,2017
+id_010113,Turif,طريف,22.776839,44.816382,Riyadh,Al-Rain,Wadi Hanifah Basin,,earthfill,under_construction,recharge,protection,90.0,6.0,0.0,80000,2017
+id_010114,Samanan Al-Tad'imi,سمنان التدعيمي,26.251389,44.890556,Riyadh,Al-Zulfi,Eastern Region Basin,,concrete,under_construction,protection,protection,122.0,10.0,0.0,280037,2014
+id_010115,Ari'ah Al-Sharqi 1,عريعره الشرقي 1,26.337337,44.84717,Riyadh,Al-Zulfi,Eastern Region Basin,,concrete,under_construction,protection,protection,127.0,8.5,0.0,64000,2014
+id_010116,Ari'ah Al-Sharqi 2,عريعره الشرقي 2,26.340833,44.849722,Riyadh,Al-Zulfi,Eastern Region Basin,,concrete,under_construction,protection,protection,291.0,7.0,0.0,76000,2014
+id_020000,Marikh,مريخ,21.82343333,39.24988889,Makkah,Jeddah,C,,rockfill,completed,drinking_water,protection,365.0,12.0,0.0,3650000,
+id_020001,Ghaya,غايا,21.78256944,39.27240556,Makkah,Jeddah,C,,rockfill,completed,drinking_water,protection,630.0,19.0,0.0,7130000,
+id_020002,Am Hablayn,أم حبلين,21.723042,39.238089,Makkah,Jeddah,C,,rockfill,completed,drinking_water,protection,795.0,10.0,0.0,4970000,
+id_020003,Daghbaj,دغبج,21.66448056,39.25558889,Makkah,Jeddah,C,,rockfill,completed,drinking_water,protection,630.0,14.0,0.0,5130000,
+id_020004,Burayman,بريمان,21.64580833,39.25259722,Makkah,Jeddah,C,,rockfill,completed,drinking_water,protection,200.0,20.0,0.0,5990000,
+id_020005,Ghulail Al-Shamali,غليل الشمالي,21.42416389,39.32467778,Makkah,Jeddah,C,,rockfill,completed,drinking_water,protection,1200.0,10.0,0.0,1020000,
+id_020015,Turabah,تربه,21.013245,41.504203,Makkah,Turbah,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,494.0,20.0,16.0,20000000,1981
+id_020017,Al-Marwani,المرواني,22.17922,39.570881,Makkah,Khalis,Wadi Al-Khurma Basin,,rockfill,completed,drinking_water,drinking_water,580.0,61.0,53.35,183600000,2009
+id_020018,Rabigh,رابغ,22.821667,39.375833,Makkah,Rabigh,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,drinking_water,381.0,60.0,50.5,220350000,2008
+id_020019,Hali,حلي,18.7675,41.575,Makkah,Al-Qunfudhah,C,,concrete,completed,drinking_water,drinking_water,384.0,87.0,47.0,254000000,2009
+id_020020,Al-Naqabiyah,النقبيه,21.068958,42.575023,Makkah,Ranyah,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,protection,132.0,20.0,18.0,10000000,1989
+id_020021,Al-Lith,الليث,20.51,40.477222,Makkah,Al-Lith,Wadi Al-Khurma Basin,,rockfill,under_design,drinking_water,drinking_water,420.0,44.5,0.0,88000000,
+id_020023,Qununa,قنونا,19.255286,41.559011,Makkah,Al-Ardiyat,Wadi Al-Dawasir Basin,,concrete,completed,drinking_water,drinking_water,326.0,46.0,38.0,79200000,2015
+id_020024,Al-Manadhah,المناضح,20.7225,40.903889,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,65.0,12.0,8.5,107000,2003
+id_020025,Katnah,كتنة,20.902461,40.92971,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,92.2,17.0,14.0,114652,2014
+id_020026,Atam,عتام,21.072053,40.494542,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,drinking_water,recharge,68.0,13.0,10.0,41000,1983
+id_020027,Damah,داماء,20.689167,40.893333,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,71.0,10.0,8.5,83000,1984
+id_020028,Ghurif Jidarah,غريف جداره,20.902058,40.74965,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,drinking_water,recharge,100.0,15.0,12.0,40000,1983
+id_020029,Dhari,ضري,22.57571,41.349388,Makkah,Al-Mawih,Wadi Al-Khurma Basin,,earthfill,completed,drinking_water,recharge,370.0,6.0,5.0,171859,2013
+id_020030,Al-Raghiyah Riman,الراغية ريمان,23.330757,41.624444,Makkah,Al-Mawih,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,protection,113.0,8.0,5.0,171585,2011
+id_020031,Al-Shawahitah,الشواحطه,20.986314,40.832006,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,68.0,17.0,16.0,210000,1984
+id_020032,Nawafilah,نوافله,20.809167,40.881944,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,138.0,15.0,12.0,222000,1987
+id_020033,Al-Atah,العطاء,20.73175,40.870028,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,100.0,18.0,15.0,210000,1984
+id_020034,Al-Marifiq,المريفق,20.799722,40.908333,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,107.0,14.0,12.0,250000,1983
+id_020035,Al-Ramah,الرامه,20.599718,41.090631,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,102.0,14.0,11.0,302876,2015
+id_020036,Al-Shu'irah,الشعيراء,20.525995,41.036911,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,94.0,15.0,12.0,171000,1984
+id_020037,Yasib,ياصب,21.351155,40.330275,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,86.0,9.0,8.0,200000,1983
+id_020038,Al-Bajidi,البجيدي,21.513889,40.138889,Makkah,Makkah,Wadi Al-Khurma Basin,,earthfill,completed,drinking_water,protection,680.0,9.0,7.0,499636,2009
+id_020039,Qurad,قراض,22.421256,40.492924,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,318.0,13.0,11.0,370000,2009
+id_020040,Sa'b,صعب,21.238794,40.383617,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,290.0,9.0,7.0,500000,1976
+id_020041,Misan,ميسان,20.754167,40.807778,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,121.0,16.0,14.0,92512,2009
+id_020042,Ikrimah,عكرمه,21.243556,40.358456,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,drinking_water,recharge,70.0,18.0,12.0,500000,1955
+id_020043,Dharah,ضراء,20.8425,40.856667,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,105.0,24.0,20.0,509910,2012
+id_020044,Al-Ayab,العياب,22.464327,40.04881,Makkah,Al-Kamil,Wadi Al-Khurma Basin,,earthfill,completed,drinking_water,recharge,107.0,23.0,19.0,527110,2009
+id_020045,Al-Sab'an,السبعان,22.382778,39.956944,Makkah,Al-Kamil,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,recharge,161.0,21.0,17.5,620000,2014
+id_020046,Thumalah,ثماله,21.119969,40.505053,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,drinking_water,recharge,111.0,10.0,7.75,608000,1983
+id_020047,Shawan,شوان,22.483405,40.01693,Makkah,Al-Kamil,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,recharge,95.0,19.0,16.0,1000000,2010
+id_020048,Hajar,حجر,22.949638,39.774944,Makkah,Makkah,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,recharge,455.0,11.0,9.0,762550,2012
+id_020049,Bathan,بطحان,22.3575,39.935833,Makkah,Al-Kamil,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,recharge,83.0,13.0,10.0,773200,2008
+id_020050,Malkan,ملكان,21.149047,40.034856,Makkah,Bahrah,Wadi Al-Khurma Basin,,earthfill,completed,drinking_water,recharge,165.0,12.0,9.0,800000,2007
+id_020051,Nu'man,نعمان,21.254992,40.217047,Makkah,Makkah,Wadi Al-Khurma Basin,,earthfill,completed,drinking_water,recharge,305.0,18.0,14.0,1000000,2005
+id_020052,Al-Qu'ur,القعور,22.321667,40.062778,Makkah,Al-Kamil,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,recharge,130.0,21.0,18.0,1060425,2009
+id_020053,Awathal,اوثال,21.086467,40.665833,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,120.0,11.0,9.0,213000,1983
+id_020054,Basal,بسل,21.168411,40.703213,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,120.0,15.0,12.0,1500000,1987
+id_020055,Lasab,لصب,21.166314,40.486536,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,drinking_water,recharge,46.0,13.0,11.0,210000,1983
+id_020056,Kara Al-Qawamah,كرا القوامه,20.733056,41.695278,Makkah,Turbah,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,150.0,13.0,10.0,1512170,2008
+id_020057,Faydat Al-Musallah,فيضة المسلح,22.478472,40.733306,Makkah,Taif,Wadi Al-Khurma Basin,,earthfill,completed,drinking_water,protection,160.0,8.0,5.0,3000000,2003
+id_020058,Wadi Fatimah,وادى فاطمة,21.725044,39.828568,Makkah,Al-Jumum,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,recharge,1428.0,18.0,15.0,20000000,1984
+id_020059,Am Al-Doum,ام الدوم,22.653246,41.33666,Makkah,Al-Mawih,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,recharge,185.0,7.0,5.0,134745,2012
+id_020060,Thariban,ثريبان,19.459628,41.84271,Makkah,Al-Ardiyat,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,recharge,149.0,20.5,17.5,701658,2014
+id_020061,Wabah,وبح,22.238312,39.849221,Makkah,Al-Kamil,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,recharge,98.0,18.0,14.0,703953,2013
+id_020062,Shawqab,شوقب,20.549722,41.117139,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,94.5,18.0,15.0,345489,2010
+id_020063,Qarn,قرن,21.589811,40.400072,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,150.0,23.0,20.0,709801,1987
+id_020064,Al-Janah,الجناح,19.695113,41.69139,Makkah,Al-Ardiyat,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,recharge,160.0,18.0,15.0,905161,2008
+id_020065,Al-Mahanad,المحند,21.041851,41.608105,Makkah,Turbah,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,296.0,15.0,12.0,2268859,2013
+id_020066,Hawajiz Al-Dab'ah,حواجز الضبعة,20.532156,41.142812,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,protection,127.0,4.0,4.0,40000,2013
+id_020067,Amat,عمت,21.157245,40.350458,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,90.0,9.0,7.0,500000,2007
+id_020068,Al-Makhadah,المخاضة,21.166798,40.327055,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,150.0,11.0,9.0,573450,2006
+id_020069,Al-Dhiyah,الضحيا,21.241667,40.345833,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,drinking_water,recharge,250.0,11.0,9.0,577550,2006
+id_020070,Al-Laqitah,اللقيطه,21.479624,39.858544,Makkah,Makkah,Wadi Al-Khurma Basin,,earthfill,completed,drinking_water,recharge,206.0,11.0,8.0,600000,2012
+id_020071,Kalakh,كلاخ,21.262717,40.782789,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,protection,164.0,10.0,7.0,2300000,1983
+id_020072,Liyah,ليا,21.217906,40.455117,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,drinking_water,recharge,120.0,22.0,18.0,10000000,1981
+id_020073,Sisad,سيسد,21.293586,40.494242,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,drinking_water,recharge,58.0,8.5,7.0,500000,1998
+id_020074,Aqawam Rabigh,عقوم رابغ,22.808722,39.023682,Makkah,Rabigh,B,,concrete,completed,drinking_water,protection,2000.0,2.0,0.0,500000,1999
+id_020075,Al-Ghalah,الغالة,20.394117,40.254865,Makkah,Al-Lith,C,,concrete,completed,drinking_water,protection,414.0,14.0,12.0,4400000,2018
+id_020076,Al-Shaqqah,الشاقة,20.160673,40.838555,Makkah,Adham,Wadi Al-Khurma Basin,,concrete,completed,drinking_water,recharge,271.0,24.0,22.0,5660000,2018
+id_020077,Buwah,بوا,20.749444,41.028889,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,under_construction,drinking_water,protection,206.0,28.5,0.0,6052785,
+id_030000,Al-Nahitah,النحيتة,25.212219,40.381161,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,concrete,completed,drinking_water,protection,230.0,6.0,4.0,77526,2014
+id_030001,Abu Hanak,ابوحنك,25.132892,40.372488,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,concrete,completed,drinking_water,recharge,45.0,8.0,3.5,80000,1983
+id_030002,Al-Wajab,الوجب,24.993948,40.038059,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,concrete,completed,drinking_water,protection,101.0,7.0,4.5,140804,2014
+id_030003,Abu Ghasha,ابوغاشا,25.156667,40.468056,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,rockfill,completed,drinking_water,recharge,105.0,8.0,3.7,160000,1984
+id_030004,Al-Jarisiyah,الجريسيه,23.536111,40.815278,Madinah,Mahad Al-Dhahab,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,recharge,307.0,6.0,4.0,214400,2008
+id_030005,Shalal,شلال,26.798218,37.858103,Madinah,Al-Ula,Wadi Al-Akhdar Basin,,concrete,completed,drinking_water,protection,162.0,8.0,5.5,318000,2008
+id_030006,Qaran,قران,23.273889,40.331111,Madinah,Mahad Al-Dhahab,Wadi Al-Hamad Basin,rainfall_area,earthfill,completed,drinking_water,recharge,500.0,5.0,3.0,500000,1976
+id_030007,Al-Salahaniyah,الصلحانيه,22.863333,40.4595,Madinah,Mahad Al-Dhahab,Wadi Al-Hamad Basin,rainfall_area,earthfill,completed,drinking_water,recharge,100.0,13.0,10.5,500000,2002
+id_030008,Amirah,أميره,25.581667,38.105278,Madinah,Al-Is,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,recharge,342.0,7.0,4.0,321215,2009
+id_030009,Nakhala,نخلا,26.543611,38.331389,Madinah,Al-Ula,Wadi Al-Akhdar Basin,,earthfill,completed,drinking_water,recharge,405.0,8.0,6.0,428903,2009
+id_030010,Al-Shara'ih,الشرائع,24.411667,39.636667,Madinah,Madinah,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,protection,500.0,8.0,5.7,880000,1980
+id_030011,Al-Farah,الفرع,23.343056,39.662778,Madinah,Wadi Al-Farah,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,protection,274.0,13.0,10.0,1000000,2009
+id_030012,Al-Ghab,الغاب,24.635342,39.516197,Madinah,Madinah,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,protection,650.0,11.0,8.9,1000000,1978
+id_030014,Talal,طلال,24.645833,41.961389,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,480.0,7.5,4.5,1204388,2013
+id_030015,Tasha,طاشا,24.038056,38.898056,Madinah,Badr,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,protection,460.0,8.0,4.5,2000000,2011
+id_030016,Al-Aqiq Al-A'lah,العقيق الاعلى,23.924722,39.697222,Madinah,Wadi Al-Farah,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,protection,268.0,19.0,16.0,2000000,2010
+id_030017,Bidan,بيضان,23.139667,40.486167,Madinah,Mahad Al-Dhahab,Wadi Al-Hamad Basin,rainfall_area,earthfill,completed,drinking_water,recharge,750.0,9.0,7.0,2200000,1998
+id_030018,Malal,ملل,24.370222,39.289222,Madinah,Madinah,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,recharge,475.0,9.0,6.0,3000000,2002
+id_030019,Al-Murabah,المربع,25.322222,38.350278,Madinah,Al-Is,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,recharge,312.0,8.0,5.0,1318125,2008
+id_030020,Rim,ريم,24.062398,39.571199,Madinah,Madinah,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,protection,1146.0,10.0,7.0,2918500,2009
+id_030021,Wasat Al-Jazl,وسط الجزل,26.558889,37.618056,Madinah,Al-Ula,Wadi Al-Akhdar Basin,,earthfill,completed,drinking_water,protection,506.0,16.0,10.0,10000000,2013
+id_030022,Al-Aqul,العاقول,24.522222,39.728056,Madinah,Madinah,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,protection,450.0,11.0,7.0,1000000,1978
+id_030023,Am Talhah,ام طلحة,26.154342,38.849117,Madinah,Khaybar,Wadi Al-Akhdar Basin,,earthfill,completed,drinking_water,recharge,373.0,9.0,6.0,707141,2018
+id_030024,Al-Hanaw,الحنو,23.816389,38.8025,Madinah,Badr,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,protection,93.0,12.5,9.5,141435,2016
+id_030025,Ashar,عشار,26.723064,37.868702,Madinah,Al-Ula,Wadi Al-Akhdar Basin,,earthfill,completed,drinking_water,protection,335.0,8.0,5.5,284355,2014
+id_030026,Khalis,خالص,26.614391,37.914449,Madinah,Al-Ula,Wadi Al-Akhdar Basin,,earthfill,completed,drinking_water,protection,279.0,12.0,8.0,348682,2011
+id_030027,Al-Sadr,الصدر,26.593413,37.901969,Madinah,Al-Ula,Wadi Al-Akhdar Basin,,earthfill,completed,drinking_water,protection,282.0,11.0,8.0,373593,2011
+id_030028,Ajathaliyah,أجثلية,25.164167,40.329722,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,285.0,6.0,4.5,440769,2013
+id_030029,Dhalamah,ظلامه,23.698611,39.567778,Madinah,Wadi Al-Farah,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,protection,297.0,8.5,6.0,1000000,2010
+id_030030,Bathan,بطحان,24.411667,39.636667,Madinah,Madinah,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,protection,266.0,12.0,9.0,500000,1966
+id_030031,Al-Muqarran,المقرن,24.99,40.545556,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,concrete,completed,drinking_water,protection,144.0,10.0,7.0,854322,2014
+id_030032,Qasibah,قصيباء,25.010321,40.507014,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,stone_masonry,completed,drinking_water,recharge,680.0,5.0,3.0,300000,1982
+id_030033,Ahamir,احامر,25.250678,40.421228,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,438.0,12.0,9.0,848721,2014
+id_030034,Al-Tar'ah,الترعه,24.015,39.049722,Madinah,Badr,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,protection,450.0,12.0,10.0,2000000,1978
+id_030035,Al-Far'ah,الفرعه,24.480833,38.493333,Madinah,Yanbu,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,recharge,600.0,18.5,13.5,20000000,1983
+id_030036,Hadhawadha,حظوظا,24.420556,39.980556,Madinah,Madinah,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,protection,595.0,7.0,4.5,40000000,1999
+id_030037,Qusayba' Al-Tad'imi,قصيباء التدعيمي,25.049046,40.473171,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,concrete,completed,drinking_water,protection,192.0,6.5,4.0,224127,2015
+id_030038,Al-Hasid,الحصيد,25.551061,39.385829,Madinah,Khaybar,Wadi Al-Hamad Basin,,stone_masonry,completed,drinking_water,recharge,91.0,8.0,4.5,400000,historical
+id_030039,Al-Aqul Al-Hajari,العاقول الحجري,24.31816,39.448696,Madinah,Madinah,Wadi Al-Hamad Basin,,stone_masonry,completed,drinking_water,protection,200.0,4.5,3.0,17000000,1950
+id_040000,Aba Al-Hiyas,ابا الحياص,25.522692,42.815416,Qassim,Al-Nabhaniyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,157.0,9.5,6.0,79473,2017
+id_040001,Al-Rubiqah,الربيقة,25.445556,43.831944,Qassim,Al-Rass,Wadi Hanifah Basin,,earthfill,completed,drinking_water,recharge,688.0,4.5,2.0,112151,2011
+id_040002,Al-Matla' Al-Aysar,المطلاع الايسر,25.821111,43.017222,Qassim,Al-Nabhaniyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,315.0,6.0,3.0,122678,2009
+id_040003,Aba Al-Hadar,ابا الهدار,25.549356,42.750702,Qassim,Al-Nabhaniyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,196.0,7.0,5.0,141034,2012
+id_040004,Aba Al-Rimah,ابا الرماح,25.49313,42.8098,Qassim,Al-Nabhaniyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,134.0,5.5,3.0,101814,2015
+id_040005,Al-Matla' Al-Ayman,المطلاع الايمن,25.848603,43.015276,Qassim,Al-Nabhaniyah,Wadi Arar Basin,,earthfill,completed,drinking_water,protection,250.0,8.0,5.0,250000,1982
+id_040006,Qatan,قطن,25.955008,42.338155,Qassim,Uqlat Al-Suqur,Wadi Arar Basin,,earthfill,completed,drinking_water,protection,388.0,5.0,0.0,280350,2007
+id_040008,Wadi Al-Nakhil,وادي النخيل,25.428092,42.839694,Qassim,Al-Nabhaniyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,363.0,5.0,2.0,107466,2011
+id_040009,Abu Jurayfah,ابوجريفة,26.194917,42.728295,Qassim,Buraydah,Wadi Arar Basin,,earthfill,completed,drinking_water,protection,680.0,5.5,2.0,538464,2012
+id_040010,Al-Rubiq,الربيق,25.420556,43.847778,Qassim,Al-Mithnab,Wadi Hanifah Basin,,earthfill,completed,drinking_water,protection,810.0,4.0,0.0,500000,2004
+id_040012,Dar'ah,درعة,25.336667,43.601667,Qassim,Al-Rass,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,618.0,5.0,2.0,60000,2009
+id_040013,Uqlat Al-Suqur,عقلة الصقور,25.848561,42.106525,Qassim,Uqlat Al-Suqur,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,1301.0,4.5,0.0,712000,2007
+id_040014,Al-Fawarah,الفواره,26.241667,42.470833,Qassim,Buraydah,Wadi Arar Basin,,earthfill,completed,drinking_water,protection,650.0,5.0,0.0,1093000,2007
+id_040015,Al-Rummah,الرمه,26.199722,44.021667,Qassim,Unayzah,Wadi Arar Basin,,concrete,completed,drinking_water,protection,700.0,7.0,4.0,1500000,1977
+id_040016,Marid,مارد,26.815422,44.209038,Qassim,Al Asyah,Wadi Arar Basin,,earthfill,completed,drinking_water,protection,500.0,7.0,4.0,1300000,1976
+id_040017,Bada'ih Al-Hamamin,بدائع الحمامين,24.968959,42.064096,Qassim,Dariyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,recharge,620.0,4.5,3.0,318616,2014
+id_050000,Al-Dhibiyah,الذيبية,28.094558,45.650503,Eastern,Hafar Al-Batin,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,1390.0,6.0,4.0,5718024,2018
+id_050001,Hafar Al-Batin,حفر الباطن,28.012222,45.507222,Eastern,Hafar Al-Batin,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,330.0,11.5,8.5,5503925,2013
+id_060000,Al-Marah,المراء,31.6375,40.146944,Northern Borders,Arar,Wadi Arar Basin,,earthfill,completed,recharge,protection,311.0,5.5,3.0,744065,2008
+id_060001,Al-Hilali,الهلالي,30.83059,41.24486,Northern Borders,Arar,Wadi Arar Basin,,earthfill,completed,recharge,protection,414.0,5.5,3.0,991250,2008
+id_060002,Al-Lawiziyah,اللويزية,31.086944,41.026389,Northern Borders,Arar,Wadi Arar Basin,,earthfill,completed,recharge,protection,530.0,7.0,5.0,623246,2008
+id_060003,Uwayj Al-Tal'ah,عويج الطلعة,29.789167,43.058611,Northern Borders,Rafha,Wadi Arar Basin,,earthfill,completed,recharge,protection,365.0,4.0,2.0,251651,2013
+id_060004,Turif,طريف,31.611389,38.521111,Northern Borders,Turaif,Wadi Al-Sirhan Basin,,earthfill,completed,recharge,protection,255.0,8.0,5.0,725625,2008
+id_060005,Al-Awashaqi,العوشقي,30.900428,40.854141,Northern Borders,Arar,Wadi Arar Basin,,earthfill,completed,recharge,protection,595.0,6.0,4.0,713200,2008
+id_060006,Gharabah,غرابة,30.877363,40.835401,Northern Borders,Arar,Wadi Arar Basin,,earthfill,completed,recharge,protection,1094.5,6.5,4.0,4124800,2014
+id_060007,Aba Al-Qur,ابا القور,30.769641,41.47753,Northern Borders,Arar,Wadi Arar Basin,,earthfill,completed,recharge,protection,736.0,8.0,5.0,3520000,2008
+id_060008,Badanah,بدنة,31.03,40.850833,Northern Borders,Arar,Wadi Arar Basin,,earthfill,completed,recharge,protection,783.0,9.0,6.0,4678750,2008
+id_060009,Ar'ar,عرعر,30.811944,40.696389,Northern Borders,Arar,Wadi Arar Basin,,earthfill,completed,recharge,protection,1828.0,9.0,7.0,10366000,2006
+id_070000,Ayash,عياش,19.412083,42.055667,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,130.0,17.0,14.0,1000000,2004
+id_070001,Ara'ir,عراعر,17.656353,43.462664,Asir,Dhahran Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,145.0,28.0,22.0,963000,1984
+id_070002,Al-Gharabah,الغرابه,18.790556,42.305556,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,120.0,25.0,21.0,1500000,2004
+id_070003,Badwah,بدوه,19.168061,42.164667,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,111.0,28.0,24.0,2000000,2007
+id_070004,Abha,أبها,18.209935,42.488654,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,350.0,25.5,22.5,2130000,1974
+id_070005,Al-Fawhah,الفوهة,19.748056,41.983333,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,100.0,24.0,20.0,3000000,2009
+id_070006,Tandahah,تندحه,18.312683,42.876847,Asir,Khamis Mushait,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,120.0,16.0,10.0,4200000,1983
+id_070007,Atud Al-Khamis,عتود الخميس,18.260411,42.715894,Asir,Khamis Mushait,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,drinking_water,protection,340.0,22.0,16.0,6240000,1981
+id_070008,Tarjis,ترجس,19.104167,42.295,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,184.0,25.0,20.0,9713800,2012
+id_070009,Marbah,مربة,17.903333,42.384722,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,drinking_water,drinking_water,215.0,32.0,26.0,10000000,2008
+id_070010,Atud,عتود,17.900556,42.471111,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,drinking_water,drinking_water,227.0,35.0,29.0,10000000,2008
+id_070012,Tabalah,تبالة,19.953934,42.143974,Asir,Bisha,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,drinking_water,drinking_water,420.0,49.25,34.25,68410000,2014
+id_070013,Shihanah,شيهانه,19.588889,41.9275,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,79.0,15.0,12.0,271100,2010
+id_070014,King Fahad,الملك فهد,19.6964,42.487117,Asir,Bisha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,507.0,68.0,60.5,325000000,1997
+id_070016,Yabah,يبة,19.014722,41.643889,Asir,Bariq,Wadi Al-Dawasir Basin,,concrete,completed,drinking_water,drinking_water,234.0,47.0,0.0,80913300,
+id_070017,Shi'b Al-Harajah,شعب الحرجه,17.973105,43.393198,Asir,Al-Harjah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,protection,62.0,11.0,9.0,103108,2015
+id_070018,Al-Qurihah,القريحاء,18.110833,43.142778,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,protection,186.5,7.5,4.5,26105,2009
+id_070019,Al-'Aws,العوص,18.279619,42.333383,Asir,Rijal Almaa,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,protection,55.0,12.0,9.0,35000,1985
+id_070020,Rim,ريم,18.235867,42.178497,Asir,Rijal Almaa,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,55.0,11.0,8.0,50000,1982
+id_070021,Al-'Asim,ال عاصم,18.29138,42.444115,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,70.0,15.0,12.0,60000,1983
+id_070022,Al-Sawdah,السوده,18.236389,42.412778,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,protection,28.0,13.0,10.0,340000,1983
+id_070023,Khath'am,خثعم,19.799444,41.8825,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,50.0,11.0,8.0,252000,1983
+id_070024,Marah,مرة,18.5825,42.15,Asir,Muhayil,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,253.0,16.0,13.0,325000,2009
+id_070025,Al-Ramid,الرميد,17.981392,43.20996,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,105.0,8.0,5.5,90000,2003
+id_070026,Zahrah Bani Bashar,زهره بني بشر,17.941944,43.225833,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,175.0,10.0,7.0,100000,1983
+id_070027,Khidar,خضار,18.153911,43.1882,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,241.0,12.0,9.0,108000,2003
+id_070028,Al-'Amal (Zahir),العمل (زهير),18.076667,43.235556,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,81.0,16.0,13.0,110000,2010
+id_070029,Al Basam,ال بسام,18.035556,43.188611,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,176.0,6.0,3.0,47700,2010
+id_070030,Bani Qays,بني قيس,19.145,42.034006,Asir,Al-Majardah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,120.0,15.0,12.0,117000,2003
+id_070031,Al-Mashrab,المشرب,18.1383,43.134147,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,391.0,9.0,6.0,111170,2010
+id_070033,Al-Wuqirah,الوقيره,18.014143,43.328845,Asir,Al-Harjah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,105.0,6.0,4.25,100000,2004
+id_070034,Tha'abah,ثعابه,18.266239,42.270122,Asir,Rijal Almaa,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,100.0,11.0,8.0,230000,1983
+id_070035,Mahlah 'Ar'arah,محلاة عرعرة,17.932042,43.286525,Asir,Al-Harjah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,113.0,12.0,9.0,79229,2010
+id_070036,Al-Dirham,ال درهم,17.993643,43.264752,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,168.0,15.0,12.0,86700,2010
+id_070037,Al-Batnah,البطنه,18.858056,42.655278,Asir,Khamis Mushait,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,360.0,13.0,10.0,151800,1983
+id_070038,Ru'am,روام,18.329722,42.0925,Asir,Rijal Almaa,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,57.0,16.0,13.0,1500000,1985
+id_070039,Al-Ghilan,الغيلان,18.055833,42.951492,Asir,Ahad Rafidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,150.0,14.0,11.5,150000,2004
+id_070040,Rimah,ريمه,18.355,42.386389,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,205.0,15.0,12.0,230000,2009
+id_070041,Tulihah Al-Sharaf,طليحة الشرف,18.447222,43.371389,Asir,Abha,Wadi Al-Dawasir Basin,,earthfill,completed,recharge,recharge,281.0,8.0,6.0,355650,2010
+id_070042,Al-Hadilah,ال حديله,18.050833,42.814444,Asir,Ahad Rafidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,265.0,9.5,6.5,160000,2010
+id_070043,Wasanib,وسانب,18.358056,42.240833,Asir,Muhayil,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,100.0,23.0,20.0,182000,1985
+id_070044,Radah,راده,18.236714,42.205464,Asir,Rijal Almaa,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,70.0,18.0,15.0,192000,1985
+id_070045,Bashut,باشوت,19.579444,41.889444,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,protection,250.0,13.0,10.0,200000,1983
+id_070046,Al-Faqa'is,الفقاعيس,18.0225,43.28201,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,105.0,13.0,10.0,102700,2010
+id_070047,Al 'Ifah,ال عيفه,17.790833,43.417222,Asir,Al-Harjah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,115.0,14.0,11.0,74700,2010
+id_070048,Al-Khulsah,الخلصة,18.766944,42.260556,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,94.0,20.0,16.0,138000,2009
+id_070049,Al-Qabdah,القبضه,17.634683,43.525867,Asir,Dhahran Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,50.0,13.0,10.0,260000,1984
+id_070050,Shari,شري,18.982222,41.911111,Asir,Bariq,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,208.0,12.0,9.0,275247,2009
+id_070051,Al-Harajah,الحرجه,17.915733,43.332072,Asir,Al-Harjah,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,160.0,11.5,8.0,280000,1983
+id_070052,Ghadar,غضار,19.549444,41.983333,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,157.0,13.0,10.0,300000,1980
+id_070053,Al-'Ayinah,العاينه,18.053333,42.2683,Asir,Rijal Almaa,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,80.0,8.0,5.5,300000,1982
+id_070054,Sadwan,سدوان,18.908611,42.225278,Asir,Tanumah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,115.0,18.0,15.0,264000,2010
+id_070055,As-Samkhiyah,الصمخية,18.073139,42.829531,Asir,Ahad Rafidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,264.0,9.0,6.0,90375,2010
+id_070056,Al-Maraghah,المراغه,18.162483,42.797581,Asir,Ahad Rafidah,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,233.0,11.0,8.0,300000,1982
+id_070057,Al-Akhdar Al-Musfir,الاخضر ال مسفر,18.59094,42.473017,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,98.0,14.0,11.0,332610,2015
+id_070058,Hijrat Zahir,هجرة زهير,18.283333,43.29365,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,100.0,10.0,7.0,350000,1983
+id_070059,Al-Nahrah,النحره,17.993107,43.202364,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,95.0,13.0,10.0,350000,2002
+id_070060,Rawdan,روضان,18.580533,42.816416,Asir,Khamis Mushait,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,169.0,6.5,4.0,357160,2015
+id_070061,Surum,سروم,19.140111,42.192611,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,112.0,11.0,8.0,390000,1998
+id_070063,Al-'Adiyah,العاديه,17.958567,43.264369,Asir,Al-Harjah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,170.0,11.0,8.0,480000,1983
+id_070064,Al-Hufah,الحفه,18.536497,42.394469,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,130.0,20.0,18.0,500000,1981
+id_070065,Ar-Rashid,الرشيد,18.25985,43.2309,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,149.0,11.0,8.5,500000,1992
+id_070066,Al Thabit (Al-Khir),ال ثابت (الخير),17.758889,43.470278,Asir,Dhahran Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,120.0,10.0,7.0,500000,2008
+id_070067,Al-Hajlah,الهجلة,18.132222,43.0025,Asir,Ahad Rafidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,129.0,12.0,9.0,342926,2010
+id_070068,Jabal Khat,جبل خاط,19.088889,42.046944,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,158.0,18.0,15.0,500000,2010
+id_070069,Jariyah Al-Majardah,جريه المجارده,19.194981,41.922949,Asir,Al-Majardah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,83.0,14.0,11.0,600000,2009
+id_070070,Afyadh Al-Talhah,افياض الطلحه,17.783333,43.508056,Asir,Dhahran Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,400.0,9.0,7.0,748000,2007
+id_070072,Shi'b Shadad,شعب شداد,19.566389,41.8975,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,77.0,8.0,6.0,74000,2009
+id_070074,Surum Al-Harajah,سروم الحرجه,17.903486,43.470911,Asir,Al-Harjah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,75.0,11.0,8.0,121560,1978
+id_070075,Sarabah,سرابه,19.104528,42.143333,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,170.0,18.0,15.0,1000000,1984
+id_070076,Bahwan,بهوان,18.6825,42.413611,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,275.0,11.0,8.0,121560,2010
+id_070077,Tabab,طبب,18.367438,42.361866,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,50.0,13.0,10.0,90000,1982
+id_070078,Anam,عنم,18.04985,43.227133,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,120.0,21.0,18.0,2000000,1984
+id_070079,Al-Musayriq,المسيرق,19.049444,42.908611,Asir,Khamis Mushait,Wadi Al-Dawasir Basin,,concrete,completed,recharge,recharge,84.0,9.0,6.0,433000,2008
+id_070080,Al-Ghurah,الغرة,19.260278,42.0925,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,76.0,22.0,19.0,135000,2009
+id_070081,Maskah,مسكة,20.024502,42.185128,Asir,Bisha,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,225.0,8.0,6.0,411226,2009
+id_070082,Al-Madhah,المضه,18.787722,43.210619,Asir,Turayb,Wadi Al-Dawasir Basin,,earthfill,completed,recharge,recharge,1070.0,8.0,6.5,4250000,1983
+id_070083,Haswah,حسوه,18.204321,42.31512,Asir,Rijal Almaa,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,45.0,11.0,8.0,20000,1983
+id_070084,Subh,صبح,18.677844,42.331407,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,130.0,13.0,10.0,229700,2010
+id_070085,Tamniyah,تمنية,18.023,42.7637,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,100.0,11.0,8.0,300000,1984
+id_070086,Al-Gha'il,الغائل,17.677728,43.346587,Asir,Dhahran Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,68.0,19.0,16.0,211400,2010
+id_070087,Al-Da'fah,الدافعه,17.786944,43.379167,Asir,Al-Harjah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,43.0,13.0,10.0,71900,2010
+id_070088,Halba,حلبا,19.246531,42.119876,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,protection,114.0,35.0,31.0,972976,2012
+id_070089,Al-Mawin,الماوين,18.650156,42.397278,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,120.0,11.0,8.0,400000,1983
+id_070090,Turayf,طريف,19.355278,42.090833,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,90.0,17.0,14.0,455300,2010
+id_070091,Ashran,عشران,18.269167,42.438056,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,111.0,38.0,31.5,1500000,1983
+id_070092,Amiq Bal-Lahmar,عمق باللحمر,18.686,42.291486,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,114.0,30.0,27.0,1062000,2010
+id_070093,Khurs,خرص,18.907222,42.319444,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,protection,136.0,18.0,15.0,446675,2009
+id_070094,Athab,اثب,18.850858,42.855842,Asir,Khamis Mushait,Wadi Al-Dawasir Basin,,concrete,completed,recharge,recharge,95.0,11.0,8.0,1064000,1984
+id_070095,Al-Dahnah,الدهناء,18.908833,42.208306,Asir,Tanumah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,70.0,15.0,12.0,120000,1983
+id_070096,Al-Qabah,القوباء,19.504167,42.185,Asir,Bisha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,166.0,17.0,14.0,2000000,2011
+id_070097,Ghalabah,غالبة,19.04,42.215278,Asir,Tanumah,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,185.0,16.0,13.0,217730,2008
+id_070098,Dhahban,ذهبان,18.13764,41.641,Asir,Al-Birk,C,,rockfill,completed,recharge,recharge,262.0,15.0,12.0,2290000,1996
+id_070099,Al-Fid,الفيض,17.999178,43.428686,Asir,Dhahran Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,130.0,23.0,20.0,2500000,1984
+id_070100,Qurdan,قرضان,17.994082,43.114552,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,195.0,17.0,13.0,780000,2012
+id_070101,Harjab,هرجاب,19.332222,42.835278,Asir,Bisha,Wadi Al-Dawasir Basin,,concrete,completed,recharge,recharge,203.0,21.0,16.0,4650000,2012
+id_070102,Al-Sarwa,السروى,18.050278,43.129253,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,flood_control,protection,120.0,5.0,3.0,55000,1982
+id_070103,Al-'Asran,العسران,18.034772,43.0665,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,flood_control,protection,200.0,10.5,8.0,60000,1983
+id_070104,Abu Khuda'ah,ابوخضاعه,18.20185,42.85783,Asir,Ahad Rafidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,flood_control,protection,65.0,5.0,2.1,100000,1983
+id_070105,Kutam,كتام,17.586455,43.542573,Asir,Dhahran Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,flood_control,protection,166.0,16.0,13.0,519500,2009
+id_070106,Al-'Ayzah,العيزاء,17.967733,43.196678,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,flood_control,protection,80.0,11.0,8.0,150000,1983
+id_070107,Al-Farwan,ال فروان,17.722339,43.495892,Asir,Dhahran Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,flood_control,protection,140.0,17.0,14.0,107000,1983
+id_070108,Wadi Daf,وادي داف,18.101472,43.20805,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,flood_control,protection,70.0,10.0,7.0,250000,1983
+id_070109,Thama,ثما,19.522217,41.981979,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,flood_control,recharge,145.0,15.0,12.0,325000,1981
+id_070110,Al-Jawah,الجوه,17.914444,43.248889,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,flood_control,recharge,122.0,14.0,11.0,500000,1998
+id_070111,Awis,عوص,19.319167,42.121389,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,flood_control,protection,127.0,23.0,20.0,593000,2010
+id_070112,Yafif,يفيف,19.740833,41.925694,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,flood_control,protection,150.0,11.0,8.0,690000,1983
+id_070113,Nabah,نبه,19.713889,41.897056,Asir,Balqarn,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,flood_control,recharge,140.0,14.0,11.0,750000,1983
+id_070114,Khadar Al-Haymah,خضار الحيمة,18.695833,42.527222,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,flood_control,protection,648.0,9.0,6.0,1128733,2009
+id_070116,Al-Mahzamah,المحزمه,18.134705,43.106295,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,flood_control,protection,280.0,22.0,18.0,1500000,1979
+id_070117,Aqdah,عقده,18.280428,42.864847,Asir,Khamis Mushait,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,220.0,10.0,8.5,3000000,1985
+id_070118,AL-Thafn,الثفن,19.245205,43.137778,Asir,Turayb,Wadi Al-Dawasir Basin,,concrete,completed,recharge,protection,189.0,8.5,7.0,639068,2018
+id_070119,Al-Farhah,الفرحة,18.024167,43.238889,Asir,Sarat Abidah,Wadi Al-Dawasir Basin,rainfall_area,concrete,under_construction,recharge,protection,57.0,14.0,0.0,59232,
+id_070120,Hadhir,حضر,19.196389,42.1375,Asir,Al-Namas,Wadi Al-Dawasir Basin,rainfall_area,concrete,under_construction,recharge,recharge,111.0,26.0,0.0,211779,
+id_070121,Wasat Marama,وسط مرمى,18.263611,43.601389,Asir,Khamis Mushait,Wadi Al-Dawasir Basin,,concrete,under_construction,recharge,recharge,85.0,18.0,0.0,400000,
+id_080002,Daqah,دوقة,19.894722,41.136667,Al-Bahah,Qilwah,Wadi Al-Khurma Basin,,concrete,completed,recharge,drinking_water,200.0,18.0,10.0,1400000,2009
+id_080003,Alib,عليب,20.146111,41.065556,Al-Bahah,Al-Hajrah,Wadi Al-Khurma Basin,,earthfill,completed,recharge,drinking_water,685.0,9.0,6.0,972060,2010
+id_080005,Al-Ahsabah,الاحسبة,19.699444,41.391667,Al-Bahah,Al-Makhwah,Wadi Al-Khurma Basin,,earthfill,completed,recharge,drinking_water,895.0,20.0,18.0,11000000,2011
+id_080007,Thurad,ثراد,20.1575,41.721389,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,drinking_water,120.0,25.0,20.0,14136000,2007
+id_080009,Al-Janabin,الجنابين,19.900253,41.710566,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,drinking_water,180.0,28.0,23.0,17000000,2011
+id_080010,Al-Aqiq,العقيق,20.2367,41.5708,Al-Bahah,Al-Aqiq,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,drinking_water,167.0,30.0,23.0,19126142,1987
+id_080012,Ardah,عردة,20.547222,41.289167,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,concrete,under_construction,recharge,drinking_water,365.0,70.0,53.0,68000000,
+id_080013,Batat Al-Jawfi,بطاط الجوفي,19.7175,41.501944,Al-Bahah,Al-Makhwah,Wadi Al-Khurma Basin,,subsurface,under_construction,recharge,drinking_water,380.0,15.0,0.0,600000,
+id_080015,Matuwah,ماطوه,19.788483,41.740367,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,134.0,11.0,8.0,24000,1983
+id_080016,Al-Arishayn,العريشين,19.797411,41.706988,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,117.0,14.0,11.0,37000,1983
+id_080017,Al-Ritaq,الرتق,19.916667,41.601389,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,100.0,10.0,8.0,57975,2009
+id_080018,Zaqat,زقط,19.841683,41.579,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,,rockfill,completed,recharge,recharge,160.0,11.0,8.0,70000,1983
+id_080019,Al-Qamah,القمع,19.807033,41.714017,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,65.0,9.0,6.0,80000,1983
+id_080020,Al-Azizah,العزيزا,20.299167,41.413889,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,94.0,14.0,11.0,92762,2013
+id_080021,Dharawah,ظروه,19.799917,41.70925,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,120.0,15.0,11.0,98000,1983
+id_080022,Al-Hijah,الهيجه,19.838031,41.637616,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,160.0,13.0,10.0,100000,1983
+id_080023,Ajlan,عجلان,20.014617,41.45805,Al-Bahah,Al-Bahah,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,protection,78.0,12.0,10.0,100000,1983
+id_080024,Al-Malad,الملد,20.012883,41.486681,Al-Bahah,Al-Bahah,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,80.0,12.0,7.0,100000,1983
+id_080025,Shahbah,شهباء,20.033889,41.480833,Al-Bahah,Al-Bahah,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,90.0,15.0,10.0,100000,1983
+id_080026,Al-Aja'idah,الاجاعدة,19.931111,41.547222,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,120.0,8.0,10.0,151900,2008
+id_080027,Dhark,ظرك,20.188611,41.291111,Al-Bahah,Al-Mandaq,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,71.0,12.0,9.0,111400,2008
+id_080028,Am Rijlan,ام رجلين,19.847495,41.652887,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,80.0,18.0,16.0,118038,2014
+id_080029,Al-Marbah,المرباه,19.835657,41.672739,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,133.0,16.0,10.0,120000,1983
+id_080030,Al-Kharar,الخرار,20.2173,41.264017,Al-Bahah,Al-Mandaq,Wadi Al-Khurma Basin,,rockfill,completed,recharge,recharge,84.0,12.0,8.0,150000,1983
+id_080031,Al-Lahijah,اللاحجة,19.917778,41.591944,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,98.0,12.0,9.0,130198,2013
+id_080032,Al-Khalah,الخالة,19.826951,41.631173,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,60.0,13.0,7.0,200000,1976
+id_080033,Al-Talqiyah,الطلقيه,19.855219,41.603917,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,,rockfill,completed,recharge,recharge,90.0,14.0,9.0,200000,1981
+id_080034,Al-Jahafin,الجحافين,19.841417,41.6422,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,recharge,recharge,118.0,10.0,9.0,200000,1997
+id_080035,Al-Haliyah,الحليه,19.81495,41.620767,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,,earthfill,completed,recharge,recharge,162.0,6.0,3.0,230000,1997
+id_080036,Subihah,سبيحه,20.3375,41.304,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,85.0,14.0,8.0,300000,1983
+id_080037,Al-Dhahin,الضحيان,20.075833,41.385278,Al-Bahah,Bani Hasan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,72.0,15.0,12.0,320000,1999
+id_080038,Al-Muzlimat,المظلمات,20.17395,41.316917,Al-Bahah,Al-Mandaq,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,recharge,recharge,120.0,12.0,8.0,400000,1983
+id_080039,Al-Sadr,الصدر,20.127,41.3579,Al-Bahah,Bani Hasan,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,100.0,24.0,18.0,500000,1981
+id_080040,Al-Mashiraf,المشيرف,20.234722,41.672778,Al-Bahah,Al-Aqiq,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,recharge,recharge,196.0,7.0,5.0,600000,2007
+id_080041,Ma'shuqah,معشوقة,20.363611,41.411667,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,recharge,recharge,135.0,13.0,10.0,905700,2008
+id_080042,Al-Marazawaq,المرزوق,19.932967,41.606883,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,300.0,20.0,17.0,750000,1986
+id_080043,Jarab,جرب,20.418056,41.85,Al-Bahah,Al-Aqiq,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,recharge,recharge,208.0,10.0,7.0,344100,2009
+id_080044,Madhas,مدهاس,20.222217,41.274233,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,350.0,16.0,10.0,1500000,1986
+id_080045,Bidah,بيده,20.196167,41.401983,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,recharge,recharge,150.0,24.0,20.0,2000000,1984
+id_080046,Al-Habis,الحبيس,19.950494,41.540986,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,40.0,14.0,10.0,10000,1983
+id_080047,Dabdab,دبدب,20.120633,41.29275,Al-Bahah,Al-Mandaq,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,38.0,12.0,10.0,30000,1983
+id_080048,Al-Milh,الملح,19.768875,41.476194,Al-Bahah,Al-Makhwah,Wadi Al-Khurma Basin,,concrete,completed,recharge,recharge,71.0,17.0,10.0,100000,1983
+id_080049,Al-Afarah,العفارة,19.776038,41.767744,Al-Bahah,Baljurashi,Wadi Al-Khurma Basin,rainfall_area,earthfill,completed,recharge,recharge,60.0,8.0,5.0,150000,2002
+id_080050,Athal,اثال,20.325167,41.057072,Al-Bahah,Al-Hajrah,Wadi Al-Khurma Basin,,concrete,completed,recharge,recharge,161.0,16.0,13.0,113000,2014
+id_080051,Al-Hadim,الهضيم,20.288056,41.396111,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,120.0,16.0,13.0,310000,2014
+id_080052,Al Sarawar,ال سرور,20.20739,41.332782,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,164.0,15.0,12.0,72244,2018
+id_080053,Shada Nira,شدا نيرا,19.758333,41.334444,Al-Bahah,Al-Makhwah,Wadi Al-Khurma Basin,,concrete,completed,recharge,recharge,217.0,15.0,13.0,884446,2010
+id_080054,Al-Madarah,المدره,20.231389,41.39,Al-Bahah,Al-Qura,Wadi Al-Khurma Basin,rainfall_area,concrete,completed,recharge,recharge,74.0,19.0,14.0,157509,2020
+id_080055,Al-Hamirah (Al-Salasil),الحميراء (السلاسل),19.647222,41.231111,Al-Bahah,Al-Makhwah,Wadi Al-Khurma Basin,,concrete,completed,recharge,protection,137.0,14.0,9.0,531187,2020
+id_080056,Al-Nusabah,النصبة,19.623056,41.46,Al-Bahah,Farat Ghamid Al-Zinad,Wadi Al-Khurma Basin,,concrete,completed,recharge,recharge,116.0,13.0,9.0,80311,2020
+id_090000,Al-Juwi'diyah,الجويعيدية,26.776389,41.638333,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,263.0,6.5,3.5,109000,2010
+id_090001,Aqadah,عقده,27.5325,41.596111,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,100.0,7.0,4.5,100000,1976
+id_090002,Al-Sahwah,الصهوة,27.145556,41.176111,Hail,Mawqaq,Wadi Arar Basin,,earthfill,completed,recharge,recharge,220.0,8.0,4.0,141260,2009
+id_090003,Al-Sada'iyah,الصداعية,26.827222,41.468889,Hail,Al-Ghazalah,Wadi Arar Basin,,earthfill,completed,recharge,recharge,308.0,4.0,2.0,105728,2009
+id_090004,Al-Ratiq,الرتيق,27.306389,41.2775,Hail,Mawqaq,Wadi Arar Basin,,concrete,completed,recharge,protection,40.0,12.0,9.5,106000,2003
+id_090005,Taba,طابا,27.018056,42.102222,Hail,Al-Shinan,Wadi Arar Basin,,earthfill,completed,recharge,protection,480.0,6.0,3.5,154383,2012
+id_090006,Tawarin,توارن,27.576056,41.44,Hail,Mawqaq,Wadi Arar Basin,,concrete,completed,recharge,recharge,75.0,7.0,4.0,120000,1983
+id_090007,Al-Jahifah,الجحفه,27.106944,42.168333,Hail,Al-Shinan,Wadi Arar Basin,,earthfill,completed,recharge,protection,280.0,6.0,3.5,493200,2007
+id_090008,Al-Mudih,المضيح,26.883889,42.041111,Hail,Al-Shinan,Wadi Arar Basin,,earthfill,completed,recharge,recharge,340.0,5.0,3.0,107662,2008
+id_090009,Fayd,فيد,27.108333,42.474444,Hail,Al-Shinan,Wadi Arar Basin,,earthfill,completed,recharge,recharge,559.0,7.0,4.5,167467,2011
+id_090010,Aqalat Bin Jabrin,عقلة بن جبرين,27.076944,41.275556,Hail,Mawqaq,Wadi Arar Basin,,earthfill,completed,recharge,recharge,361.0,7.0,4.0,714614,2011
+id_090011,Al-Salaf,السلف,27.428694,41.520639,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,220.0,7.0,2.5,150000,1976
+id_090012,Al-Raqab,الرقب,25.712162,41.075278,Hail,Al-Hait,Wadi Al-Rumah Basin,,earthfill,completed,recharge,recharge,450.0,5.0,2.5,159750,2013
+id_090013,Saqiyat Fayd,ساقيه فيد,27.144722,42.454444,Hail,Al-Shinan,Wadi Arar Basin,,earthfill,completed,recharge,protection,400.0,5.0,3.0,180000,1984
+id_090015,Nuqbayn,نقبين,27.620833,41.614028,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,200.0,7.5,5.0,230000,1983
+id_090016,Al-Sir,الصر,27.371783,41.4362,Hail,Hail,Wadi Arar Basin,,concrete,completed,recharge,recharge,65.0,12.5,8.0,250000,1982
+id_090017,Ghamrah,غمرة,26.591667,42.311667,Hail,Samirah,Wadi Arar Basin,,earthfill,completed,recharge,recharge,350.0,6.0,3.5,250000,2003
+id_090018,Samirahh,سميراء,26.580278,42.181111,Hail,Samirah,Wadi Arar Basin,,earthfill,completed,recharge,protection,810.0,5.5,3.5,787228,2010
+id_090019,Al-Radafin,الرضفين,27.2675,41.228611,Hail,Mawqaq,Wadi Arar Basin,,earthfill,completed,recharge,recharge,245.0,8.0,4.0,300000,2002
+id_090020,Al-Hawidah,الهويدى,27.072567,41.3408,Hail,Al-Ghazalah,Wadi Arar Basin,,earthfill,completed,recharge,protection,250.0,6.0,3.0,360000,1983
+id_090021,Al-Shinan,الشنان,27.147317,42.344858,Hail,Al-Shinan,Wadi Arar Basin,,earthfill,completed,recharge,protection,220.0,9.0,5.5,446568,2007
+id_090022,Al-Bar,البار,27.387,41.500314,Hail,Hail,Wadi Arar Basin,,concrete,completed,recharge,recharge,90.0,7.0,6.5,500000,1981
+id_090023,Al-Halifah,الحليفة,25.917556,40.759946,Hail,Al-Hait,Wadi Al-Rumah Basin,,earthfill,completed,recharge,recharge,500.0,6.0,3.5,2768748,2012
+id_090024,Al-Sab'an,السبعان,26.995,41.943333,Hail,Al-Shinan,Wadi Arar Basin,,earthfill,completed,recharge,protection,218.0,7.0,4.5,630351,2010
+id_090025,Saqf,سقف,26.960556,41.084167,Hail,Al-Ghazalah,Wadi Arar Basin,,concrete,completed,recharge,recharge,127.0,7.0,4.0,600000,2009
+id_090026,Watadah,وتده,26.271415,42.086535,Hail,Samirah,Wadi Arar Basin,,earthfill,completed,recharge,recharge,366.0,6.0,3.5,649943,2010
+id_090027,Al-Salimah,السليمى,26.30225,41.349267,Hail,Al-Sulimi,Wadi Al-Rumah Basin,,earthfill,completed,recharge,recharge,800.0,6.0,3.5,1000000,1989
+id_090028,Dalihan,دليهان,27.278333,40.991389,Hail,Mawqaq,Wadi Arar Basin,,earthfill,completed,recharge,recharge,170.0,5.5,3.0,1000000,2008
+id_090029,Bazakhah,بزاخة,27.243333,41.406111,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,513.0,5.5,3.0,349411,2008
+id_090031,Al-Shaqiq,الشقيق,27.1525,40.948333,Hail,Mawqaq,Wadi Arar Basin,,concrete,completed,recharge,recharge,310.0,6.5,4.0,2000000,2009
+id_090032,Al-Wasitah,الوسيطاء,26.793333,41.733889,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,600.0,15.0,10.5,2500000,1989
+id_090033,Al-Ha'it,الحائط,25.963333,40.471111,Hail,Al-Hait,Wadi Al-Rumah Basin,,earthfill,completed,recharge,recharge,150.0,12.0,9.5,3000000,2008
+id_090034,Al-Dabiyah,الدابية,25.7525,40.572778,Hail,Al-Hait,Wadi Al-Rumah Basin,,earthfill,completed,recharge,recharge,195.0,9.0,6.0,1191704,2012
+id_090035,Wasmiya,وسمى,27.508917,41.579722,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,180.0,6.0,4.5,100000,1983
+id_090036,Al-Na'ih,النعى,27.1775,42.275278,Hail,Al-Shinan,Wadi Arar Basin,,concrete,completed,recharge,recharge,110.0,5.5,4.5,160000,1983
+id_090037,Al-Adirah,الاديرع,27.366389,41.585,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,611.0,8.0,4.5,550870,2013
+id_090038,Al-Rawdah,الروضه,26.821667,41.6025,Hail,Hail,Wadi Arar Basin,,concrete,completed,recharge,recharge,300.0,15.0,10.5,1500000,1989
+id_090039,Al-Ghazalah,الغزالة,26.796638,41.352678,Hail,Al-Ghazalah,Wadi Arar Basin,,earthfill,completed,recharge,recharge,620.0,4.5,2.0,120000,2008
+id_090040,Al-Rawd Bin Hadi,الروض بن هادي,26.189786,40.502343,Hail,Al-Hait,Wadi Al-Rumah Basin,,earthfill,completed,recharge,recharge,1477.0,5.5,3.0,2000000,2012
+id_090041,Aqadh Al-Tad'imi,عقده التدعيمي,27.516111,41.58,Hail,Hail,Wadi Arar Basin,,concrete,completed,recharge,recharge,129.0,8.5,6.0,81232,2013
+id_090042,Mashar,مشار,27.559736,41.60625,Hail,Hail,Wadi Arar Basin,,concrete,completed,recharge,recharge,356.0,7.0,4.5,116121,2013
+id_090043,Aba Adi,اباعدي,27.570833,41.603333,Hail,Hail,Wadi Arar Basin,,concrete,completed,recharge,recharge,153.0,8.5,6.0,98449,2009
+id_090044,Qarih,قارح,27.501667,41.598889,Hail,Hail,Wadi Arar Basin,,concrete,completed,recharge,recharge,172.0,17.0,14.5,216392,2013
+id_090045,Al-Sir Al-Tad'imi,الصر التدعيمي,27.369167,41.463611,Hail,Hail,Wadi Arar Basin,,earthfill,completed,recharge,recharge,605.0,7.0,4.5,746493,2013
+id_100000,Al-Kharar,الخرار,26.2025,37.376667,Tabuk,Al-Wajh,Wadi Al-Hamad Basin,,earthfill,completed,recharge,protection,367.0,10.0,6.0,167550,2008
+id_100001,Rahib,رحيب,27.475556,36.798333,Tabuk,Tabuk,Wadi Al-Akhdar Basin,,earthfill,completed,recharge,recharge,230.0,8.5,5.5,102263,2009
+id_100002,Abu Al-Qazaz,ابو القزاز,26.784167,36.7675,Tabuk,Al-Wajh,Wadi Al-Hamad Basin,,earthfill,completed,recharge,recharge,360.0,7.0,4.0,423879,2009
+id_100003,Al-Zarib,الزريب,26.284722,36.584167,Tabuk,Al-Wajh,A,,earthfill,completed,recharge,recharge,200.0,7.0,4.0,500000,2008
+id_100004,Shawaq,شواق,27.48,36.610278,Tabuk,Duba,Wadi Al-Akhdar Basin,,earthfill,completed,recharge,recharge,600.0,7.0,4.0,800000,2006
+id_100005,Aynawanah,عينونه,28.211111,35.3275,Tabuk,Duba,A,,earthfill,completed,recharge,protection,168.0,7.5,5.0,700000,2008
+id_100006,Damah,داماء,27.3778,36.442937,Tabuk,Duba,Wadi Al-Akhdar Basin,,concrete,completed,recharge,recharge,356.0,11.0,8.5,934972,2013
+id_100007,Sharamah,شرماء,28.083889,35.501944,Tabuk,Duba,A,,earthfill,completed,recharge,protection,1000.0,8.0,5.0,1000000,2008
+id_100008,Samin,سمين,25.112778,37.419167,Tabuk,Umluj,B,,earthfill,completed,recharge,recharge,278.0,6.0,3.0,177000,2007
+id_100009,Al-Nabi',النابع,26.418333,37.085,Tabuk,Al-Wajh,Wadi Al-Hamad Basin,,concrete,completed,recharge,recharge,165.0,15.0,12.0,1000000,2008
+id_100010,Al-Kar,الكر,26.643056,36.955833,Tabuk,Al-Wajh,Wadi Al-Hamad Basin,,earthfill,completed,recharge,recharge,395.0,10.8,8.0,1003409,2013
+id_100011,'Afal,عفال,28.941389,35.18,Tabuk,Haql,A,,earthfill,completed,recharge,protection,395.0,12.0,7.0,2000000,2007
+id_100012,Shaghab,شغب,27.293333,36.4975,Tabuk,Duba,A,,earthfill,completed,recharge,recharge,561.0,10.5,7.5,1743381,2013
+id_100013,Al-Balitih,البليطيح,27.211776,36.861579,Tabuk,Al-Wajh,Wadi Al-Akhdar Basin,,concrete,completed,recharge,recharge,175.0,13.0,10.0,600000,2010
+id_100014,Al-Fari'ah,الفارعة,27.178889,37.035,Tabuk,Al-Wajh,Wadi Al-Akhdar Basin,,earthfill,completed,recharge,protection,1200.0,12.5,9.5,4643000,2009
+id_100015,Wadi Al-Najad,وادي النجد,26.818056,37.023889,Tabuk,Al-Wajh,Wadi Al-Hamad Basin,,earthfill,completed,recharge,recharge,1033.0,10.0,7.0,1047775,2013
+id_100016,Tala' Al-Shamali,تلاع الشمالي,28.262068,36.571371,Tabuk,Tabuk,Wadi Al-Akhdar Basin,,earthfill,completed,recharge,protection,611.5,7.0,4.5,777008,2019
+id_100017,Salim Al-Awasat,سالم الاوسط,28.242222,36.598333,Tabuk,Tabuk,Wadi Al-Akhdar Basin,,earthfill,completed,recharge,protection,617.0,6.5,4.0,458187,2018
+id_100018,Dahkan,ضحكان,27.413889,35.760556,Tabuk,Duba,A,,concrete,completed,recharge,protection,255.0,18.0,15.0,1200000,2012
+id_100019,Damh,ضم,28.568056,36.000556,Tabuk,Tabuk,Wadi Al-Akhdar Basin,,earthfill,completed,recharge,protection,465.0,10.0,7.0,2500000,2012
+id_100020,Dab'an,ضبعان,28.213611,36.626944,Tabuk,Tabuk,Wadi Al-Akhdar Basin,,earthfill,completed,recharge,protection,518.0,7.0,4.5,957508,2019
+id_100021,Tila' Al-Janawabi,تلاع الجنوبي,28.18582,36.651087,Tabuk,Tabuk,Wadi Al-Akhdar Basin,,earthfill,under_construction,recharge,protection,482.0,6.0,0.0,422481,
+id_100022,Al-Baqar,البقار,28.079444,36.510833,Tabuk,Tabuk,Wadi Al-Akhdar Basin,,earthfill,under_construction,recharge,protection,286.0,15.0,12.0,1800000,
+id_100024,Na'am,نعام,28.132222,36.688889,Tabuk,Tabuk,Wadi Al-Akhdar Basin,,earthfill,under_construction,recharge,protection,510.0,10.0,9.5,1500000,
+id_100025,Al-Mawilah (Al-Sir),المويلح (الصر),27.676944,35.566389,Tabuk,Duba,A,,concrete,under_construction,recharge,recharge,168.5,15.0,11.0,1593000,
+id_110000,Al-Ma'tadal (Al-Tamariyah),المعتدل (التمريات),30.519167,40.3425,Al-Jawf,Sakaka,Wadi Arar Basin,,earthfill,completed,recharge,protection,510.0,4.5,3.0,574000,2009
+id_110002,Al-Ay'ali,الاعيلي,30.592668,38.633672,Al-Jawf,Tabarjal,Wadi Al-Sirhan Basin,,earthfill,completed,recharge,protection,425.0,6.5,5.0,1200000,2009
+id_110004,Al-Shawihitiyah,الشويحيطية,30.325442,40.187523,Al-Jawf,Sakaka,Wadi Arar Basin,,earthfill,completed,recharge,protection,310.0,5.5,3.0,2300000,2009
+id_110005,Al-Nakhalah,ام نخلة,31.215833,37.371111,Al-Jawf,Al-Qurayat,Wadi Al-Sirhan Basin,,earthfill,completed,flood_control,protection,180.0,6.8,4.5,600000,2010
+id_110006,Bair,باير,31.161667,37.481944,Al-Jawf,Al-Qurayat,Wadi Al-Sirhan Basin,,earthfill,completed,flood_control,protection,375.0,6.0,4.5,1250000,1999
+id_110007,Hasidah Al-Gharbiyah,حصيدة الغربية,31.423056,37.247222,Al-Jawf,Al-Qurayat,Wadi Al-Sirhan Basin,,earthfill,completed,flood_control,protection,450.0,7.5,6.0,1300000,2001
+id_110008,Sarmadah,سرمداء,31.039021,37.612829,Al-Jawf,Al-Qurayat,Wadi Al-Sirhan Basin,,earthfill,completed,flood_control,protection,420.0,3.3,2.0,2284600,2007
+id_110009,Hasidah Al-Sharqiyah,حصيدة الشرقية,31.244167,37.353333,Al-Jawf,Al-Qurayat,Wadi Al-Sirhan Basin,,earthfill,completed,flood_control,protection,775.0,6.5,5.0,2600000,1999
+id_110010,Al-Marir,المرير,30.049444,39.913889,Al-Jawf,Sakaka,Wadi Arar Basin,,concrete,completed,protection,protection,153.0,14.0,12.0,1194257,2019
+id_120000,Baish,بيش,17.665556,42.6575,Jazan,Al-Raith,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,drinking_water,340.0,73.0,61.0,193644000,2008
+id_120002,Jazan,جازان,17.048889,42.957222,Jazan,Abu Arish,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,drinking_water,316.0,39.7,31.5,54200000,1970
+id_120003,Damad,ضمد,17.198611,42.988056,Jazan,Al-Idabi,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,drinking_water,610.0,42.0,35.0,55500000,2009
+id_120005,Qasi,قسي,17.19179,42.878304,Jazan,Damad,Wadi Al-Dawasir Basin,rainfall_area,rockfill,completed,recharge,recharge,1044.0,25.0,22.5,15100000,2018
+id_120006,Shab Maghawarah,شعب مغوره,17.332222,43.255278,Jazan,Al-Zaydan Al-Dhair,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,92.5,16.0,13.0,98000,2008
+id_120007,Lajab (Bashimah),لجب (بشيمة),17.573889,42.975833,Jazan,Al-Raith,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,protection,170.0,7.0,5.0,23413,2009
+id_120008,Al-Madirah,المديرة,17.306389,43.262222,Jazan,Al-Zaydan Al-Dhair,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,103.0,14.0,11.0,157000,2008
+id_120009,Amud,عمود,17.5525,43.011389,Jazan,Al-Raith,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,drinking_water,178.0,13.5,10.0,84957,2012
+id_120010,Al-Raith,الريث,17.614971,42.826909,Jazan,Al-Raith,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,protection,85.0,13.0,10.0,180000,1999
+id_120011,Qurah,قرى,17.511111,42.728889,Jazan,Al-Raith,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,199.82,26.0,23.0,985954,2010
+id_120012,Wasah,وساع,17.402222,42.831111,Jazan,Sabya,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,132.0,25.0,22.0,1500000,2009
+id_120013,Wa'al,وعال,17.496944,42.746667,Jazan,Harub,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,protection,197.0,16.0,14.0,1016800,2009
+id_120014,Shahdan,شهدان,17.454776,42.736093,Jazan,Sabya,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,recharge,689.0,40.0,35.0,2500000,
+id_120015,Am Khabarah,ام خباره,16.704156,43.139789,Jazan,Samtah,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,70.0,10.0,8.5,150000,1997
+id_130000,Najran,نجران,17.408056,44.014167,Najran,Najran,Rub Al-Khali Basin,,concrete,completed,recharge,drinking_water,274.0,60.0,45.0,86000000,1979
+id_130002,Aratad,ارتاد,18.226944,43.8275,Najran,Thar,Rub Al-Khali Basin,,concrete,completed,recharge,protection,140.0,8.0,6.0,79700,2009
+id_130003,Yasan,ياسان,18.0475,43.960833,Najran,Thar,Rub Al-Khali Basin,,concrete,completed,recharge,recharge,97.0,15.0,12.0,233425,2011
+id_130004,Al-Salamah,السلامه,17.984722,43.8675,Najran,Badr Al-Janub,Rub Al-Khali Basin,,concrete,completed,recharge,protection,120.0,10.0,6.0,500000,2010
+id_130005,Al-Bayadh,البياض,18.330917,43.919107,Najran,Thar,Rub Al-Khali Basin,,earthfill,completed,recharge,protection,235.0,10.0,7.0,243000,2009
+id_130006,Al-Maghawi,المغوي,18.274675,43.847868,Najran,Thar,Rub Al-Khali Basin,,concrete,completed,recharge,protection,73.0,13.0,10.0,208340,2016
+id_130007,Makish,مخش,18.20774,44.458188,Najran,Thar,Rub Al-Khali Basin,,earthfill,completed,recharge,protection,175.0,11.0,8.0,288000,2011
+id_130008,Khadiran,خضيران,18.000556,43.861389,Najran,Badr Al-Janub,Rub Al-Khali Basin,,concrete,completed,recharge,recharge,112.0,13.0,10.0,1000000,2010
+id_130009,Al-Mahjar,المحجر,17.851389,43.713889,Najran,Badr Al-Janub,Rub Al-Khali Basin,rainfall_area,earthfill,completed,recharge,recharge,270.0,6.0,4.0,1000000,2002
+id_130010,Al-Yatim,اليتم,18.190546,43.879979,Najran,Thar,Rub Al-Khali Basin,,concrete,completed,recharge,protection,111.0,10.0,8.0,300000,2009
+id_130011,Makhdab,مخضوب,18.453333,44.093333,Najran,Yadamah,Rub Al-Khali Basin,,earthfill,completed,recharge,recharge,241.0,8.0,5.0,343700,2010
+id_130012,Thar,ثار,17.980556,44.002778,Najran,Thar,Rub Al-Khali Basin,,earthfill,completed,recharge,recharge,70.0,12.0,9.0,360000,2004
+id_130013,Humayran,حميران,18.013889,43.858056,Najran,Badr Al-Janub,Rub Al-Khali Basin,,concrete,completed,recharge,protection,76.0,20.0,18.0,491830,2016
+id_130014,Al-Ashah,العشة,17.920078,43.698473,Najran,Badr Al-Janub,Rub Al-Khali Basin,rainfall_area,earthfill,completed,recharge,protection,196.0,11.0,8.0,270045,2009
+id_130015,Qatan,قطن,18.189722,44.015833,Najran,Thar,Rub Al-Khali Basin,,concrete,completed,recharge,protection,123.0,13.0,10.0,758500,2009
+id_130016,(Surum) Halal,(سروم) حلال,17.64983,43.866401,Najran,Habuna,Rub Al-Khali Basin,,earthfill,completed,recharge,recharge,222.0,12.0,12.0,585630,2008
+id_130017,Al-Khadarah,الخضارة,17.894749,43.69264,Najran,Badr Al-Janub,Rub Al-Khali Basin,rainfall_area,earthfill,completed,recharge,recharge,355.0,10.0,4.0,600000,2002
+id_130018,Na'wan,نعوان,18.222778,44.329722,Najran,Thar,Rub Al-Khali Basin,,earthfill,completed,recharge,recharge,216.0,12.0,9.0,532000,2011
+id_130019,Al-Safah,الصفاح,18.313056,43.853056,Najran,Thar,Rub Al-Khali Basin,,earthfill,completed,recharge,recharge,198.0,9.0,2.0,366300,2008
+id_130020,Tarimah,تريمه,17.892778,44.095,Najran,Habuna,Rub Al-Khali Basin,,concrete,completed,recharge,recharge,115.0,19.0,16.0,2073500,2010
+id_130021,Al-Malihah,المليحه,17.945123,43.780487,Najran,Badr Al-Janub,Rub Al-Khali Basin,rainfall_area,concrete,completed,recharge,protection,121.0,17.0,14.0,471000,2010
+id_130022,Akadhaba,عكذباء,18.136111,44.256667,Najran,Thar,Rub Al-Khali Basin,,earthfill,completed,recharge,protection,180.0,6.0,4.0,250000,2010
+id_130023,Al-Athibah,الاثايبه,17.626417,44.205858,Najran,Najran,Rub Al-Khali Basin,,concrete,completed,recharge,protection,45.0,14.0,11.0,437350,2001
+id_130024,Hadadah,هداده,17.596111,43.731389,Najran,Badr Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,recharge,recharge,80.0,8.0,6.0,500000,2002
+id_130025,Al-Haj,الحج,17.570556,44.1875,Najran,Najran,Rub Al-Khali Basin,,earthfill,completed,recharge,protection,806.0,7.0,5.0,578000,2009
+id_130026,Al-Sharam,الشرم,17.741111,43.586944,Najran,Badr Al-Janub,Wadi Al-Dawasir Basin,rainfall_area,concrete,under_construction,recharge,protection,95.0,15.5,0.0,163086,
+id_130027,Qurdah,قرضة,18.184444,44.113333,Najran,Thar,Rub Al-Khali Basin,,earthfill,under_construction,recharge,protection,156.0,10.0,0.0,242875,
+id_130028,Matarah Al-Qaran,مطارة القرن,17.756944,43.675833,Najran,Badr Al-Janub,Rub Al-Khali Basin,rainfall_area,concrete,under_construction,recharge,protection,136.0,29.0,0.0,2054425,

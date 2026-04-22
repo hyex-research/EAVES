@@ -53,6 +53,17 @@ Dams with reliable SRTM-derived curves (quality grades A–B, $R^2 \geq 0.98$) p
 
 Automated quality gates detect displaced flood centroids and negligible fill volumes, flagging problematic dams for regional parameter assignment rather than propagating unreliable fits.
 
+## ⚠️ **Limitations**
+
+EAVES reconstructs reservoir geometry from a pre-impoundment DEM — it is not a surveyed bathymetric record. Users should treat outputs as a best-effort approximation rather than absolute capacity.
+
+- **Valley-geometry approximation, not bathymetry**: curves follow the SRTM valley surface up to the spillway, not a measured reservoir bottom. They are sensitive to DEM noise (±2 m vertical, ~10 m horizontal LE90) in the same way the underlying terrain is.
+- **Synthetic dam wall**: the wall orientation and length come from a terrain-alignment search at or near the catalogue coordinates — it is the best-fit crest for that SRTM patch, not necessarily the engineered as-built structure. Small placement shifts can meaningfully change the reconstructed footprint.
+- **SRTM snapshot (Feb 2000)**: dams constructed after 2000 get a clean pre-impoundment valley (ideal); dams predating 2000 carry whatever sediment and reservoir infill had already accumulated by the acquisition date, so their curves are partial rather than pre-dam.
+- **Resolution-limited regimes**: sub-pixel reservoirs (`n_pixels < 30`), narrow valleys (`valley_width_m < 3 × pixel_size`), shallow depressions (`spillway_height_m < 5 m`), and urban-modified terrain produce curves with elevated uncertainty — see the `uncertainty_flags` column in `eaves_summary.csv` for per-dam tagging.
+
+Full quantitative treatment of these limitations will be provided in the accompanying publication.
+
 ## 🔁 **Usage**
 
 EAVES is configured via a JSON settings file that points to the input catalogues, external rasters/shapefiles, and the output directory. Reference deployments live in `settings/`:
@@ -90,6 +101,9 @@ A settings file is a flat JSON object with any subset of the keys accepted by `e
 | `output_dir`, `srtm_dir`, `dams_csv`, `water_extent_dir`, `domain_dir` | Paths to local inputs / outputs |
 | `merit_rivers_shp`, `merit_basins_shp`, `country_shp` | External shapefiles for preprocessing |
 | `target_country`, `country_name_col` | Country filter applied to `country_shp` |
+| `bathymetry_eav_csv` *(optional)* | Sonar EAV table for validation plots |
+| `grdl_dir` *(optional)* | Folder of GRDL reference curves for validation plots |
+| `sedimentation_dir` *(optional)* | Folder with `sedimentation_yield.csv` + `owe_annual_mean.csv` to merge into `eaves_summary.csv` (currently KSA-specific, see [Dash et al. 2025](https://doi.org/10.1016/j.jenvman.2025.127199)) |
 | `max_seg_len_m`, `max_snap_distance_m` | Preprocessing knobs |
 
 Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rather than silently reverting to defaults.
@@ -117,7 +131,9 @@ Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rat
 │   │
 │   └── postprocess/             # After all dams processed
 │       ├── plots.py             # Diagnostic + validation plots, QC flood maps
-│       └── regionalization.py   # Reliability tagging, threshold analysis, parameter assignment
+│       ├── regionalization.py   # Reliability tagging, threshold analysis, parameter assignment
+│       ├── reliability.py       # Physical uncertainty flags (sub-pixel, narrow valley, etc.)
+│       └── external_data.py     # Merge optional sedimentation / OWE columns into summary
 │
 ├── settings/                    # Reference deployment configurations
 │   ├── <country>.json           # Full regional run
@@ -125,6 +141,7 @@ Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rat
 │
 ├── input/                       # Deployment inputs (gitignored; licensed data)
 │   ├── <country>_dams/          # Dam catalogue CSV, water-extent time series
+│   │   └── sedimentation_owe/   # Optional: sediment yield + OWE CSVs (e.g. Dash et al. 2025 for KSA)
 │   ├── grdl/                    # Reference EAV curves for validation dams
 │   └── domain_inputs/           # Preprocessing cache (rivers_split, dams_snapped)
 │
@@ -149,11 +166,11 @@ Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rat
 
 | File | Description |
 |------|-------------|
-| `eaves_summary.csv` | One row per successfully processed dam: fitted $c$, $b$, $R^2$, footprint area, quality grade, placement method |
-| `eaves_params.csv` | Final EAV parameters for **all** dams (SRTM-direct + regionalized fallback) |
+| `eaves_summary.csv` | One row per successfully processed dam: fitted $c$, $b$, $R^2$, footprint area, quality grade, placement method, reliability flags (`uncertainty_flags`, `uncertainty_score`), and — when `sedimentation_dir` is provided — `sed_yield_t_ha_yr`, `upstream_area_km2`, `owe_mm_year` |
+| `eaves_params.csv` | Final EAV parameters for **all** dams with a `source` label of `srtm_derived`, `regr_derived`, or `regi_derived` |
 | `failed_dams.csv` | Dams that failed placement or QC, with failure reason |
 | `threshold_analysis.csv` | Capacity-threshold sweep for reliability classification |
-| `bathymetry_validation.csv` | Sonar bathymetry vs SRTM comparison data |
+| `bathymetry_validation.csv` | Sonar bathymetry vs SRTM comparison data (only when `bathymetry_eav_csv` is set) |
 
 ### Analysis plots (`output/2_results_plots/`)
 
@@ -167,7 +184,7 @@ Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rat
 
 ### Flood QC maps (`output/0_check_dams/`)
 
-One PNG per dam showing the DEM, flood footprint, river network overlay, and dam marker. Named by dam ID (e.g., `id_120000_flood.png`).
+One PNG per dam showing the DEM, flood footprint, river network overlay, a red triangle at the dam location, and a darkorange line indicating the chosen dam-wall orientation and length. After regionalization each plot is renamed to reflect the parameter source: `{dam_id}_srtm.png` (direct SRTM fit), `{dam_id}_regr.png` (topographic regression), or `{dam_id}_regi.png` (regional median).
 
 ## 📥 **Data dependencies**
 
@@ -188,6 +205,7 @@ EAVES runs standalone — all preprocessing (country clip, segment split, dam sn
 | **Dam catalogue** (e.g. `<country>_dams.csv`) | User-provided | Dam locations, attributes, capacities |
 | **Filtered satellite water extent** | User-provided | Empirical area estimates for regionalization |
 | **Sonar bathymetry** (optional) | Field survey | Ground-truth validation for one or more reservoirs |
+| **Sedimentation & evaporation** (optional, KSA-specific) | [Dash et al. 2025](https://doi.org/10.1016/j.jenvman.2025.127199) | Per-dam sediment yield (t ha⁻¹ yr⁻¹), upstream catchment area (km²), and open-water evaporation (mm yr⁻¹), merged into `eaves_summary.csv` when `sedimentation_dir` is set |
 
 > **Note on SRTM data:** EAVES uses `.hgt` tiles from the Shuttle Radar Topography Mission Global 1 arc-second dataset (SRTMGL1 v003), acquired in February 2000. Tiles can be downloaded from [USGS EarthExplorer](https://earthexplorer.usgs.gov/) or the [ESA STEP mirror](https://step.esa.int/auxdata/dem/SRTMGL1/). The Saudi dam catalogue used in this study is not publicly available.
 

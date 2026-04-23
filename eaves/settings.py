@@ -2,7 +2,7 @@
 
 A settings file is a flat JSON object whose keys are a subset of the kwargs
 accepted by :func:`eaves.config.configure`. Unknown keys raise ``ValueError``
-so typos in a deployment file fail loudly rather than silently reverting to
+so typos in a settings file fail loudly rather than silently reverting to
 defaults.
 
 Usage::
@@ -31,11 +31,15 @@ _ALLOWED_KEYS = {
     "target_country",
     "country_name_col",
     "bathymetry_eav_csv",
+    "bathymetry_dam_id",
     "grdl_dir",
     "sedimentation_dir",
     "max_seg_len_m",
     "max_snap_distance_m",
 }
+
+_POSITIVE_NUMERIC_KEYS = {"max_seg_len_m", "max_snap_distance_m"}
+_NON_EMPTY_STRING_KEYS = {"target_country", "country_name_col", "bathymetry_dam_id"}
 
 
 def load_settings(path: str) -> dict:
@@ -56,10 +60,24 @@ def load_settings(path: str) -> dict:
             f"Allowed keys: {sorted(_ALLOWED_KEYS)}"
         )
 
+    _validate_values(path, settings)
+
     base = os.path.dirname(os.path.abspath(path))
     resolved = {k: _resolve_path(v, base, k) for k, v in settings.items()}
     configure(**resolved)
     return resolved
+
+
+def _validate_values(path: str, settings: dict) -> None:
+    """Raise ``ValueError`` for malformed numeric knobs or empty scalar strings."""
+    for key in _POSITIVE_NUMERIC_KEYS & settings.keys():
+        v = settings[key]
+        if not isinstance(v, (int, float)) or isinstance(v, bool) or not v > 0:
+            raise ValueError(f"{path}: {key!r} must be a positive number, got {v!r}")
+    for key in _NON_EMPTY_STRING_KEYS & settings.keys():
+        v = settings[key]
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError(f"{path}: {key!r} must be a non-empty string, got {v!r}")
 
 
 def _resolve_path(value, base: str, key: str):
@@ -70,7 +88,7 @@ def _resolve_path(value, base: str, key: str):
     """
     if not isinstance(value, str):
         return value
-    if key in {"target_country", "country_name_col"}:
+    if key in {"target_country", "country_name_col", "bathymetry_dam_id"}:
         return value
     expanded = os.path.expanduser(value)
     if os.path.isabs(expanded):

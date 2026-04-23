@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eaves"
+dynamic = ["version"]
+description = "Elevation–Area–Volume estimation for ungaged arid-basin reservoirs from pre-impoundment SRTM topography"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "CC-BY-NC-4.0" }
+authors = [
+    { name = "Nikola Ivanović", email = "nikola.ivanovic@kaust.edu.sa" },
+]
+keywords = [
+    "hydrology",
+    "reservoir",
+    "bathymetry",
+    "SRTM",
+    "elevation-area-volume",
+    "remote sensing",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "geopandas",
+    "shapely",
+    "pyproj",
+    "rasterio",
+    "matplotlib",
+    "scikit-learn",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+eaves = "eaves.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/hyex-research/EAVES"
+Issues   = "https://github.com/hyex-research/EAVES/issues"
+
+[tool.setuptools.packages.find]
+include = ["eaves*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "eaves.__version__" }

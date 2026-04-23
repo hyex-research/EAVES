@@ -243,18 +243,20 @@ def main():
         dam_data_list = _build_dam_data_list(gdf_dams, translit_map)
 
         bathy_result = None
-        bathy_row = summary_df[summary_df["dam_id"].str.contains("120000", na=False)]
-        bathy_eav = os.path.join(_cfg.EAV_DIR, "id_120000_eav.csv")
-        if not bathy_row.empty and os.path.isfile(bathy_eav):
-            eav = pd.read_csv(bathy_eav)
-            row = bathy_row.iloc[0]
-            bathy_result = {
-                "elev_bins": eav["elevation_m"].values,
-                "area_m2": eav["area_m2"].values,
-                "vol_m3": eav["volume_m3"].values,
-                "c": row["c"],
-                "b": row["b"],
-            }
+        bathy_id = getattr(_cfg, "BATHYMETRY_DAM_ID", None)
+        if bathy_id:
+            bathy_row = summary_df[summary_df["dam_id"] == bathy_id]
+            bathy_eav = os.path.join(_cfg.EAV_DIR, f"{bathy_id}_eav.csv")
+            if not bathy_row.empty and os.path.isfile(bathy_eav):
+                eav = pd.read_csv(bathy_eav)
+                row = bathy_row.iloc[0]
+                bathy_result = {
+                    "elev_bins": eav["elevation_m"].values,
+                    "area_m2": eav["area_m2"].values,
+                    "vol_m3": eav["volume_m3"].values,
+                    "c": row["c"],
+                    "b": row["b"],
+                }
 
         print(f"  Loaded {len(summary_df)} succeeded, {len(failures)} failed dams.\n")
         _run_plots_and_regionalization(summary_df, failures, dam_data_list, bathy_result)
@@ -326,18 +328,13 @@ def main():
             failure["dam_name"] = dam_dict.get("dam_name_latin", "")
             failures.append(failure)
             if dam_id:
-                try:
-                    eav_path = os.path.join(_cfg.EAV_DIR, f"{dam_id}_eav.csv")
-                    if os.path.exists(eav_path):
-                        os.remove(eav_path)
-                except Exception:
-                    pass
-                try:
-                    flood_path = os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_flood.png")
-                    if os.path.exists(flood_path):
-                        os.remove(flood_path)
-                except Exception:
-                    pass
+                eav_path = os.path.join(_cfg.EAV_DIR, f"{dam_id}_eav.csv")
+                flood_path = os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_flood.png")
+                for p in (eav_path, flood_path):
+                    try:
+                        os.remove(p)
+                    except FileNotFoundError:
+                        pass
         elif result is not None:
             summaries.append({
                 "dam_id": dam_id,
@@ -368,7 +365,7 @@ def main():
                 "lon": dam_dict["_lon"],
             })
 
-            if "120000" in dam_id:
+            if dam_id == getattr(_cfg, "BATHYMETRY_DAM_ID", None):
                 bathy_result = result
 
     summary_df = pd.DataFrame(summaries)

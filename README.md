@@ -66,22 +66,15 @@ Full quantitative treatment of these limitations will be provided in the accompa
 
 ## 🔁 **Usage**
 
-EAVES is configured via a JSON settings file that points to the input catalogues, external rasters/shapefiles, and the output directory. Reference deployments live in `settings/`:
+EAVES is configured via a JSON settings file that points to the input catalogues, external rasters/shapefiles, and the output directory. One reference config per region lives in `settings/`:
 
-- `settings/<country>.json` — full regional run
-- `settings/test.json` — 9-dam example fixture under `test/`
+- `settings/<country>.json` — full regional run (paths under `region/<country>/`)
 
 ### Full run
 
 ```bash
 conda activate eaves
 python run_eaves.py --settings settings/<country>.json
-```
-
-### Test run (9 example dams, ~5 min end-to-end)
-
-```bash
-python run_eaves.py --settings settings/test.json
 ```
 
 ### Other flags
@@ -91,6 +84,16 @@ python run_eaves.py --settings settings/test.json
 | `--plot-only` | Skip per-dam calculation and regenerate plots from existing results |
 | `--only id_120000 id_020017 ...` | Process only the listed dam IDs |
 | `--rebuild-domain` | Rebuild the preprocessing cache (MERIT clip + segment split + dam snap) instead of loading from `<domain_dir>/` |
+
+### Testing
+
+Test workflow is pytest-only. The 9-dam fixture + its internal settings file live under `tests/fixture/`.
+
+```bash
+pytest -m "not slow"    # fast sanity suite (~1 s)
+pytest -m slow          # full 9-dam regression run (~5 min); writes to tests/fixture/output/ and compares SHA256s to tests/golden_hashes.json
+pytest                  # everything
+```
 
 ### Settings file
 
@@ -106,7 +109,7 @@ A settings file is a flat JSON object with any subset of the keys accepted by `e
 | `sedimentation_dir` *(optional)* | Folder with `sedimentation_yield.csv` + `owe_annual_mean.csv` to merge into `eaves_summary.csv` (currently KSA-specific, see [Dash et al. 2025](https://doi.org/10.1016/j.jenvman.2025.127199)) |
 | `max_seg_len_m`, `max_snap_distance_m` | Preprocessing knobs |
 
-Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rather than silently reverting to defaults.
+Unknown keys raise `ValueError` — a typo in a settings file fails loudly rather than silently reverting to defaults.
 
 ## 🗂️ **Repository Structure**
 
@@ -135,26 +138,34 @@ Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rat
 │       ├── reliability.py       # Physical uncertainty flags (sub-pixel, narrow valley, etc.)
 │       └── external_data.py     # Merge optional sedimentation / OWE columns into summary
 │
-├── settings/                    # Reference deployment configurations
-│   ├── <country>.json           # Full regional run (paths under deployment/<country>/)
-│   └── test.json                # 9-dam example fixture (paths under deployment/test/)
+├── settings/                    # Reference settings
+│   ├── <country>.json           # Full regional run (paths under region/<country>/)
+│   └── test.json                # 9-dam example fixture (paths under tests/fixture/)
 │
-├── deployment/                  # Per-deployment input/output trees
-│   ├── <country>/               # Full regional deployment
-│   │   ├── input/               # Deployment inputs (licensed / user-provided)
-│   │   │   ├── <country>_dams/  # Dam catalogue CSV, water-extent time series
-│   │   │   │   └── sedimentation_owe/  # Optional sediment yield + OWE CSVs (e.g. Dash et al. 2025 for KSA)
-│   │   │   ├── grdl/            # Reference EAV curves for validation dams
-│   │   │   └── domain_inputs/   # Preprocessing cache (rivers_split, dams_snapped)
-│   │   └── output/              # Generated outputs
-│   │       ├── 0_check_dams/    # Per-dam flood QC maps (100 DPI)
-│   │       ├── 1_results_csv/   # Summary CSVs, EAV tables, failed dams
-│   │       │   └── eav_tables/  # Individual dam EAV curves ({dam_id}_eav.csv)
-│   │       └── 2_results_plots/ # Analysis figures (300 DPI)
-│   └── test/                    # 9-dam example fixture (committed)
-│       ├── input/               # Dams subset + water-extent TS + preprocessing cache
-│       └── output/              # Expected outputs after running settings/test.json
+├── region/                      # Per-region spatial runs
+│   └── <country>/               # Full regional deployment
+│       ├── input/               # Region inputs (licensed / user-provided)
+│       │   ├── <country>_dams/  # Dam catalogue CSV, water-extent time series
+│       │   │   └── sedimentation_owe/  # Optional sediment yield + OWE CSVs (e.g. Dash et al. 2025 for KSA)
+│       │   ├── grdl/            # Reference EAV curves for validation dams
+│       │   └── domain_inputs/   # Preprocessing cache (rivers_split, dams_snapped)
+│       └── output/              # Generated outputs
+│           ├── 0_check_dams/    # Per-dam flood QC maps (100 DPI)
+│           ├── 1_results_csv/   # Summary CSVs, EAV tables, failed dams
+│           │   └── eav_tables/  # Individual dam EAV curves ({dam_id}_eav.csv)
+│           └── 2_results_plots/ # Analysis figures (300 DPI)
 │
+├── tests/                       # Test suite + shared 9-dam fixture
+│   ├── conftest.py              # Session fixtures (repo_root, fixture_output, golden_hashes)
+│   ├── test_smoke.py            # Fast sanity checks (imports, settings validation)
+│   ├── test_regression.py       # Slow: reruns the fixture, compares SHA256s
+│   ├── golden_hashes.json       # Expected-output spec for the regression test
+│   └── fixture/                 # Self-contained 9-dam fixture
+│       ├── settings.json        # Pytest-internal settings (paths under fixture/)
+│       ├── input/               # Dams subset + water-extent TS + preprocessing cache + GRDL
+│       └── output/              # Pipeline outputs written by `pytest -m slow` (committed for reference)
+│
+├── pytest.ini                   # Pytest config (registers `slow` marker)
 ├── environment.yml              # Conda environment specification
 ├── LICENSE                      # CC BY-NC 4.0
 └── README.md
@@ -192,8 +203,8 @@ EAVES runs standalone — all preprocessing (country clip, segment split, dam sn
 
 ### Included in this repository
 
-- 9-dam example fixture (`deployment/test/input/`) — dams CSV subset + water-extent time series + preprocessing cache
-- GRDL reference EAV curves (`deployment/<country>/input/grdl/` — user-provided per deployment)
+- 9-dam example fixture (`tests/fixture/`) — dams CSV subset + water-extent time series + preprocessing cache + GRDL reference curves
+- GRDL reference EAV curves per region (`region/<country>/input/grdl/` — user-provided)
 
 ### External (referenced by path in the settings file)
 

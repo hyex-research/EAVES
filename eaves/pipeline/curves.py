@@ -239,6 +239,11 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 ds2 = get_downstream_direction_from_dem(dem_utm, dr2, dc2)
                 bad2 = _pool_downstream_skewed(fp2, dr2, dc2, ds2)
                 approx_v2 = _approx_cone_volume_m3(n2, pixel_area, spillway_height)
+                # Stage-3 acceptance rules. `approx_v0`/`approx_v2` are cone-volume
+                # estimates from the nominal and retried placements. Ratios below
+                # were hand-tuned together on the KSA catalogue and are intentionally
+                # asymmetric (different thresholds for "geometry recovered" vs
+                # "volume still short"). Change them as a set, not individually.
                 take = False
                 if geom_bad and (not bad2) and approx_v2 >= approx_v0 * 0.82:
                     take = True

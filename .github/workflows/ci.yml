@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    name: Smoke tests (pytest -m "not slow")
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install conda env from environment.yml
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment.yml
+          environment-name: eaves
+          cache-environment: true
+          cache-environment-key: eaves-${{ hashFiles('environment.yml') }}
+
+      - name: Run smoke tests
+        run: pytest -m "not slow" -v

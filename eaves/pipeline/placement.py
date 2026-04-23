@@ -17,6 +17,9 @@ from ..config import (
     MAX_CREST_FLOW_DOT,
     TERRAIN_WALL_TOP_K,
     ALIGN_WEIGHT,
+    PLACEMENT_GOOD_ENOUGH_VOL_ERR,
+    PLACEMENT_UPSTREAM_MAX_VOL_ERR,
+    FALLBACK_MIN_PIXELS,
 )
 from .terrain import get_downstream_direction_from_dem
 from ..utils import (
@@ -576,8 +579,6 @@ def _try_terrain_placement_once(
     z_wall = dam_elev + dam_height
     h, w = dem_utm.shape
 
-    GOOD_ENOUGH = 0.26
-    UPSTREAM_MAX_ERR = 1.5
     best_up = None
     best_up_err = float("inf")
     best_dn = None
@@ -639,12 +640,12 @@ def _try_terrain_placement_once(
                     best_dn_err = vol_err
                     best_dn = candidate
 
-        if best_up_err < GOOD_ENOUGH:
+        if best_up_err < PLACEMENT_GOOD_ENOUGH_VOL_ERR:
             return best_up
         if deadline is not None and time.time() > deadline:
             break
 
-    if best_up is not None and best_up_err <= UPSTREAM_MAX_ERR:
+    if best_up is not None and best_up_err <= PLACEMENT_UPSTREAM_MAX_VOL_ERR:
         return best_up
     if best_up is not None and best_dn is not None:
         return best_up if best_up_err <= best_dn_err else best_dn
@@ -829,9 +830,8 @@ def fallback_multidirection_fill(
     if not valid_fills:
         return None, 0, 0.0, None
 
-    MIN_PIXELS = 10
     within_cap = [(n, a, fp, ci, up, wv) for n, a, fp, ci, up, wv in valid_fills
-                  if a <= area_cap_km2 and n >= MIN_PIXELS]
+                  if a <= area_cap_km2 and n >= FALLBACK_MIN_PIXELS]
     pool = within_cap if within_cap else valid_fills
 
     up_fills = [f for f in pool if f[4]]

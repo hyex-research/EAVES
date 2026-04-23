@@ -9,8 +9,8 @@ Produces the two geojsons the main EAVES loop consumes from
   within ``MAX_SNAP_DISTANCE_M``; columns ``snapped_segment_id``,
   ``snap_distance``, ``up1..up4`` are attached. The catalogue is assumed to
   already be cleaned upstream (region-specific curation is left to the
-  caller; see ``input/<country>_dams/clean_catalogue.py`` in any deployment
-  bundle for a reference implementation).
+  caller; see ``region/<country>/input/<country>_dams/clean_catalogue.py``
+  for a reference implementation).
 """
 
 from __future__ import annotations

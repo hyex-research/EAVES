@@ -88,6 +88,16 @@ MAX_CREST_FLOW_DOT = 0.74
 TERRAIN_WALL_TOP_K = 18
 ALIGN_WEIGHT = 2.35
 
+# Acceptance tolerances for per-dam terrain-based placement (stage 2/5):
+#   volume error := |log(approx_vol / catalogue_capacity)|
+# GOOD_ENOUGH lets the upstream-walk loop early-exit once a candidate is close
+# enough; UPSTREAM_MAX_VOL_ERR is the loose fallback when no early-exit winner
+# was found. FALLBACK_MIN_PIXELS is the minimum footprint size (in SRTM pixels)
+# for a candidate fill to be considered in the stage-6 multi-direction fallback.
+PLACEMENT_GOOD_ENOUGH_VOL_ERR = 0.26
+PLACEMENT_UPSTREAM_MAX_VOL_ERR = 1.5
+FALLBACK_MIN_PIXELS = 10
+
 _PLACEMENT_BUDGET_S = 300.0
 
 # Preprocessing (MERIT clip + segment split + dam snap).
@@ -125,6 +135,7 @@ def configure(
     target_country: str | None = None,
     country_name_col: str | None = None,
     bathymetry_eav_csv: str | None = None,
+    bathymetry_dam_id: str | None = None,
     grdl_dir: str | None = None,
     sedimentation_dir: str | None = None,
     max_seg_len_m: float | None = None,
@@ -158,6 +169,8 @@ def configure(
         _self.COUNTRY_NAME_COL = country_name_col
     if bathymetry_eav_csv is not None:
         _self.BATHYMETRY_EAV_CSV = bathymetry_eav_csv
+    if bathymetry_dam_id is not None:
+        _self.BATHYMETRY_DAM_ID = bathymetry_dam_id
     if grdl_dir is not None:
         _self.GRDL_DIR = grdl_dir
     if sedimentation_dir is not None:

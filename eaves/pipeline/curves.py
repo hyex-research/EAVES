@@ -184,7 +184,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
 
     # --- Stage 1: fast path ---
     nominal = _try_terrain_placement_once(
-        dem_utm, dem_tf, dam_r0, dam_c0, dam_elev,
+        dem_utm, dam_r0, dam_c0, dam_elev,
         dam_length_m, dam_height, spillway_height, capacity_m3, pixel_area,
         flow_dir_px, wall_thickness, seed_dist,
         deadline=_deadline,
@@ -197,7 +197,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     else:
         # --- Stage 2: upstream walk ---
         out = search_terrain_wall_extended_upstream(
-            dem_utm, dem_tf, dam_r0, dam_c0, dam_length_m,
+            dem_utm, dam_r0, dam_c0, dam_length_m,
             dam_height, spillway_height, capacity_m3, pixel_area, flow_dir_px,
             wall_thickness, seed_dist,
             skip_duplicate_nominal=True,
@@ -227,7 +227,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 geom_bad = True
         if vol_short or geom_bad:
             out2 = search_terrain_wall_extended_upstream(
-                dem_utm, dem_tf, dam_r0, dam_c0, dam_length_m,
+                dem_utm, dam_r0, dam_c0, dam_length_m,
                 dam_height, spillway_height, capacity_m3, pixel_area, flow_dir_px,
                 wall_thickness, seed_dist,
                 skip_duplicate_nominal=True,
@@ -286,7 +286,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                     if not np.isfinite(_ne):
                         continue
                     _res = _try_terrain_placement_once(
-                        dem_utm, dem_tf, _nr, _nc, _ne,
+                        dem_utm, _nr, _nc, _ne,
                         dam_length_m, dam_height, spillway_height, capacity_m3,
                         pixel_area, flow_dir_px, wall_thickness, seed_dist,
                         deadline=_deadline,
@@ -317,7 +317,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
             prepend_bypass_flow_align=True,
         )
         relax_nom = _try_terrain_placement_once(
-            dem_utm, dem_tf, dam_r0, dam_c0, dam_elev,
+            dem_utm, dam_r0, dam_c0, dam_elev,
             dam_length_m, dam_height, spillway_height, capacity_m3, pixel_area,
             flow_dir_px, wall_thickness, seed_dist,
             deadline=_deadline,
@@ -329,7 +329,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
             placement_method = "stage_5_relaxed_alignment"
         elif time.time() < _deadline:
             out_r = search_terrain_wall_extended_upstream(
-                dem_utm, dem_tf, dam_r0, dam_c0, dam_length_m,
+                dem_utm, dam_r0, dam_c0, dam_length_m,
                 dam_height, spillway_height, capacity_m3, pixel_area, flow_dir_px,
                 wall_thickness, seed_dist,
                 skip_duplicate_nominal=True,
@@ -353,7 +353,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         z_spillway = dam_elev + spillway_height
         z_wall = dam_elev + dam_height
         footprint, n_pixels, footprint_area_km2, wall_vec = fallback_multidirection_fill(
-            dem_utm, dem_tf, dam_r, dam_c, dam_elev, z_spillway, z_wall,
+            dem_utm, dam_r, dam_c, dam_elev, z_spillway, z_wall,
             spillway_height, dam_height, capacity_m3, pixel_area,
             wall_thickness, seed_dist, area_cap_km2,
             flow_dir_px=flow_dir_px,

@@ -9,10 +9,8 @@ import pandas as pd
 from scipy.optimize import curve_fit
 
 from .config import (
-    PLACEMENT_OVERRIDES_CSV,
     UPSTREAM_STEP_PX,
     UPSTREAM_MAX_SHIFT_PX,
-    _placement_overrides_cache,
 )
 import eaves.config as _cfg
 
@@ -22,14 +20,19 @@ import eaves.config as _cfg
 # ---------------------------------------------------------------------------
 
 def _load_placement_overrides():
-    """Load ``dam_placement_overrides.csv`` once; keyed by dam_id."""
+    """Load ``dam_placement_overrides.csv`` once; keyed by dam_id.
+
+    Path is read from ``_cfg.PLACEMENT_OVERRIDES_CSV`` if set (see settings);
+    silently skipped otherwise.
+    """
     if _cfg._placement_overrides_cache is not None:
         return _cfg._placement_overrides_cache
     _cfg._placement_overrides_cache = {}
-    if not os.path.isfile(PLACEMENT_OVERRIDES_CSV):
+    overrides_csv = getattr(_cfg, "PLACEMENT_OVERRIDES_CSV", None)
+    if not overrides_csv or not os.path.isfile(overrides_csv):
         return _cfg._placement_overrides_cache
     try:
-        df = pd.read_csv(PLACEMENT_OVERRIDES_CSV, comment="#")
+        df = pd.read_csv(overrides_csv, comment="#")
     except Exception:
         return _cfg._placement_overrides_cache
     df.columns = [str(c).strip() for c in df.columns]

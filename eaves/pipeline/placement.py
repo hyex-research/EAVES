@@ -9,7 +9,6 @@ from scipy.ndimage import label
 
 from ..config import (
     WALL_BUFFER_PX,
-    WALL_THICKNESS,
     FLAT_STD_THRESH,
     FLAT_MIN_PIXELS,
     UPSTREAM_WALK_STEP_M,
@@ -18,7 +17,6 @@ from ..config import (
     MAX_CREST_FLOW_DOT,
     TERRAIN_WALL_TOP_K,
     ALIGN_WEIGHT,
-    _PLACEMENT_BUDGET_S,
 )
 from .terrain import get_downstream_direction_from_dem
 from ..utils import (
@@ -307,7 +305,7 @@ def iter_wall_placements_from_terrain(
 # Wall rasterisation & flood fill
 # ---------------------------------------------------------------------------
 
-def place_wall(dem, transform, dam_row, dam_col, perp_vec_px,
+def place_wall(dem, dam_row, dam_col, perp_vec_px,
                wall_elev, spillway_elev, thickness=2):
     nrows, ncols = dem.shape
     perp = perp_vec_px / np.linalg.norm(perp_vec_px) if np.linalg.norm(perp_vec_px) > 0 else np.array([0, 1])
@@ -387,7 +385,6 @@ def detect_flat_water(dem_footprint, min_pixels=FLAT_MIN_PIXELS,
 
     dominant_idx = np.argmax(counts)
     dominant_elev = unique_elevs[dominant_idx]
-    dominant_count = counts[dominant_idx]
 
     flat_mask = valid & (np.abs(dem_footprint - dominant_elev) <= 0.5)
     labeled, n_features = label(flat_mask)
@@ -563,7 +560,7 @@ def _iter_upstream_positions_walked(dem_utm, dam_r0, dam_c0, upstream_offsets,
 # ---------------------------------------------------------------------------
 
 def _try_terrain_placement_once(
-    dem_utm, dem_tf, dam_r, dam_c, dam_elev,
+    dem_utm, dam_r, dam_c, dam_elev,
     eff_length, dam_height, spillway_height, capacity_m3, pixel_area,
     flow_dir_px, wall_thickness, seed_dist,
     prepend_angles_deg=None, prepend_bypass_flow_align=False,
@@ -594,7 +591,7 @@ def _try_terrain_placement_once(
     ):
         dem_walled = dem_utm.copy()
         place_wall(
-            dem_walled, dem_tf, dam_r, dam_c, wall_vec,
+            dem_walled, dam_r, dam_c, wall_vec,
             z_wall, z_spillway, thickness=wall_thickness,
         )
 
@@ -659,7 +656,7 @@ def _try_terrain_placement_once(
 # ---------------------------------------------------------------------------
 
 def search_terrain_wall_extended_upstream(
-    dem_utm, dem_tf, dam_r0, dam_c0, dam_length_base_m,
+    dem_utm, dam_r0, dam_c0, dam_length_base_m,
     dam_height, spillway_height, capacity_m3, pixel_area, flow_dir_px,
     wall_thickness, seed_dist,
     skip_duplicate_nominal=False,
@@ -705,7 +702,7 @@ def search_terrain_wall_extended_upstream(
             if not np.isfinite(lelev):
                 continue
             res = _try_terrain_placement_once(
-                dem_utm, dem_tf, lr, lc, lelev,
+                dem_utm, lr, lc, lelev,
                 dam_length_base_m, dam_height, spillway_height, capacity_m3,
                 pixel_area, flow_dir_px, wall_thickness, seed_dist,
                 prepend_angles_deg=prepend_angles_deg,
@@ -726,7 +723,7 @@ def search_terrain_wall_extended_upstream(
         if skip_duplicate_nominal and upstream_m < 0.5:
             continue
         res = _try_terrain_placement_once(
-            dem_utm, dem_tf, dam_r, dam_c, dam_elev,
+            dem_utm, dam_r, dam_c, dam_elev,
             dam_length_base_m, dam_height, spillway_height, capacity_m3, pixel_area,
             flow_dir_px, wall_thickness, seed_dist,
             prepend_angles_deg=prepend_angles_deg,
@@ -751,7 +748,7 @@ def search_terrain_wall_extended_upstream(
                 break
             eff_length = dam_length_base_m + ext_m
             res = _try_terrain_placement_once(
-                dem_utm, dem_tf, dam_r, dam_c, dam_elev,
+                dem_utm, dam_r, dam_c, dam_elev,
                 eff_length, dam_height, spillway_height, capacity_m3, pixel_area,
                 flow_dir_px, wall_thickness, seed_dist,
                 prepend_angles_deg=prepend_angles_deg,
@@ -771,7 +768,7 @@ def search_terrain_wall_extended_upstream(
 # ---------------------------------------------------------------------------
 
 def fallback_multidirection_fill(
-    dem_utm, dem_tf, dam_r, dam_c, dam_elev, z_spillway, z_wall,
+    dem_utm, dam_r, dam_c, dam_elev, z_spillway, z_wall,
     spillway_height, dam_height, capacity_m3, pixel_area,
     wall_thickness, seed_dist, area_cap_km2,
     flow_dir_px=None,
@@ -794,7 +791,7 @@ def fallback_multidirection_fill(
         perp_px = np.array([-downstream_px[1], downstream_px[0]])
 
         dem_walled = dem_utm.copy()
-        place_wall(dem_walled, dem_tf, dam_r, dam_c, perp_px,
+        place_wall(dem_walled, dam_r, dam_c, perp_px,
                    z_wall, z_spillway, thickness=wall_thickness)
 
         h, w = dem_utm.shape

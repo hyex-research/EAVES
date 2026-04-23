@@ -61,24 +61,12 @@ GRADE_COLORS = {
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-# Environment-specific paths (SRTM, MERIT, country shp, dam catalogue,
-# bathymetry) are supplied via the settings JSON file — see
-# :mod:`eaves.settings`.
-REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INPUT_DIR = os.path.join(REPO_DIR, "input")
-OUTPUT_DIR = os.path.join(REPO_DIR, "output")
+# All path attributes (SRTM_DIR, DAMS_CSV, OUTPUT_DIR, FLOOD_DIR, etc.) are
+# populated by :func:`configure` from the settings JSON — see
+# :mod:`eaves.settings`. Consumers should either have settings loaded before
+# reading them, or use ``getattr(_cfg, "X", None)`` for optional ones.
 
 COUNTRY_NAME_COL = "NAME"
-
-GRDL_DIR = os.path.join(INPUT_DIR, "grdl")
-DOMAIN_DIR = os.path.join(INPUT_DIR, "domain_inputs")
-
-FLOOD_DIR = os.path.join(OUTPUT_DIR, "0_check_dams")
-CSV_DIR = os.path.join(OUTPUT_DIR, "1_results_csv")
-EAV_DIR = os.path.join(CSV_DIR, "eav_tables")
-PLOT_DIR = os.path.join(OUTPUT_DIR, "2_results_plots")
-
-PLACEMENT_OVERRIDES_CSV = os.path.join(INPUT_DIR, "dam_placement_overrides.csv")
 
 # ---------------------------------------------------------------------------
 # Processing parameters
@@ -106,8 +94,6 @@ _PLACEMENT_BUDGET_S = 300.0
 MAX_SEG_LEN_M = 2000.0
 MAX_SNAP_DISTANCE_M = 1000.0
 # Buffer (degrees) applied around each dam when clipping the MERIT network.
-# A tight box keeps the rivers file small while leaving plenty of room for
-# upstream walks and per-dam local clipping at runtime.
 DAM_BBOX_BUFFER_DEG = 0.3
 
 GRDL_NAME_MAP = {

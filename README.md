@@ -136,24 +136,24 @@ Unknown keys raise `ValueError` — a typo in a deployment file fails loudly rat
 │       └── external_data.py     # Merge optional sedimentation / OWE columns into summary
 │
 ├── settings/                    # Reference deployment configurations
-│   ├── <country>.json           # Full regional run
-│   └── test.json                # 9-dam example fixture
+│   ├── <country>.json           # Full regional run (paths under deployment/<country>/)
+│   └── test.json                # 9-dam example fixture (paths under deployment/test/)
 │
-├── input/                       # Deployment inputs (gitignored; licensed data)
-│   ├── <country>_dams/          # Dam catalogue CSV, water-extent time series
-│   │   └── sedimentation_owe/   # Optional: sediment yield + OWE CSVs (e.g. Dash et al. 2025 for KSA)
-│   ├── grdl/                    # Reference EAV curves for validation dams
-│   └── domain_inputs/           # Preprocessing cache (rivers_split, dams_snapped)
-│
-├── output/                      # Generated outputs (gitignored)
-│   ├── 0_check_dams/            # Per-dam flood QC maps (100 DPI)
-│   ├── 1_results_csv/           # Summary CSVs, EAV tables, failed dams
-│   │   └── eav_tables/          # Individual dam EAV curves ({dam_id}_eav.csv)
-│   └── 2_results_plots/         # Analysis figures (300 DPI)
-│
-├── test/                        # 9-dam example fixture (committed)
-│   ├── input/                   # Dams subset + water-extent TS + preprocessing cache
-│   └── output/                  # Expected outputs after running settings/test.json
+├── deployment/                  # Per-deployment input/output trees
+│   ├── <country>/               # Full regional deployment
+│   │   ├── input/               # Deployment inputs (licensed / user-provided)
+│   │   │   ├── <country>_dams/  # Dam catalogue CSV, water-extent time series
+│   │   │   │   └── sedimentation_owe/  # Optional sediment yield + OWE CSVs (e.g. Dash et al. 2025 for KSA)
+│   │   │   ├── grdl/            # Reference EAV curves for validation dams
+│   │   │   └── domain_inputs/   # Preprocessing cache (rivers_split, dams_snapped)
+│   │   └── output/              # Generated outputs
+│   │       ├── 0_check_dams/    # Per-dam flood QC maps (100 DPI)
+│   │       ├── 1_results_csv/   # Summary CSVs, EAV tables, failed dams
+│   │       │   └── eav_tables/  # Individual dam EAV curves ({dam_id}_eav.csv)
+│   │       └── 2_results_plots/ # Analysis figures (300 DPI)
+│   └── test/                    # 9-dam example fixture (committed)
+│       ├── input/               # Dams subset + water-extent TS + preprocessing cache
+│       └── output/              # Expected outputs after running settings/test.json
 │
 ├── environment.yml              # Conda environment specification
 ├── LICENSE                      # CC BY-NC 4.0
@@ -192,8 +192,8 @@ EAVES runs standalone — all preprocessing (country clip, segment split, dam sn
 
 ### Included in this repository
 
-- 9-dam example fixture (`test/input/`) — dams CSV subset + water-extent time series + preprocessing cache
-- GRDL reference EAV curves (`input/grdl/` — user-provided)
+- 9-dam example fixture (`deployment/test/input/`) — dams CSV subset + water-extent time series + preprocessing cache
+- GRDL reference EAV curves (`deployment/<country>/input/grdl/` — user-provided per deployment)
 
 ### External (referenced by path in the settings file)
 

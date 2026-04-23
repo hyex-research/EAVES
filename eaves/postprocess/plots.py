@@ -192,11 +192,12 @@ def make_diagnostic_plots(summary_df, output_dir):
 # ---------------------------------------------------------------------------
 
 def grdl_validation(summary_df, output_dir):
-    if not os.path.isdir(_cfg.GRDL_DIR):
+    grdl_dir = getattr(_cfg, "GRDL_DIR", None)
+    if not grdl_dir or not os.path.isdir(grdl_dir):
         return
 
     import glob as _glob
-    grdl_files = sorted(_glob.glob(os.path.join(_cfg.GRDL_DIR, "*.csv")))
+    grdl_files = sorted(_glob.glob(os.path.join(grdl_dir, "*.csv")))
     if not grdl_files:
         return
 

@@ -18,10 +18,10 @@ from .config import configure
 from .preprocess import ensure_inputs
 from .settings import load_settings
 from .pipeline.workers import _worker_indexed
-from .postprocess.plots import bathymetry_validation, grdl_validation, make_diagnostic_plots
 from .postprocess.regionalization import assign_quality, run_regionalization
 from .postprocess.reliability import add_uncertainty_flags, print_flag_tally
 from .postprocess.external_data import add_sedimentation_columns
+from .postprocess.panels import make_panels
 
 
 def _load_translit_map():
@@ -61,18 +61,8 @@ def _build_dam_data_list(gdf_dams, translit_map):
     return dam_data_list
 
 
-def _run_plots_and_regionalization(summary_df, failures, dam_data_list, bathy_result=None):
-    """Generate all analysis plots and run regionalization on existing results."""
-    if bathy_result is not None:
-        bathymetry_validation(bathy_result, _cfg.PLOT_DIR)
-
-    if len(summary_df) > 0:
-        grdl_validation(summary_df, _cfg.PLOT_DIR)
-
-    if len(summary_df) > 0:
-        print("\nGenerating diagnostic plots...")
-        make_diagnostic_plots(summary_df, _cfg.PLOT_DIR)
-
+def _run_plots_and_regionalization(summary_df, failures, dam_data_list):
+    """Run regionalization and rename per-dam flood plots by source."""
     run_regionalization(summary_df, failures, dam_data_list)
     _rename_flood_plots_by_source()
 
@@ -154,6 +144,20 @@ def main():
         help="Path to a settings JSON file. Loaded BEFORE --output-dir/--srtm-dir "
         "overrides, so CLI flags win on conflict.",
     )
+    parser.add_argument(
+        "--panels",
+        action="store_true",
+        help="After the run completes, render the EAVES Data Descriptor "
+        "panel figures (1-3) into <OUTPUT_DIR>/2_results_plots. Compatible "
+        "with --plot-only.",
+    )
+    parser.add_argument(
+        "--panels-only",
+        action="store_true",
+        help="Skip the EAV pipeline entirely; just regenerate the panel "
+        "figures from the existing EAVES outputs. Implies a settings file "
+        "(or prior --output-dir) so the CSV paths are known.",
+    )
     args = parser.parse_args()
 
     if args.settings:
@@ -186,6 +190,18 @@ def main():
     os.makedirs(_cfg.CSV_DIR, exist_ok=True)
     os.makedirs(_cfg.PLOT_DIR, exist_ok=True)
     os.makedirs(_cfg.FLOOD_DIR, exist_ok=True)
+
+    # ------------------------------------------------------------------
+    # --panels-only: short-circuit; skip the pipeline entirely.
+    # ------------------------------------------------------------------
+    if args.panels_only:
+        print("--panels-only: rendering panel figures from existing outputs.")
+        make_panels()
+        elapsed = time.time() - t0
+        print("--------------------------------")
+        print(f"TOTAL TIME: {time.strftime('%H:%M:%S', time.gmtime(elapsed))}")
+        print("--------------------------------")
+        return
 
     translit_map = _load_translit_map()
 
@@ -242,24 +258,11 @@ def main():
 
         dam_data_list = _build_dam_data_list(gdf_dams, translit_map)
 
-        bathy_result = None
-        bathy_id = getattr(_cfg, "BATHYMETRY_DAM_ID", None)
-        if bathy_id:
-            bathy_row = summary_df[summary_df["dam_id"] == bathy_id]
-            bathy_eav = os.path.join(_cfg.EAV_DIR, f"{bathy_id}_eav.csv")
-            if not bathy_row.empty and os.path.isfile(bathy_eav):
-                eav = pd.read_csv(bathy_eav)
-                row = bathy_row.iloc[0]
-                bathy_result = {
-                    "elev_bins": eav["elevation_m"].values,
-                    "area_m2": eav["area_m2"].values,
-                    "vol_m3": eav["volume_m3"].values,
-                    "c": row["c"],
-                    "b": row["b"],
-                }
-
         print(f"  Loaded {len(summary_df)} succeeded, {len(failures)} failed dams.\n")
-        _run_plots_and_regionalization(summary_df, failures, dam_data_list, bathy_result)
+        _run_plots_and_regionalization(summary_df, failures, dam_data_list)
+
+        if args.panels:
+            make_panels()
 
         elapsed = time.time() - t0
         print("--------------------------------")
@@ -309,7 +312,6 @@ def main():
 
     summaries = []
     failures = []
-    bathy_result = None
     results = [None] * n_dams
 
     with mp.Pool(n_workers) as pool:
@@ -364,9 +366,6 @@ def main():
                 "lat": dam_dict["_lat"],
                 "lon": dam_dict["_lon"],
             })
-
-            if dam_id == getattr(_cfg, "BATHYMETRY_DAM_ID", None):
-                bathy_result = result
 
     summary_df = pd.DataFrame(summaries)
 
@@ -440,7 +439,10 @@ def main():
     fail_df.to_csv(fail_path, index=False)
     print(f"Failed/flagged dams: {len(failures)}")
 
-    _run_plots_and_regionalization(summary_df, failures, dam_data_list, bathy_result)
+    _run_plots_and_regionalization(summary_df, failures, dam_data_list)
+
+    if args.panels:
+        make_panels()
 
     for src in _cfg._srtm_cache.values():
         try:

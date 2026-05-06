@@ -3,3 +3,6 @@ __pycache__/
 *.nbc
 *.nbi
 .pytest_cache/
+
+# Exclude graphify from the root
+graphify-out/

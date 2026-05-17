@@ -169,7 +169,7 @@ Unknown keys raise `ValueError` — a typo in a settings file fails loudly rathe
 │           │   └── eav_tables/  # Individual dam EAV curves ({dam_id}_eav.csv)
 │           └── 2_results_plots/ # Analysis figures (300 DPI)
 │
-├── test/                       # Test suite + shared 15-dam fixture
+├── test/                        # Test suite + shared 15-dam fixture
 │   ├── conftest.py              # Session fixtures (repo_root, fixture_output, golden_hashes)
 │   ├── test_smoke.py            # Fast sanity checks (imports, settings validation)
 │   ├── test_regression.py       # Slow: reruns the fixture, compares SHA256s

@@ -1,7 +1,12 @@
-"""Panel set p4 — validation panels.
+"""Panel set p4 — comparison against independently-produced datasets.
+
+Not a validation in the strict sense: both anchors below use methodologies
+distinct from EAVES (sonar measures the current operational bathymetry,
+GRDL fuses Landsat extents with an external DEM) so we present them as
+cross-references rather than ground truth.
 
 Panel a — sonar bathymetry vs SRTM for the Baish reservoir (V-A and E-A).
-Panel b — GRDL Landsat-observed extents vs EAVES SRTM for three reference dams.
+Panel b — GRDL Landsat-derived extents vs EAVES SRTM for three reference dams.
 Panel c — distribution of (SRTM spillway volume / catalogue capacity) over the
           full domain, with Grade A/B reliability bands.
 """
@@ -26,6 +31,7 @@ from ._shared import (
     P4_VERM,
     mm_to_in,
     panel_label,
+    save_panel,
 )
 
 
@@ -84,17 +90,17 @@ def _load_grdl_comparisons() -> list:
         grdl_depth, grdl_area_km2, grdl_vol_mcm = _read_grdl_csv(grdl_path)
         eav = pd.read_csv(Path(_cfg.EAV_DIR) / f"{dam_id}_eav.csv")
         row = summary[summary["dam_id"] == dam_id]
-        dam_name = stem.capitalize() + " Dam"
+        dam_name = stem.capitalize()
         if not row.empty:
             dn = row.iloc[0].get("dam_name")
             if dn and str(dn).strip():
-                dam_name = str(dn) + " Dam"
+                dam_name = str(dn)
         eaves_area_km2 = eav["area_m2"].to_numpy() / 1e6
         eaves_vol_mcm = eav["volume_m3"].to_numpy() / 1e6
         eaves_elev = eav["elevation_m"].to_numpy()
         eaves_depth = eaves_elev - eaves_elev.min()
         out.append({
-            "stem": stem, "dam_id": dam_id, "dam_name": dam_name,
+            "dam_id": dam_id, "dam_name": dam_name,
             "grdl_depth": grdl_depth,
             "grdl_area_km2": grdl_area_km2,
             "grdl_vol_mcm": grdl_vol_mcm,
@@ -112,7 +118,7 @@ def _bathy_dam_label(ax) -> None:
     ax.text(
         0.97, 0.04, f"{name}",
         transform=ax.transAxes, ha="right", va="bottom",
-        fontsize=14, color="0.10",
+        fontsize=10, color="0.10",
         bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
                   edgecolor="0.7", linewidth=0.5, alpha=0.9),
     )
@@ -144,17 +150,17 @@ def _draw_bathy_va(ax, data: dict, panel_label_char=None) -> None:
     ax.plot(a_g, c_srt * a_g ** b_srt, color=P4_VERM, ls="--", lw=0.8, alpha=0.7,
             label=f"SRTM fit: c={c_srt_si:.4g}, b={b_srt:.4f}")
 
-    ax.set_xlabel(r"Area (km$^2$)", fontsize=14)
-    ax.set_ylabel("Volume (MCM)", fontsize=14)
-    ax.tick_params(labelsize=14, length=2.5)
+    ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
+    ax.set_ylabel("Volume (MCM)", fontsize=10)
+    ax.tick_params(labelsize=10, length=2.5)
     ax.grid(True, ls="--", alpha=0.3, lw=0.4)
     _bathy_dam_label(ax)
-    leg = ax.legend(loc="upper left", frameon=False, fontsize=14,
+    leg = ax.legend(loc="upper left", frameon=False, fontsize=10,
                     handlelength=1.4, labelspacing=0.3)
     for txt in leg.get_texts():
         txt.set_color("0.10")
     if panel_label_char:
-        panel_label(ax, panel_label_char)
+        panel_label(ax, panel_label_char, fontsize=12)
 
 
 def _draw_bathy_ea(ax, data: dict) -> None:
@@ -163,12 +169,12 @@ def _draw_bathy_ea(ax, data: dict) -> None:
             color=P4_BLUE, lw=1.4, label="Bathymetry")
     ax.plot(data["area_srt_km2"], data["elev_srt"],
             color=P4_VERM, lw=1.4, label="SRTM")
-    ax.set_xlabel(r"Area (km$^2$)", fontsize=14)
-    ax.set_ylabel("Elevation (m asl)", fontsize=14)
-    ax.tick_params(labelsize=14, length=2.5)
+    ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
+    ax.set_ylabel("Elevation (m asl)", fontsize=10)
+    ax.tick_params(labelsize=10, length=2.5)
     ax.grid(True, ls="--", alpha=0.3, lw=0.4)
     _bathy_dam_label(ax)
-    leg = ax.legend(loc="upper left", frameon=False, fontsize=14,
+    leg = ax.legend(loc="upper left", frameon=False, fontsize=10,
                     handlelength=1.4, labelspacing=0.3)
     for txt in leg.get_texts():
         txt.set_color("0.10")
@@ -182,18 +188,18 @@ def _draw_grdl_va(ax, comp: dict, show_xlabel: bool = False,
     ax.plot(comp["eaves_area_km2"], comp["eaves_vol_mcm"],
             color=P4_VERM, lw=1.2, label="SRTM")
     if show_xlabel:
-        ax.set_xlabel(r"Area (km$^2$)", fontsize=14)
-    ax.set_ylabel("Volume (MCM)", fontsize=14)
-    ax.tick_params(labelsize=14, length=2.5)
+        ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
+    ax.set_ylabel("Volume (MCM)", fontsize=10)
+    ax.tick_params(labelsize=10, length=2.5)
     if not show_xlabel:
         ax.tick_params(labelbottom=False)
     ax.grid(True, ls="--", alpha=0.3, lw=0.4)
-    leg = ax.legend(loc="upper left", frameon=False, fontsize=14,
+    leg = ax.legend(loc="upper left", frameon=False, fontsize=10,
                     handlelength=1.4, labelspacing=0.3)
     for txt in leg.get_texts():
         txt.set_color("0.10")
     if panel_label_char:
-        panel_label(ax, panel_label_char)
+        panel_label(ax, panel_label_char, fontsize=12)
 
 
 def _draw_grdl_da(ax, comp: dict, show_xlabel: bool = True,
@@ -204,12 +210,12 @@ def _draw_grdl_da(ax, comp: dict, show_xlabel: bool = True,
     ax.plot(comp["eaves_area_km2"], comp["eaves_depth"],
             color=P4_VERM, lw=1.2, label="SRTM")
     if show_xlabel:
-        ax.set_xlabel(r"Area (km$^2$)", fontsize=14)
+        ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
     if show_ylabel:
-        ax.set_ylabel("Depth (m)", fontsize=14)
-    ax.tick_params(labelsize=14, length=2.5)
+        ax.set_ylabel("Depth (m)", fontsize=10)
+    ax.tick_params(labelsize=10, length=2.5)
     ax.grid(True, ls="--", alpha=0.3, lw=0.4)
-    leg = ax.legend(loc="upper left", frameon=False, fontsize=14,
+    leg = ax.legend(loc="upper left", frameon=False, fontsize=10,
                     handlelength=1.4, labelspacing=0.3)
     for txt in leg.get_texts():
         txt.set_color("0.10")
@@ -254,20 +260,20 @@ def _draw_panel_c(ax) -> None:
     ax.set_xscale("log")
     ax.set_xlim(x_lo, x_hi)
     ax.set_xlabel(r"Volume ratio  ($V_\mathrm{SRTM}/V_\mathrm{catalogue}$)",
-                  fontsize=14)
-    ax.set_ylabel(f"Number of dams (n = {n_total})", fontsize=14)
-    ax.tick_params(labelsize=14, length=2.5)
+                  fontsize=10)
+    ax.set_ylabel(f"Number of dams (n = {n_total})", fontsize=10)
+    ax.tick_params(labelsize=10, length=2.5)
     ax.grid(True, which="both", axis="x", linestyle=":", linewidth=0.4, alpha=0.5)
-    leg = ax.legend(loc="upper left", frameon=False, fontsize=14,
+    leg = ax.legend(loc="upper left", frameon=False, fontsize=10,
                     handlelength=1.2, labelspacing=0.25, borderaxespad=0.3)
     for txt in leg.get_texts():
         txt.set_color("0.10")
 
-    panel_label(ax, "c")
+    panel_label(ax, "c", fontsize=12)
 
 
-def make_p4_validation(output_dir: str | os.PathLike) -> Path:
-    """Render p4 (validation panels).
+def make_p4_comparison(output_dir: str | os.PathLike) -> Path:
+    """Render p4 (cross-reference comparison panels).
 
     Left column  — panel a (sonar vs SRTM: A-V scatter + E-A) stacked above
                    panel c (vol-ratio histogram).
@@ -277,55 +283,63 @@ def make_p4_validation(output_dir: str | os.PathLike) -> Path:
 
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_png = out_dir / "p4_validation.png"
+    out_png = out_dir / "p4_comparison.png"
 
     bathy = _load_bathy_validation_data()
     grdl = _load_grdl_comparisons()
     n_dams = len(grdl)
 
-    fig = plt.figure(figsize=(mm_to_in(520), mm_to_in(210)))
-    gs = fig.add_gridspec(
-        1, 2,
-        width_ratios=[1.4, 1.5],
-        wspace=0.10,
-        left=0.06, right=0.985, top=0.97, bottom=0.06,
-    )
+    with plt.rc_context({
+        "font.size":       10,
+        "axes.labelsize":  10,
+        "axes.titlesize":  10,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+    }):
+        fig = plt.figure(figsize=(mm_to_in(400), mm_to_in(160)))
+        gs = fig.add_gridspec(
+            1, 2,
+            width_ratios=[1.4, 1.5],
+            wspace=0.14,
+            left=0.06, right=0.985, top=0.97, bottom=0.06,
+        )
 
-    # ---- left column: panel a (same height as 1 GRDL row) + panel c ----
-    gs_left = GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=gs[0, 0],
-        height_ratios=[1.7, 1.3],
-        hspace=0.30,
-    )
-    gs_a = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs_left[0], wspace=0.25)
-    _draw_bathy_va(fig.add_subplot(gs_a[0]), bathy, panel_label_char="a")
-    _draw_bathy_ea(fig.add_subplot(gs_a[1]), bathy)
-    _draw_panel_c(fig.add_subplot(gs_left[1]))
+        # ---- left column: panel a (same height as 1 GRDL row) + panel c ----
+        gs_left = GridSpecFromSubplotSpec(
+            2, 1, subplot_spec=gs[0, 0],
+            height_ratios=[1.7, 1.3],
+            hspace=0.30,
+        )
+        gs_a = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs_left[0], wspace=0.25)
+        _draw_bathy_va(fig.add_subplot(gs_a[0]), bathy, panel_label_char="a")
+        _draw_bathy_ea(fig.add_subplot(gs_a[1]), bathy)
+        _draw_panel_c(fig.add_subplot(gs_left[1]))
 
-    # ---- right column: panel b (n_dams rows × 2 cols) ----
-    gs_b = GridSpecFromSubplotSpec(
-        n_dams, 2, subplot_spec=gs[0, 1],
-        hspace=0.10, wspace=0.20,
-    )
-    for i, comp in enumerate(grdl):
-        is_last = (i == n_dams - 1)
-        ax_va = fig.add_subplot(gs_b[i, 0])
-        ax_da = fig.add_subplot(gs_b[i, 1])
-        _draw_grdl_va(ax_va, comp, show_xlabel=is_last,
-                      panel_label_char="b" if i == 0 else None)
-        _draw_grdl_da(ax_da, comp, show_xlabel=is_last, show_ylabel=True)
-        for _ax in (ax_va, ax_da):
-            _ax.text(
-                0.97, 0.04, comp["dam_name"],
-                transform=_ax.transAxes, ha="right", va="bottom",
-                fontsize=14, color="0.10",
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
-                          edgecolor="0.7", linewidth=0.5, alpha=0.9),
-            )
-        if not is_last:
-            ax_da.tick_params(labelbottom=False)
+        # ---- right column: panel b (n_dams rows × 2 cols) ----
+        gs_b = GridSpecFromSubplotSpec(
+            n_dams, 2, subplot_spec=gs[0, 1],
+            hspace=0.10, wspace=0.20,
+        )
+        for i, comp in enumerate(grdl):
+            is_last = (i == n_dams - 1)
+            ax_va = fig.add_subplot(gs_b[i, 0])
+            ax_da = fig.add_subplot(gs_b[i, 1])
+            _draw_grdl_va(ax_va, comp, show_xlabel=is_last,
+                          panel_label_char="b" if i == 0 else None)
+            _draw_grdl_da(ax_da, comp, show_xlabel=is_last, show_ylabel=True)
+            for _ax in (ax_va, ax_da):
+                _ax.text(
+                    0.97, 0.04, comp["dam_name"],
+                    transform=_ax.transAxes, ha="right", va="bottom",
+                    fontsize=10, color="0.10",
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                              edgecolor="0.7", linewidth=0.5, alpha=0.9),
+                )
+            if not is_last:
+                ax_da.tick_params(labelbottom=False)
 
-    fig.savefig(out_png, dpi=300, bbox_inches="tight")
+        save_panel(fig, out_png)
     plt.close(fig)
     print(f"wrote {out_png}")
     return out_png

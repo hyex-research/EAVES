@@ -1,0 +1,16 @@
+dam_id,dam_name,dam_name_arabic,latitude,longitude,region,governorate,watershed_basin,watershed_basin_2,dam_type,status,primary_purpose,current_purpose,dam_length_m,dam_height_m,spillway_height_m,storage_capacity_m3,construction_year
+id_010007,Al-Anbari,العنبرى,25.195278,45.277333,Riyadh,Shaqra,Eastern Region Basin,,concrete,completed,recharge,protection,50.0,8.0,6.0,110000,1982.0
+id_020002,Am Hablayn,أم حبلين,21.723042,39.238089,Makkah,Jeddah,C,,rockfill,completed,drinking_water,protection,795.0,10.0,0.0,4970000,
+id_020018,Rabigh,رابغ,22.821667,39.375833,Makkah,Rabigh,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,drinking_water,381.0,60.0,50.5,220350000,2008.0
+id_020072,Liyah,ليا,21.217906,40.455117,Makkah,Taif,Wadi Al-Khurma Basin,rainfall_area,rockfill,completed,drinking_water,recharge,120.0,22.0,18.0,10000000,1981.0
+id_020077,Buwah,بوا,20.749444,41.028889,Makkah,Misan,Wadi Al-Khurma Basin,rainfall_area,concrete,under_construction,drinking_water,protection,206.0,28.5,0.0,6052785,
+id_030005,Shalal,شلال,26.798218,37.858103,Madinah,Al-Ula,Wadi Al-Akhdar Basin,,concrete,completed,drinking_water,protection,162.0,8.0,5.5,318000,2008.0
+id_030035,Al-Far'ah,الفرعه,24.480833,38.493333,Madinah,Yanbu,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,recharge,600.0,18.5,13.5,20000000,1983.0
+id_030036,Hadhawadha,حظوظا,24.420556,39.980556,Madinah,Madinah,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,protection,595.0,7.0,4.5,40000000,1999.0
+id_070010,Atud,عتود,17.900556,42.471111,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,drinking_water,drinking_water,227.0,35.0,29.0,10000000,2008.0
+id_070014,King Fahad,الملك فهد,19.6964,42.487117,Asir,Bisha,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,drinking_water,drinking_water,507.0,68.0,60.5,325000000,1997.0
+id_070114,Khadar Al-Haymah,خضار الحيمة,18.695833,42.527222,Asir,Abha,Wadi Al-Dawasir Basin,rainfall_area,earthfill,completed,flood_control,protection,648.0,9.0,6.0,1128733,2009.0
+id_080005,Al-Ahsabah,الاحسبة,19.699444,41.391667,Al-Bahah,Al-Makhwah,Wadi Al-Khurma Basin,,earthfill,completed,recharge,drinking_water,895.0,20.0,18.0,11000000,2011.0
+id_100013,Al-Balitih,البليطيح,27.211776,36.861579,Tabuk,Al-Wajh,Wadi Al-Akhdar Basin,,concrete,completed,recharge,recharge,175.0,13.0,10.0,600000,2010.0
+id_120000,Baish,بيش,17.665556,42.6575,Jazan,Al-Raith,Wadi Al-Dawasir Basin,rainfall_area,concrete,completed,recharge,drinking_water,340.0,73.0,61.0,193644000,2009.0
+id_130000,Najran,نجران,17.408056,44.014167,Najran,Najran,Rub Al-Khali Basin,,concrete,completed,recharge,drinking_water,274.0,60.0,45.0,86000000,1979

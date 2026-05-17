@@ -24,6 +24,7 @@ from ._shared import (
     COL_FIT_BLACK,
     mm_to_in,
     panel_label,
+    save_panel,
 )
 
 
@@ -79,7 +80,7 @@ def _compute_example_dam_result() -> dict:
     dam_data["longitude"] = lon
     dam_row = _Row(dam_data, Point(lon, lat))
 
-    buf_deg = buffer_deg_for_dam(capacity, dam_height)
+    buf_deg = buffer_deg_for_dam(capacity)
     srtm_data, srtm_tf, srtm_crs = load_srtm_tiles(lat, lon, buffer_deg=buf_deg + 0.02)
     result = process_dam(dam_row, None, srtm_data, srtm_tf, srtm_crs)
     result["dam_id"] = dam_id
@@ -95,9 +96,10 @@ def _compute_example_dam_result() -> dict:
     return result
 
 
-def _draw_panel_a(ax) -> None:
+def _draw_panel_a(ax) -> "matplotlib.axes.Axes":
     """SRTM DEM around the worked-example reservoir, with the inundated
-    footprint outlined and the dam pixel marked."""
+    footprint outlined and the dam pixel marked. Returns the colorbar axes
+    so the caller can shift it in lockstep with ``ax`` if needed."""
     result = _compute_example_dam_result()
     dem = np.asarray(result["dem_utm"], dtype=float)
     fp = np.asarray(result["footprint"], dtype=bool)
@@ -115,12 +117,12 @@ def _draw_panel_a(ax) -> None:
             markeredgewidth=0.5, markersize=5, linestyle="none", zorder=5)
 
     cbar = plt.colorbar(im, ax=ax, shrink=0.85, pad=0.025, aspect=22)
-    cbar.set_label("Elevation (m)", fontsize=9)
+    cbar.set_label("Elevation (m)", fontsize=10)
     cbar.ax.tick_params(labelsize=9, length=2.0)
     cbar.outline.set_linewidth(0.5)
 
-    ax.set_xlabel("Column (px)", fontsize=9)
-    ax.set_ylabel("Row (px)", fontsize=9)
+    ax.set_xlabel("Column (px)", fontsize=10)
+    ax.set_ylabel("Row (px)", fontsize=10)
     ax.tick_params(labelsize=9, length=2.5)
 
     capped = bool(result.get("capped", False))
@@ -140,7 +142,7 @@ def _draw_panel_a(ax) -> None:
     ax.text(
         0.02, 0.02, info,
         transform=ax.transAxes, ha="left", va="bottom",
-        fontsize=9, color="0.10",
+        fontsize=10, color="0.10",
         bbox=dict(boxstyle="round,pad=0.3",
                   facecolor="white", edgecolor="0.6", linewidth=0.5,
                   alpha=0.85),
@@ -177,8 +179,8 @@ def _draw_panel_b(ax) -> None:
 
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel(r"Inundated area $A$ (m$^2$)", fontsize=9)
-    ax.set_ylabel(r"Storage volume $V$ (m$^3$)", fontsize=9)
+    ax.set_xlabel(r"Inundated area $A$ (m$^2$)", fontsize=10)
+    ax.set_ylabel(r"Storage volume $V$ (m$^3$)", fontsize=10)
     ax.tick_params(labelsize=9, length=2.5)
     ax.grid(True, which="both", linestyle=":", linewidth=0.4, alpha=0.5)
 
@@ -190,11 +192,11 @@ def _draw_panel_b(ax) -> None:
     ax.text(
         0.04, 0.96, annotation,
         transform=ax.transAxes, ha="left", va="top",
-        fontsize=9, color="0.10",
+        fontsize=10, color="0.10",
         bbox=dict(boxstyle="round,pad=0.3",
                   facecolor="white", edgecolor="0.6", linewidth=0.5),
     )
-    leg = ax.legend(loc="lower right", frameon=False, fontsize=9)
+    leg = ax.legend(loc="lower right", frameon=False, fontsize=10)
     for txt in leg.get_texts():
         txt.set_color("0.10")
     panel_label(ax, "b", fontsize=12)
@@ -243,11 +245,11 @@ def _draw_panel_c(ax) -> None:
     )
 
     ax.set_xlim(x_min, x_max)
-    ax.set_xlabel(r"Power-law exponent $b$", fontsize=9)
-    ax.set_ylabel("Number of reservoirs", fontsize=9)
+    ax.set_xlabel(r"Power-law exponent $b$", fontsize=10)
+    ax.set_ylabel("Number of reservoirs", fontsize=10)
     ax.tick_params(labelsize=9, length=2.5)
     ax.grid(True, axis="y", linestyle=":", linewidth=0.4, alpha=0.5)
-    leg = ax.legend(loc="upper right", frameon=False, fontsize=9)
+    leg = ax.legend(loc="upper right", frameon=False, fontsize=10)
     for txt in leg.get_texts():
         txt.set_color("0.10")
     panel_label(ax, "c", fontsize=12)
@@ -261,19 +263,47 @@ def make_p3_baish(output_dir: str | os.PathLike) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "p3_baish_example.png"
 
-    fig = plt.figure(figsize=(mm_to_in(180), mm_to_in(135)))
-    gs = fig.add_gridspec(
-        2, 2,
-        width_ratios=[1.0, 1.0],
-        height_ratios=[1.05, 0.85],
-        wspace=0.32, hspace=0.32,
-        left=0.07, right=0.985, top=0.95, bottom=0.09,
-    )
-    _draw_panel_a(fig.add_subplot(gs[0, 0]))
-    _draw_panel_b(fig.add_subplot(gs[0, 1]))
-    _draw_panel_c(fig.add_subplot(gs[1, :]))
+    with plt.rc_context({
+        "font.size":       10,
+        "axes.labelsize":  10,
+        "axes.titlesize":  10,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+    }):
+        fig = plt.figure(figsize=(mm_to_in(230), mm_to_in(170)))
+        gs = fig.add_gridspec(
+            2, 2,
+            width_ratios=[1.0, 1.0],
+            height_ratios=[1.05, 0.85],
+            wspace=0.32, hspace=0.32,
+            left=0.07, right=0.985, top=0.95, bottom=0.09,
+        )
+        ax_a = fig.add_subplot(gs[0, 0])
+        _draw_panel_a(ax_a)
+        _draw_panel_b(fig.add_subplot(gs[0, 1]))
+        ax_c = fig.add_subplot(gs[1, :])
+        _draw_panel_c(ax_c)
 
-    fig.savefig(out_png)
+        # plt.colorbar(ax=ax) steals width from ax_a's right side, leaving
+        # ax_a + its colorbar visually centred a few percent right of ax_c's
+        # left edge. Re-anchor ax_a (and its colorbar) so their combined
+        # left edge sits flush with ax_c's left edge.
+        fig.canvas.draw()
+        pos_a = ax_a.get_position()
+        pos_c = ax_c.get_position()
+        dx = pos_c.x0 - pos_a.x0
+        if abs(dx) > 1e-4:
+            ax_a.set_position([pos_a.x0 + dx, pos_a.y0, pos_a.width, pos_a.height])
+            for sib in fig.axes:
+                if sib is ax_a:
+                    continue
+                sp = sib.get_position()
+                # Colorbar lives just right of panel a (same row, narrow width).
+                if sp.y0 > 0.45 and sp.x0 < 0.5 and sp.width < 0.06:
+                    sib.set_position([sp.x0 + dx, sp.y0, sp.width, sp.height])
+
+        save_panel(fig, out_png)
     plt.close(fig)
     print(f"wrote {out_png}")
     return out_png

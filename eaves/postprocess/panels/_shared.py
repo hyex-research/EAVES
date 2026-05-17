@@ -65,22 +65,27 @@ def mm_to_in(mm: float) -> float:
     return mm / 25.4
 
 
+def save_panel(fig, out_png, *, dpi: int = 300, bbox: str = "tight") -> None:
+    """Save ``fig`` as a 300-dpi PNG and a vector PDF alongside it.
+
+    Every panel module writes both formats so the publication pipeline can
+    pick the right one (PNG for the report, PDF for journal submission)
+    without re-rendering.
+    """
+    from pathlib import Path
+    p = Path(out_png)
+    fig.savefig(p, dpi=dpi, bbox_inches=bbox)
+    fig.savefig(p.with_suffix(".pdf"), bbox_inches=bbox)
+
+
 # ---------------------------------------------------------------------------
 # Colour palettes
 # ---------------------------------------------------------------------------
-# Vega-10 categorical palette (figure 1 panel a).
-VEGA = {
-    "teal":   "#72B7B2",
-    "green":  "#54A24B",
-    "red":    "#E45756",
-    "blue":   "#4C78A8",
-    "purple": "#B279A2",
-    "orange": "#F58518",
-}
-# Parameter source — srtm-derived blue, regionalised orange, failed red.
-COL_SRTM = VEGA["blue"]
-COL_REGI = VEGA["orange"]
-COL_FAILED = VEGA["red"]
+# Parameter source — srtm-derived blue, regionalised orange, failed red
+# (Vega-10 categorical palette: only the three slots panel 1 actually uses).
+COL_SRTM = "#4C78A8"
+COL_REGI = "#F58518"
+COL_FAILED = "#E45756"
 # Geographic supporting greys.
 COL_LAND_OTHER = "#DCDCDC"
 COL_LAND_KSA = "#F7F0E0"

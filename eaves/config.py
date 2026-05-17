@@ -5,12 +5,11 @@ from __future__ import annotations
 import os
 import warnings
 
-import numpy as np
 import matplotlib
 matplotlib.use("Agg")
-import matplotlib as _mpl  # noqa: E402
-import matplotlib.pyplot as plt  # noqa: E402, F401
-import rasterio  # noqa: E402
+import matplotlib as _mpl
+import matplotlib.pyplot
+import rasterio
 
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -31,32 +30,6 @@ _mpl.rcParams.update({
     "axes.linewidth": 0.6,
     "figure.dpi": 300,
 })
-
-# Nature column widths in inches
-FIG_SINGLE_COL = 3.5    # 89 mm
-FIG_DOUBLE_COL = 7.2    # 183 mm
-FIG_MAX_HEIGHT = 6.7    # 170 mm
-
-# Colorblind-safe palette (Nature recommended)
-NATURE_COLORS = {
-    "black":    "#000000",
-    "orange":   "#E69F00",
-    "sky_blue": "#56B4E9",
-    "green":    "#009E73",
-    "yellow":   "#F0E442",
-    "blue":     "#0072B2",
-    "vermillion": "#D55E00",
-    "purple":   "#CC79A7",
-}
-
-# Quality grade colours (colorblind-safe)
-GRADE_COLORS = {
-    "A": NATURE_COLORS["green"],
-    "B": NATURE_COLORS["blue"],
-    "C": NATURE_COLORS["orange"],
-    "D": NATURE_COLORS["vermillion"],
-    "F": NATURE_COLORS["black"],
-}
 
 # ---------------------------------------------------------------------------
 # Paths

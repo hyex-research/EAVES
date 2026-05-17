@@ -18,7 +18,7 @@ def example_dam_id() -> str:
     if not dam_id:
         raise RuntimeError(
             "BATHYMETRY_DAM_ID not configured. Load a settings file (e.g. "
-            "settings/ksa.json) before generating the worked-example panels."
+            "region/ksa/ksa.json) before generating the worked-example panels."
         )
     return dam_id
 

@@ -281,7 +281,20 @@ def get_downstream_direction_from_dem(dem, dam_row, dam_col, search_radius=5):
 # ---------------------------------------------------------------------------
 
 def compute_valley_width(dem_utm, dam_r, dam_c, spillway_height, dam_elev, pixel_size):
-    """Minimum cross-section gap width at spillway level (metres)."""
+    """Minimum cross-section gap width at spillway level (metres).
+
+    Casts rays at 2-degree intervals from the dam pixel and looks for terrain
+    that rises above ``z_spillway`` on both sides. The minimum two-sided gap
+    over all angles is the reported valley width.
+
+    When no angle produces a two-sided wall pair within the search radius the
+    function returns ``2 * max_search * pixel_size`` -- the full diameter of
+    the search window. This is the conservative lower bound for floodplain or
+    wide-pan reservoirs where spillway-level terrain is genuinely farther
+    away than the search radius and is the right physical answer for those
+    sites (rather than the not-a-number sentinel that the old behaviour
+    produced and that propagated downstream as a missing feature).
+    """
     z_spillway = dam_elev + spillway_height
     nrows, ncols = dem_utm.shape
     max_search = 200
@@ -317,7 +330,7 @@ def compute_valley_width(dem_utm, dam_r, dam_c, spillway_height, dam_elev, pixel
             min_gap_m = min(min_gap_m, gap_m)
 
     if min_gap_m == float("inf"):
-        return np.nan
+        return float(2 * max_search * pixel_size)
     return min_gap_m
 
 

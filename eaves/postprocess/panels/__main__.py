@@ -10,12 +10,12 @@ from ...settings import load_settings
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="Render EAVES Data Descriptor panel figures (1-4).",
+        description="Render EAVES Data Descriptor panel figures (1-5).",
     )
     parser.add_argument(
         "--settings",
         default=None,
-        help="Path to a settings JSON file (e.g. settings/ksa.json). "
+        help="Path to a settings JSON file (e.g. region/ksa/ksa.json). "
         "Required unless settings have already been applied in-process.",
     )
     parser.add_argument(
@@ -27,11 +27,12 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument(
         "--figures",
         nargs="+",
-        type=int,
-        choices=[1, 2, 3, 4],
-        default=[1, 2, 3, 4],
-        metavar="N",
-        help="Subset of figure numbers to render (default: all).",
+        type=str,
+        choices=["1", "2", "3", "4", "5", "s1", "s2", "s3"],
+        default=["1", "2", "3", "4", "5", "s1", "s2", "s3"],
+        metavar="ID",
+        help="Subset of panel IDs to render (default: all, including the "
+             "supplementary s1, s2, and s3 figures).",
     )
     args = parser.parse_args(argv)
 
@@ -45,6 +46,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     n = sum(len(v) for v in out.values())
     print(f"\nDone. Rendered {n} file(s) in total.")
+    return None
 
 
 if __name__ == "__main__":  # pragma: no cover

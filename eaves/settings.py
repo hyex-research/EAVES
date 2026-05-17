@@ -8,7 +8,7 @@ defaults.
 Usage::
 
     from eaves.settings import load_settings
-    load_settings("settings/<country>.json")
+    load_settings("region/<country>/<country>.json")
 """
 
 from __future__ import annotations

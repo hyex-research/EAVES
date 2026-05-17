@@ -82,7 +82,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         construction_year = 2001
 
     target_epsg = utm_epsg_from_lon(dam_lon)
-    radius = buffer_deg_for_dam(capacity_m3, dam_height)
+    radius = buffer_deg_for_dam(capacity_m3)
 
     dem_utm, dem_tf, pixel_area, dst_crs = clip_and_reproject_dem(
         srtm_data, srtm_transform, srtm_crs,
@@ -392,6 +392,12 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     if z_max <= z_min:
         raise ValueError(f"z_max ({z_max:.1f}) <= z_min ({z_min:.1f})")
 
+    # Snap z_min to the nearest 0.5 m so every bin elevation in the output
+    # EAV table lands on a half-integer boundary. The displacement is
+    # ≤ 0.25 m -- well below SRTM's ~2 m vertical accuracy -- and produces
+    # noticeably cleaner publication tables without changing the curve
+    # within its uncertainty.
+    z_min = round(float(z_min) * 2.0) / 2.0
     elev_bins = np.arange(z_min, z_max + BIN_Z, BIN_Z)
     area_m2 = np.array([
         np.nansum(dem_fp <= z) * pixel_area for z in elev_bins

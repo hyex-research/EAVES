@@ -33,6 +33,7 @@ from ._shared import (
     COL_SRTM,
     mm_to_in,
     panel_label,
+    save_panel,
 )
 
 
@@ -53,7 +54,7 @@ def _load_dam_points() -> pd.DataFrame:
     catalogue["capacity_mcm"] = catalogue["storage_capacity_m3"] / 1.0e6
 
     merged = summary.merge(params[["dam_id", "source"]], on="dam_id", how="left")
-    merged["source"] = merged["source"].fillna("regi_derived")
+    merged["source"] = merged["source"].fillna("regi_multi")
     merged.loc[merged["dam_id"].isin(failed_ids), "source"] = "placement_failed"
 
     failed_only = catalogue[
@@ -108,7 +109,7 @@ def _draw_panel_a(ax) -> None:
     counts = dams["source"].value_counts()
     groups = [
         ("srtm_derived",     COL_SRTM,   "SRTM-derived",          "v", False),
-        ("regi_derived",     COL_REGI,   "Regionalization",       "v", False),
+        ("regi_multi",     COL_REGI,   "Regionalization",       "v", False),
         ("placement_failed", COL_FAILED, "Placement failed",      "x", True),
     ]
     for src, colour, _label, marker, is_failed in groups:
@@ -127,7 +128,7 @@ def _draw_panel_a(ax) -> None:
                 dams.loc[mask, "lon"], dams.loc[mask, "lat"],
                 s=sizes[mask.values],
                 facecolor=colour, edgecolor="black", linewidth=0.35,
-                marker=marker, zorder=4 if src == "regi_derived" else 4.5,
+                marker=marker, zorder=4 if src == "regi_multi" else 4.5,
                 alpha=0.92,
             )
 
@@ -158,7 +159,7 @@ def _draw_panel_a(ax) -> None:
             )
     leg1 = ax.legend(
         handles=src_handles, loc="upper right",
-        title="Parameter source", title_fontsize=9, fontsize=9,
+        title="Parameter source", title_fontsize=10, fontsize=10,
         borderpad=0.45, handletextpad=0.45, labelspacing=0.55,
         frameon=True, fancybox=False, edgecolor=COL_BORDER, framealpha=0.92,
     )
@@ -175,19 +176,19 @@ def _draw_panel_a(ax) -> None:
         for c, s in zip(cap_ticks, cap_sz)
     ]
     leg2 = ax.legend(
-        handles=cap_handles, loc="lower left",
-        title="Capacity (MCM)", title_fontsize=9, fontsize=9,
+        handles=cap_handles, loc="lower right",
+        title="Capacity (MCM)", title_fontsize=10, fontsize=10,
         borderpad=0.55, handletextpad=0.6, labelspacing=0.95,
         frameon=True, fancybox=False, edgecolor=COL_BORDER, framealpha=0.92,
     )
     leg2.get_frame().set_linewidth(0.5)
 
-    panel_label(ax, "a")
+    panel_label(ax, "a", fontsize=12)
 
 
 def _box(ax, x, y, w, h, text, *,
          facecolor=COL_BOX_PROC, edgecolor=COL_BOX_PROC_EDGE,
-         fontsize=7.0, fontweight="normal",
+         fontsize=10, fontweight="normal",
          rounding=1.5, zorder=2, text_color="0.10") -> None:
     patch = FancyBboxPatch(
         (x - w / 2.0, y - h / 2.0), w, h,
@@ -206,7 +207,7 @@ def _box(ax, x, y, w, h, text, *,
 
 def _ellipse(ax, x, y, w, h, text, *,
              facecolor=COL_BOX_INPUT, edgecolor=COL_BOX_INPUT_EDGE,
-             fontsize=7.4, fontweight="normal",
+             fontsize=10, fontweight="normal",
              zorder=2, text_color="0.10") -> None:
     patch = Ellipse(
         (x, y), w, h,
@@ -224,7 +225,7 @@ def _ellipse(ax, x, y, w, h, text, *,
 
 def _diamond(ax, x, y, w, h, text, *,
              facecolor=COL_BOX_DECISION, edgecolor=COL_BOX_DECISION_EDGE,
-             fontsize=8.0, fontweight="normal",
+             fontsize=10, fontweight="normal",
              zorder=2, text_color="0.10") -> None:
     pts = [(x, y + h / 2.0), (x + w / 2.0, y),
            (x, y - h / 2.0), (x - w / 2.0, y)]
@@ -259,7 +260,7 @@ def _arrow(ax, x1, y1, x2, y2, *,
             0.5 * (y1 + y2) + label_dy,
             label,
             ha="center", va="center",
-            fontsize=8.5, color="0.10",
+            fontsize=10, color="0.10",
             zorder=3,
         )
 
@@ -282,17 +283,17 @@ def _draw_panel_b(ax) -> None:
 
     # ---- Inputs (ellipses) ------------------------------------------------
     in_y = 95.0
-    in_w = 24.0
+    in_w = 30.0
     in_h = 9.0
     inputs = [
-        (cx - 28.0, in_y, "SRTM"),
+        (cx - 32.0, in_y, "SRTM"),
         (cx,        in_y, "Dam catalogue"),
-        (cx + 28.0, in_y, "MERIT Hydro"),
+        (cx + 32.0, in_y, "MERIT Hydro"),
     ]
     for (x, y, t) in inputs:
         _ellipse(ax, x, y, in_w, in_h, t,
                  facecolor=COL_BOX_INPUT, edgecolor=COL_BOX_INPUT_EDGE,
-                 fontsize=8.5)
+                 fontsize=10)
 
     conv_y = 87.5
     for (x, _, _) in inputs:
@@ -306,11 +307,14 @@ def _draw_panel_b(ax) -> None:
     _box(ax, cx, snap_y, w_proc, h_std,
          "Snap dam to nearest MERIT segment",
          facecolor=COL_BOX_PROC, edgecolor=COL_BOX_PROC_EDGE,
-         fontsize=8.5)
+         fontsize=10)
 
     # ---- 6-stage wall-placement (2-column stage list) --------------------
+    # 1 axis unit ~= 1.035 mm at the current figure size, so row_step here
+    # is set to put ~1 mm of clear vertical space between successive stage
+    # rows; six_h grows to keep the box around the (now-taller) text block.
     six_y = 67.5
-    six_h = 14.0
+    six_h = 17.0
     ax.add_patch(FancyBboxPatch(
         (cx - w_six / 2.0, six_y - six_h / 2.0),
         w_six, six_h,
@@ -321,19 +325,19 @@ def _draw_panel_b(ax) -> None:
     ax.text(
         cx, six_y + six_h / 2.0 - 2.0, "6-stage wall placement:",
         ha="center", va="center",
-        fontsize=8.5, color="0.10", zorder=3,
+        fontsize=10, color="0.10", zorder=3,
     )
     stages_left = ["1. Fast path", "2. Upstream walk", "3. Quality recovery"]
     stages_right = ["4. River-direction retry", "5. Relaxed alignment", "6. Multi-direction fallback"]
-    col_xs = [cx - w_six / 2.0 + 4.0, cx + 6.0]
-    base_y = six_y + 1.5
-    row_step = 2.6
+    col_xs = [cx - w_six / 2.0 + 4.0, cx - 2.0]
+    base_y = six_y + 2.0
+    row_step = 3.6
     for col, stages in enumerate((stages_left, stages_right)):
         for row, s in enumerate(stages):
             ax.text(
                 col_xs[col], base_y - row * row_step, s,
                 ha="left", va="center",
-                fontsize=8.5, color="0.10", zorder=3,
+                fontsize=10, color="0.10", zorder=3,
             )
 
     # ---- Sequential processing steps -------------------------------------
@@ -347,7 +351,7 @@ def _draw_panel_b(ax) -> None:
     for (text, y) in proc:
         _box(ax, cx, y, w_proc, h_std, text,
              facecolor=COL_BOX_PROC, edgecolor=COL_BOX_PROC_EDGE,
-             fontsize=8.5)
+             fontsize=10)
         proc_ys.append(y)
 
     # ---- Equal-length arrows along the main spine -----------------------
@@ -362,7 +366,7 @@ def _draw_panel_b(ax) -> None:
     dec_y = 16.5
     dec_w = 30.0
     dec_h = 8.0
-    _diamond(ax, cx, dec_y, dec_w, dec_h, "Reliable?", fontsize=8.5)
+    _diamond(ax, cx, dec_y, dec_w, dec_h, "Reliable?", fontsize=10)
     _arrow(ax, cx, proc_ys[-1] - h_std / 2.0,
            cx, dec_y + dec_h / 2.0)
 
@@ -372,19 +376,8 @@ def _draw_panel_b(ax) -> None:
     yes_w = 28.5
     yes_h = 9.0
     yes_x = cx + dec_w / 2.0 + arrow + yes_w / 2.0
-    # Empty box, then layered text so the count line is regular weight.
-    _box(ax, yes_x, dec_y, yes_w, yes_h, "",
-         facecolor=COL_BOX_OUT_SRTM, edgecolor=COL_SRTM)
-    ax.text(
-        yes_x, dec_y + yes_h * 0.18, "SRTM-derived",
-        ha="center", va="center",
-        fontsize=8.5, color="0.10", zorder=3,
-    )
-    ax.text(
-        yes_x, dec_y - yes_h * 0.20, "(n = 320)",
-        ha="center", va="center",
-        fontsize=8.5, color="0.10", zorder=3,
-    )
+    _box(ax, yes_x, dec_y, yes_w, yes_h, "SRTM-derived",
+         facecolor=COL_BOX_OUT_SRTM, edgecolor=COL_SRTM, fontsize=10)
     _arrow(
         ax,
         cx + dec_w / 2.0, dec_y,
@@ -392,25 +385,21 @@ def _draw_panel_b(ax) -> None:
         label="Yes", label_dx=-1.5, label_dy=1.8,
     )
 
-    # ---- No branch (down) — Regionalization box: title, equation, counts
+    # ---- No branch (down) — Regionalization box: title + recipe ---------
     regi_y = 3.0
-    regi_h = 11.0
+    regi_h = 9.0
     _box(ax, cx, regi_y, w_out, regi_h, "",
          facecolor=COL_BOX_OUT_REGI, edgecolor=COL_REGI)
     ax.text(
-        cx, regi_y + 3.5, "Regionalization",
+        cx, regi_y + 1.8, "Regionalization",
         ha="center", va="center",
-        fontsize=8.5, color="0.10", zorder=3,
+        fontsize=10, color="0.10", zorder=3,
     )
     ax.text(
-        cx, regi_y, "LOO-$R^2$ regression or regional median",
+        cx, regi_y - 1.8,
+        "Multi-feature LR for $A_\\mathrm{cap}$  +  regional-median $b$",
         ha="center", va="center",
-        fontsize=8.5, color="0.10", zorder=3,
-    )
-    ax.text(
-        cx, regi_y - 3.5, "(n = 184 + 22 failed)",
-        ha="center", va="center",
-        fontsize=8.5, color="0.10", zorder=3,
+        fontsize=10, color="0.10", zorder=3,
     )
     _arrow(
         ax,
@@ -419,7 +408,7 @@ def _draw_panel_b(ax) -> None:
         label="No", label_dx=3.0, label_dy=0.0,
     )
 
-    panel_label(ax, "b")
+    panel_label(ax, "b", fontsize=12)
 
 
 def make_p1_domain(output_dir: str | os.PathLike) -> Path:
@@ -428,16 +417,26 @@ def make_p1_domain(output_dir: str | os.PathLike) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "p1_domain_flowchart.png"
 
-    fig = plt.figure(figsize=(mm_to_in(250.0), mm_to_in(130.0)))
-    gs = fig.add_gridspec(
-        1, 2,
-        width_ratios=[1.10, 1.00],
-        wspace=0.12, left=0.05, right=0.995, bottom=0.09, top=0.91,
-    )
-    _draw_panel_a(fig.add_subplot(gs[0, 0]))
-    _draw_panel_b(fig.add_subplot(gs[0, 1]))
+    # p1 ships with a uniform 10 pt base across every text element; the
+    # panel label sits at 10 * 1.2 = 12 pt (overridden at the call site).
+    with plt.rc_context({
+        "font.size":       10,
+        "axes.labelsize":  10,
+        "axes.titlesize":  10,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+    }):
+        fig = plt.figure(figsize=(mm_to_in(250.0), mm_to_in(130.0)))
+        gs = fig.add_gridspec(
+            1, 2,
+            width_ratios=[1.10, 1.00],
+            wspace=0.12, left=0.05, right=0.995, bottom=0.09, top=0.91,
+        )
+        _draw_panel_a(fig.add_subplot(gs[0, 0]))
+        _draw_panel_b(fig.add_subplot(gs[0, 1]))
 
-    fig.savefig(out_png, dpi=300, bbox_inches="tight")
+        save_panel(fig, out_png)
     plt.close(fig)
     print(f"wrote {out_png}")
     return out_png

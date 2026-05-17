@@ -123,18 +123,6 @@ def _crest_gap_m_at_angle(dem, dam_r, dam_c, wr, wc, z_spillway, pixel_size, max
     return gap_px * pixel_size
 
 
-def find_wall_from_terrain(dem, dam_r, dam_c, dam_length_m, z_spillway,
-                           pixel_size, flow_dir_px=None, top_k=None):
-    """Best (wall, upstream) from terrain scoring, or (None, None)."""
-    placed = list(iter_wall_placements_from_terrain(
-        dem, dam_r, dam_c, dam_length_m, z_spillway, pixel_size,
-        flow_dir_px=flow_dir_px, top_k=top_k if top_k is not None else 1,
-    ))
-    if not placed:
-        return None, None
-    return placed[0][0], placed[0][1]
-
-
 def iter_wall_placements_from_terrain(
     dem, dam_r, dam_c, dam_length_m, z_spillway, pixel_size, *,
     flow_dir_px=None, top_k=TERRAIN_WALL_TOP_K,

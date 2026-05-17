@@ -1,0 +1,2 @@
+dam_id,dam_name,reason,detail,capacity_mcm,dam_height_m,spillway_height_m,dam_length_m,upstream_area_km2,valley_width_m,valley_ratio,channel_slope,mean_catchment_slope
+id_010007,Al-Anbari,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",0.11,8.0,6.0,50.0,20.40838204,764.5394091625869,127.42323486043115,0.013282489657202513,0.05302128568291664

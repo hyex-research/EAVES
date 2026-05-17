@@ -195,7 +195,7 @@ def interpolate_nans(data):
     return out
 
 
-def buffer_deg_for_dam(capacity_m3, dam_height_m):
+def buffer_deg_for_dam(capacity_m3):
     capacity_mcm = capacity_m3 / 1e6
     if capacity_mcm > 100:
         return 0.12

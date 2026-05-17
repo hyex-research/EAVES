@@ -27,6 +27,7 @@ from ._shared import (
     COL_WALL,
     mm_to_in,
     panel_label,
+    save_panel,
 )
 
 
@@ -37,9 +38,9 @@ _EXPECTED_METHODS: dict[str, str] = {
 }
 
 _STAGE_TITLES: dict[str, str] = {
-    "a": "Stage 1 — direct wall placement",
-    "b": "Stage 4 — river-direction retry",
-    "c": "Stage 6 — synthetic fallback",
+    "a": "Stage 1: fast path",
+    "b": "Stage 4: river-direction retry",
+    "c": "Stage 6: multi-direction fallback",
 }
 
 # Preferred exemplar dam IDs (tried first; automatic ranking used as fallback).
@@ -116,7 +117,7 @@ def _compute_placement_result(dam_id: str, gdf_dams: gpd.GeoDataFrame,
         (float(g["latitude"]), float(g["longitude"]), "kml"),
         (float(g.geometry.y), float(g.geometry.x), "snapped"),
     ]
-    buf_deg = buffer_deg_for_dam(float(g["storage_capacity_m3"]), float(g["dam_height_m"]))
+    buf_deg = buffer_deg_for_dam(float(g["storage_capacity_m3"]))
 
     last_error = None
     for lat, lon, _tag in coords_to_try:
@@ -197,7 +198,7 @@ def _footprint_to_polygon_patches(footprint_mask: np.ndarray,
     return polys
 
 
-def _render_placement_panel(ax, result: dict, *, dam_id: str, dam_name: str,
+def _render_placement_panel(ax, result: dict, *, dam_name: str,
                             letter: str, gdf_rivers_lonlat: gpd.GeoDataFrame,
                             cat_lat: float, cat_lon: float,
                             snap_lat: float, snap_lon: float,
@@ -319,17 +320,16 @@ def _render_placement_panel(ax, result: dict, *, dam_id: str, dam_name: str,
     ax.yaxis.set_major_formatter(plt.FuncFormatter(_lat_fmt))
     ax.set_xticks([centre_x])
     ax.set_yticks([centre_y])
-    ax.set_xlabel("Longitude (°E)", fontsize=8.5)
-    ax.set_ylabel("Latitude (°N)" if letter == "a" else "", fontsize=8.5)
+    ax.set_xlabel("Longitude (°E)", fontsize=10)
+    ax.set_ylabel("Latitude (°N)" if letter == "a" else "", fontsize=10)
 
-    # Panel label (12 pt to match panel scale) above stage title.
-    panel_label(ax, letter, y_offset_pt=22.0, fontsize=12.0)
-    ax.set_title(_STAGE_TITLES[letter], fontsize=8.5, pad=4, loc="left")
+    panel_label(ax, letter, y_offset_pt=22.0, fontsize=12)
+    ax.set_title(_STAGE_TITLES[letter], fontsize=10, pad=4, loc="left")
 
     # Dam name, top-right corner (name only — no dam_id).
     if dam_name:
         ax.text(0.98, 0.97, dam_name, transform=ax.transAxes,
-                fontsize=8.5, ha="right", va="top",
+                fontsize=10, ha="right", va="top",
                 bbox=dict(facecolor="white", alpha=0.85, edgecolor="none", pad=1.5),
                 zorder=8)
 
@@ -348,7 +348,7 @@ def _placement_legend(fig) -> None:
     fig.legend(
         handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.01),
         ncol=4, frameon=False, handlelength=1.6, handletextpad=0.6,
-        columnspacing=2.0, borderaxespad=0.0, fontsize=8.5,
+        columnspacing=2.0, borderaxespad=0.0, fontsize=10,
     )
 
 
@@ -429,9 +429,21 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
         exemplars[letter] = (dam_id, sum_row)
         results[letter] = result
 
+    # Uniform 10 pt text across every element; panel labels overridden to 12.
+    rc_override = {
+        "font.size":       10,
+        "axes.labelsize":  10,
+        "axes.titlesize":  10,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+    }
+    rc_stack = plt.rc_context(rc_override)
+    rc_stack.__enter__()
+
     fig, axes = plt.subplots(
         nrows=1, ncols=3,
-        figsize=(mm_to_in(180.0), mm_to_in(82.0)),
+        figsize=(mm_to_in(220.0), mm_to_in(100.0)),
         constrained_layout=False,
     )
 
@@ -464,7 +476,7 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
             snap_lon, snap_lat = cat_lon, cat_lat
         _render_placement_panel(
             ax, result,
-            dam_id=dam_id, dam_name=dam_name,
+            dam_name=dam_name,
             letter=letter,
             gdf_rivers_lonlat=gdf_rivers,
             cat_lat=cat_lat, cat_lon=cat_lon,
@@ -476,7 +488,8 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
     _placement_legend(fig)
     plt.subplots_adjust(left=0.05, right=0.99, top=0.85, bottom=0.18, wspace=0.30)
 
-    fig.savefig(out_png, dpi=300, bbox_inches="tight")
+    save_panel(fig, out_png)
     plt.close(fig)
+    rc_stack.__exit__(None, None, None)
     print(f"wrote {out_png}")
     return out_png

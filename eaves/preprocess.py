@@ -6,11 +6,12 @@ Produces the two geojsons the main EAVES loop consumes from
 * ``rivers_split.geojson``  -- country-clipped MERIT rivers with long segments
   split to ``MAX_SEG_LEN_M`` and ``up1..up4`` adjacency preserved.
 * ``dams_snapped.geojson``  -- dam catalogue snapped to the nearest river node
-  within ``MAX_SNAP_DISTANCE_M``; columns ``snapped_segment_id``,
-  ``snap_distance``, ``up1..up4`` are attached. The catalogue is assumed to
-  already be cleaned upstream (region-specific curation is left to the
-  caller; see ``region/<country>/input/<country>_dams/clean_catalogue.py``
-  for a reference implementation).
+  within ``MAX_SNAP_DISTANCE_M``; the ``snapped_segment_id`` column is
+  attached (this is the only river-network feature the EAV pipeline reads
+  back). The catalogue is assumed to already be cleaned upstream
+  (region-specific curation is left to the caller; see
+  ``region/<country>/input/<country>_dams/clean_catalogue.py`` for a
+  reference implementation).
 """
 
 from __future__ import annotations
@@ -118,8 +119,8 @@ def _snap_dams_to_nearest_segment(
     """Snap dams to the nearest river node within ``max_snap_distance_m``.
 
     All input dams are retained. Dams within snap distance get their geometry
-    moved to the closest segment endpoint and ``snapped_segment_id`` / ``up1..up4``
-    populated from the downstream segment (largest ``uparea`` at that node).
+    moved to the closest segment endpoint and ``snapped_segment_id`` set to
+    the downstream segment ID (largest ``uparea`` at that node).
     Dams outside snap distance keep their catalogue geometry and receive
     ``snapped_segment_id=None`` -- EAVES workers fall back to catalogue
     coordinates and skip the stage-4 river retry for these.
@@ -136,8 +137,7 @@ def _snap_dams_to_nearest_segment(
         node_to_segments[start_node.wkt].append((seg_id, True))
         node_to_segments[end_node.wkt].append((seg_id, False))
 
-    snapped_ids, snapped_pts, snap_d = [], [], []
-    up1, up2, up3, up4 = [], [], [], []
+    snapped_ids, snapped_pts = [], []
 
     for dam in gdf_dams.itertuples():
         dam_point = dam.geometry
@@ -146,8 +146,7 @@ def _snap_dams_to_nearest_segment(
         cand = gdf_rivers_split.iloc[cand_idx]
 
         if cand.empty:
-            snapped_ids.append(None); snapped_pts.append(None); snap_d.append(np.inf)
-            up1.append(None); up2.append(None); up3.append(None); up4.append(None)
+            snapped_ids.append(None); snapped_pts.append(None)
             continue
 
         dam_m = gpd.GeoSeries([dam_point], crs=crs).to_crs(3857).iloc[0]
@@ -156,8 +155,7 @@ def _snap_dams_to_nearest_segment(
         closest_seg_id, min_d = min(seg_distances, key=lambda x: x[1])
 
         if min_d > max_snap_distance_m:
-            snapped_ids.append(None); snapped_pts.append(None); snap_d.append(min_d)
-            up1.append(None); up2.append(None); up3.append(None); up4.append(None)
+            snapped_ids.append(None); snapped_pts.append(None)
             continue
 
         closest_seg = gdf_rivers_split.loc[closest_seg_id]
@@ -170,23 +168,12 @@ def _snap_dams_to_nearest_segment(
         conn_ids = [sid for sid, _ in connected]
         upareas = gdf_rivers_split.loc[conn_ids, "uparea"]
         downstream_id = upareas.idxmax()
-        downstream_row = gdf_rivers_split.loc[downstream_id]
 
         snapped_ids.append(downstream_id)
         snapped_pts.append(closest_point)
-        snap_d.append(min_d)
-        up1.append(str(downstream_row.get("up1")) if pd.notnull(downstream_row.get("up1")) else None)
-        up2.append(str(downstream_row.get("up2")) if pd.notnull(downstream_row.get("up2")) else None)
-        up3.append(str(downstream_row.get("up3")) if pd.notnull(downstream_row.get("up3")) else None)
-        up4.append(str(downstream_row.get("up4")) if pd.notnull(downstream_row.get("up4")) else None)
 
     out = gdf_dams.copy()
     out["snapped_segment_id"] = snapped_ids
-    out["snap_distance"] = snap_d
-    out["up1"] = up1
-    out["up2"] = up2
-    out["up3"] = up3
-    out["up4"] = up4
     # Replace catalogue geometry with the snapped node where available; leave
     # the original point intact otherwise so downstream code can still run.
     out["geometry"] = [

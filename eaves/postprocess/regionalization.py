@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
-from .plots import plot_threshold_analysis, plot_regression_diagnostics
+# note: diagnostic plots (threshold_analysis, regression_diagnostics) are
+# rendered by the panels step in production, not by run_regionalization
+# itself, so this module emits CSVs only.
 
 try:
     from sklearn.linear_model import LinearRegression
@@ -18,6 +20,117 @@ try:
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
+
+
+# Features used by the multi-feature LR anchor for A_cap. All entered in
+# log-space. Missing features are median-imputed at predict time so the
+# regression always returns a finite value. The trusted-set LOO accuracy of
+# this recipe is documented in panel p5 and in the EAVES report.
+_REGIONAL_FEATURES = (
+    "capacity_mcm",
+    "dam_height_m",
+    "spillway_height_m",
+    "valley_ratio",
+    "channel_slope",
+    "mean_catchment_slope",
+    "upstream_area_km2",
+)
+_REGIONAL_FEATURE_FLOOR = 1e-5    # log-space floor for slopes etc.
+
+
+def _log_feature_vector(row, features=_REGIONAL_FEATURES):
+    """Return log-space feature vector or ``None`` if any feature is missing."""
+    out = []
+    for f in features:
+        v = row.get(f) if isinstance(row, dict) else (
+            row[f] if f in row else None
+        )
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            return None
+        if not np.isfinite(v) or v <= 0:
+            return None
+        out.append(np.log(max(v, _REGIONAL_FEATURE_FLOOR)))
+    return np.asarray(out, dtype=float)
+
+
+def _fit_multi_anchor_lr_full(train_df, features=_REGIONAL_FEATURES, min_n=8):
+    """Fit the multi-feature LR and return everything needed for prediction
+    intervals.
+
+    Returns a ``dict`` with keys ``coefs``, ``residual_var``, ``XtX_inv`` or
+    ``None`` if the trusted set is too small after dropping rows with missing
+    features.
+    """
+    rows = []
+    targets = []
+    if "footprint_area_km2" not in train_df.columns:
+        return None
+    for _, r in train_df.iterrows():
+        v = _log_feature_vector(r, features)
+        if v is None:
+            continue
+        a = r.get("footprint_area_km2")
+        try:
+            a = float(a)
+        except (TypeError, ValueError):
+            continue
+        if not np.isfinite(a) or a <= 0:
+            continue
+        rows.append(v)
+        targets.append(np.log(a))
+    if len(rows) < min_n:
+        return None
+    X = np.array(rows)
+    y = np.array(targets)
+    X_int = np.column_stack([np.ones(len(X)), X])
+    coefs, *_ = np.linalg.lstsq(X_int, y, rcond=None)
+    resid = y - X_int @ coefs
+    n, p_plus1 = X_int.shape
+    residual_var = (float(np.sum(resid ** 2) / (n - p_plus1))
+                    if n > p_plus1 else 0.0)
+    try:
+        XtX_inv = np.linalg.inv(X_int.T @ X_int)
+    except np.linalg.LinAlgError:
+        XtX_inv = None
+    return {"coefs": coefs, "residual_var": residual_var, "XtX_inv": XtX_inv}
+
+
+def _fit_multi_anchor_lr(train_df, features=_REGIONAL_FEATURES, min_n=8):
+    """Back-compat wrapper: returns just the coefficient array."""
+    fit = _fit_multi_anchor_lr_full(train_df, features, min_n)
+    return fit["coefs"] if fit is not None else None
+
+
+def _predict_log_a_with_sigma(row, fit, features=_REGIONAL_FEATURES):
+    """Predict ``log A_cap`` (natural log, km^2) with 1-sigma prediction error.
+
+    Returns ``(log_A, sigma_log_A)`` or ``(None, None)`` if any required
+    feature is missing or the fit object lacks the design-matrix inverse.
+    """
+    if fit is None or fit.get("XtX_inv") is None:
+        return None, None
+    v = _log_feature_vector(row, features)
+    if v is None:
+        return None, None
+    x_new = np.concatenate([[1.0], v])
+    log_a = float(fit["coefs"] @ x_new)
+    var_pred = fit["residual_var"] * (1.0 + float(x_new @ fit["XtX_inv"] @ x_new))
+    return log_a, float(np.sqrt(max(var_pred, 0.0)))
+
+
+def _predict_multi_anchor_lr(row, coefs, features=_REGIONAL_FEATURES):
+    """Predict full-pool area (km^2) from the multi-LR anchor."""
+    if coefs is None:
+        return None
+    v = _log_feature_vector(row, features)
+    if v is None:
+        return None
+    log_a = float(coefs[0] + float(np.dot(coefs[1:], v)))
+    return float(np.exp(log_a))
+
+
 
 
 def assign_quality(row):
@@ -95,8 +208,6 @@ def run_regionalization(summary_df, failures, dam_data_list):
     print(f"\n  Chosen reliability threshold: {chosen_threshold:.1f} MCM")
     threshold_df.to_csv(os.path.join(_cfg.CSV_DIR, "threshold_analysis.csv"), index=False)
 
-    plot_threshold_analysis(summary_df, threshold_df, chosen_threshold, _cfg.PLOT_DIR)
-
     # --- Step C: Fit regression for b ---
     features = ["valley_ratio", "channel_slope", "mean_catchment_slope", "dam_height_m"]
     train = summary_df[
@@ -158,10 +269,9 @@ def run_regionalization(summary_df, failures, dam_data_list):
                 if imp_sum > 0:
                     importances = importances / imp_sum
 
-            plot_regression_diagnostics(
-                y, best_preds, train_clean, features, importances,
-                best_model_name, best_r2_val, _cfg.PLOT_DIR,
-            )
+            # Diagnostic plot of the regression is rendered separately by
+            # the panels step, not here -- run_regionalization stays a pure
+            # parameter-assignment function.
         else:
             print("  Both models below R\u00b2=0.25, falling back to regional median b.")
     elif not HAS_SKLEARN:
@@ -173,16 +283,38 @@ def run_regionalization(summary_df, failures, dam_data_list):
     regional_median_c = float(train_clean["c"].median()) if len(train_clean) > 0 else 0.06
     print(f"  Regional median b = {regional_median_b:.4f}")
 
-    # --- Step D: A_cap empirical fallback ---
-    a_cap_fallback_coef = None
-    if len(train_clean) >= 10 and "footprint_area_km2" in train_clean.columns:
-        log_cap = np.log(train_clean["capacity_mcm"].values)
-        log_area = np.log(train_clean["footprint_area_km2"].values)
-        valid_mask = np.isfinite(log_cap) & np.isfinite(log_area)
-        if valid_mask.sum() >= 10:
-            from numpy.polynomial.polynomial import polyfit
-            coefs = polyfit(log_cap[valid_mask], log_area[valid_mask], 1)
-            a_cap_fallback_coef = coefs
+    # --- Step D: multi-feature LR anchor for A_cap ---
+    # Single recipe: log A_cap regressed on every feature in
+    # `_REGIONAL_FEATURES` in log space, trained on the trusted DEM
+    # footprints. Any feature missing for a regionalised dam is imputed with
+    # the training-set median so the predictor never short-circuits.
+    #
+    # The anchor uses the FULL trusted set (every dam tagged ``reliable``),
+    # not the capacity-thresholded ``train_clean`` subset that drives the
+    # b-regression: small fixtures and small regions otherwise drop below
+    # the multi-LR's min_n and lose the recipe entirely.
+    trusted_full = summary_df[summary_df["reliable"]].copy()
+    multi_fit = _fit_multi_anchor_lr_full(trusted_full)
+    a_cap_multi_coef = multi_fit["coefs"] if multi_fit is not None else None
+    if multi_fit is not None:
+        print(f"  Multi-LR A_cap fit:  {len(_REGIONAL_FEATURES)} features, "
+              f"intercept={a_cap_multi_coef[0]:+.3f}, "
+              f"residual sigma={np.sqrt(multi_fit['residual_var']):.3f} (ln-space)")
+    else:
+        print("  [WARN] Multi-LR A_cap fit could not be trained (fewer than "
+              "8 trusted dams with all features). Regionalization will fail "
+              "loudly only if a dam actually needs regionalising.")
+
+    # 1-sigma uncertainty in b from the trusted-set distribution. Used by
+    # quadrature to inflate the c uncertainty (since c = V_cap / A_cap^b).
+    b_sigma = (float((trusted_full["b"].quantile(0.84)
+                       - trusted_full["b"].quantile(0.16)) / 2.0)
+               if len(trusted_full) else 0.25)
+
+    feature_medians = {
+        f: float(trusted_full[f].dropna().median())
+        for f in _REGIONAL_FEATURES if f in trusted_full.columns
+    }
 
     # --- Step E: Assign parameters to every dam ---
     param_rows = []
@@ -192,11 +324,10 @@ def run_regionalization(summary_df, failures, dam_data_list):
         param_rows.append({
             "dam_id": row["dam_id"],
             "dam_name": row.get("dam_name", ""),
+            "capacity_mcm": row["capacity_mcm"],
             "c": row["c"],
             "b": row["b"],
             "source": "srtm_derived",
-            "capacity_mcm": row["capacity_mcm"],
-            "r_squared": row["r_squared"],
         })
 
     # (b) Unreliable SRTM dams
@@ -221,9 +352,11 @@ def run_regionalization(summary_df, failures, dam_data_list):
             "capacity_mcm": float(dam_d.get("storage_capacity_m3", 0)) / 1e6,
             "dam_height_m": float(dam_d.get("dam_height_m", 0)),
             "spillway_height_m": float(dam_d.get("spillway_height_m", 0)),
+            "dam_length_m": float(dam_d.get("dam_length_m") or np.nan),
             "valley_ratio": f.get("valley_ratio", np.nan),
             "channel_slope": f.get("channel_slope", np.nan),
             "mean_catchment_slope": f.get("mean_catchment_slope", np.nan),
+            "upstream_area_km2": f.get("upstream_area_km2", np.nan),
             "lat": dam_d.get("_lat", np.nan),
             "lon": dam_d.get("_lon", np.nan),
         })
@@ -236,9 +369,11 @@ def run_regionalization(summary_df, failures, dam_data_list):
             "capacity_mcm": row["capacity_mcm"],
             "dam_height_m": row.get("dam_height_m", np.nan),
             "spillway_height_m": row.get("spillway_height_m", np.nan),
+            "dam_length_m": row.get("dam_length_m", np.nan),
             "valley_ratio": row.get("valley_ratio", np.nan),
             "channel_slope": row.get("channel_slope", np.nan),
             "mean_catchment_slope": row.get("mean_catchment_slope", np.nan),
+            "upstream_area_km2": row.get("upstream_area_km2", np.nan),
             "lat": row.get("lat", np.nan),
             "lon": row.get("lon", np.nan),
         })
@@ -257,63 +392,50 @@ def run_regionalization(summary_df, failures, dam_data_list):
             region_df["source"] = "regr_derived"
         else:
             region_df["b"] = regional_median_b
-            region_df["source"] = "regi_derived"
+            region_df["source"] = "regi_multi"
 
+        # Median-impute any missing regionalisation feature so the multi-LR
+        # never short-circuits at predict time.
+        for feat, med in feature_medians.items():
+            if feat in region_df.columns:
+                region_df[feat] = region_df[feat].where(
+                    region_df[feat].notna() & (region_df[feat] > 0), med,
+                )
+
+        # Multi-feature LR anchor for A_cap, back-solving c = V_cap / A_cap^b.
+        # The anchor enforces V(A_cap_pred) = V_cap exactly; uncertainty
+        # away from the anchor is driven by b_sigma and is propagated
+        # downstream by the dedicated uncertainty module.
         for idx_r, row_r in region_df.iterrows():
-            dam_id_r = row_r["dam_id"]
             capacity_m3_r = row_r["capacity_mcm"] * 1e6
             b_val = row_r["b"]
-            A_cap_m2 = np.nan
-
-            sat_path = os.path.join(_cfg.WATER_EXTENT_DIR, f"{dam_id_r}_ts_filtered.csv")
-            if os.path.isfile(sat_path):
-                try:
-                    sat_df = pd.read_csv(sat_path)
-                    if "water_area_km2" in sat_df.columns:
-                        areas = sat_df["water_area_km2"].dropna()
-                        if len(areas) > 5:
-                            A_cap_km2 = float(areas.quantile(0.95))
-                            A_cap_m2 = A_cap_km2 * 1e6
-                except Exception:
-                    pass
-
-            if np.isnan(A_cap_m2) and a_cap_fallback_coef is not None:
-                cap_mcm = row_r["capacity_mcm"]
-                if np.isfinite(cap_mcm) and cap_mcm > 0:
-                    log_a = (a_cap_fallback_coef[0]
-                             + a_cap_fallback_coef[1] * np.log(cap_mcm))
-                    A_cap_km2 = np.exp(log_a)
-                    A_cap_m2 = A_cap_km2 * 1e6
-
-            c_val = np.nan
-            if np.isfinite(A_cap_m2) and A_cap_m2 > 0 and np.isfinite(b_val):
-                c_val = capacity_m3_r / (A_cap_m2 ** b_val)
-                v_check = c_val * (A_cap_m2 ** b_val)
-                if v_check <= 0 or v_check > 2.0 * capacity_m3_r or v_check < 0.5 * capacity_m3_r:
-                    c_val = regional_median_c
-                    region_df.at[idx_r, "b"] = regional_median_b
-                    region_df.at[idx_r, "source"] = "regi_derived"
-
-            if np.isnan(c_val) or c_val <= 0:
-                c_val = regional_median_c
-                region_df.at[idx_r, "b"] = regional_median_b
-                region_df.at[idx_r, "source"] = "regi_derived"
-
-            region_df.at[idx_r, "c"] = c_val
+            log_a_ln, _ = _predict_log_a_with_sigma(row_r, multi_fit)
+            if (log_a_ln is None or not np.isfinite(log_a_ln)
+                    or not np.isfinite(b_val)):
+                raise RuntimeError(
+                    f"Multi-LR anchor failed for dam {row_r['dam_id']!r} "
+                    "after median imputation -- this should not happen and "
+                    "indicates a bug or fully-degenerate inputs."
+                )
+            A_cap_m2 = float(np.exp(log_a_ln)) * 1e6
+            region_df.at[idx_r, "c"] = capacity_m3_r / (A_cap_m2 ** b_val)
+            region_df.at[idx_r, "source"] = "regi_multi"
 
         for _, row_r in region_df.iterrows():
             param_rows.append({
                 "dam_id": row_r["dam_id"],
                 "dam_name": row_r.get("dam_name", ""),
+                "capacity_mcm": row_r["capacity_mcm"],
                 "c": row_r["c"],
                 "b": row_r["b"],
                 "source": row_r["source"],
-                "capacity_mcm": row_r["capacity_mcm"],
-                "r_squared": np.nan,
             })
 
     params_df = pd.DataFrame(param_rows)
     params_df["b"] = params_df["b"].clip(1.1, 2.0)
+    params_df = params_df[[
+        "dam_id", "dam_name", "capacity_mcm", "c", "b", "source",
+    ]]
 
     dup_mask = params_df["dam_id"].duplicated(keep=False)
     if dup_mask.any():
@@ -322,7 +444,8 @@ def run_regionalization(summary_df, failures, dam_data_list):
               f"{dup_ids[:5]}{'...' if len(dup_ids) > 5 else ''}")
         params_df = params_df.drop_duplicates(subset="dam_id", keep="first").reset_index(drop=True)
 
-    # --- Save ---
+    # --- Save (sorted by dam_id for deterministic, human-readable output) ---
+    params_df = params_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
     params_path = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
     params_df.to_csv(params_path, index=False)
 

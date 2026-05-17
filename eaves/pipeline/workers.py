@@ -38,6 +38,35 @@ class DamRow:
         return self._data.get(key, default)
 
 
+def _catalogue_features(dam_data):
+    """Catalogue-available features attached to every failure record.
+
+    Returns the four catalogue/external columns that we can populate without
+    running placement (capacity, dam height, spillway height, upstream catchment
+    area). Non-numeric or missing values come through as NaN.
+    """
+    def _f(key):
+        try:
+            v = float(dam_data.get(key))
+        except (TypeError, ValueError):
+            return np.nan
+        return v if np.isfinite(v) else np.nan
+    sc = dam_data.get("storage_capacity_m3")
+    try:
+        cap_mcm = float(sc) / 1e6
+        if not np.isfinite(cap_mcm):
+            cap_mcm = np.nan
+    except (TypeError, ValueError):
+        cap_mcm = np.nan
+    return {
+        "capacity_mcm":        cap_mcm,
+        "dam_height_m":        _f("dam_height_m"),
+        "spillway_height_m":   _f("spillway_height_m"),
+        "dam_length_m":        _f("dam_length_m"),
+        "upstream_area_km2":   _f("upstream_area_km2"),
+    }
+
+
 def _process_dam_worker(dam_data, gdf_rivers_data):
     _cfg._srtm_cache = {}
 
@@ -53,6 +82,7 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
                 "mark_placement_failed=1 in dam_placement_overrides.csv "
                 "(QC: skip SRTM placement; catalogue/terrain not trustworthy for this site)."
             ),
+            **_catalogue_features(dam_data),
         }
 
     from shapely.geometry import Point
@@ -76,11 +106,15 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
         if spillway_height <= 0:
             spillway_height = dam_height * 0.75
     except (ValueError, TypeError):
-        return None, {"dam_id": dam_id, "dam_name": dam_name_latin,
-                      "reason": "missing_attributes",
-                      "detail": "Invalid dam_height_m or storage_capacity_m3"}
+        return None, {
+            "dam_id": dam_id,
+            "dam_name": dam_name_latin,
+            "reason": "missing_attributes",
+            "detail": "Invalid dam_height_m or storage_capacity_m3",
+            **_catalogue_features(dam_data),
+        }
 
-    buf_deg = buffer_deg_for_dam(capacity_m3, dam_height)
+    buf_deg = buffer_deg_for_dam(capacity_m3)
 
     # --- Extract topo features ---
     topo_features = {
@@ -163,6 +197,7 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
         "dam_name": dam_name_latin,
         "reason": _classify_failure(str(last_error)),
         "detail": str(last_error),
+        **_catalogue_features(dam_data),
     }
     failure.update(topo_features)
     return None, failure

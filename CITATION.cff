@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
-title: "EAVES: elevation--area--volume curves for Saudi Arabian reservoirs reconstructed from pre-impoundment SRTM topography"
+title: "EAVES: elevation-area-volume curves for Saudi Arabian reservoirs reconstructed from pre-impoundment SRTM topography"
 abstract: >
   EAVES reconstructs reservoir Elevation–Area–Volume (EAV) curves for
   ungaged arid-basin dams from pre-impoundment SRTM topography. It

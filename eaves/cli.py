@@ -36,8 +36,29 @@ def _load_translit_map():
     return mapping
 
 
+def _load_upstream_area_lookup() -> dict:
+    """Build a ``{dam_id: upstream_area_km2}`` map from the sedimentation
+    inputs once, so every worker can attach the column to its failure
+    record without re-reading the CSV.
+    """
+    sed_dir = getattr(_cfg, "SEDIMENTATION_DIR", None)
+    if not sed_dir:
+        return {}
+    p = os.path.join(sed_dir, "sedimentation_yield.csv")
+    if not os.path.isfile(p):
+        return {}
+    try:
+        df = pd.read_csv(p)
+    except Exception:
+        return {}
+    if not {"dam_id", "area_km2"}.issubset(df.columns):
+        return {}
+    return dict(zip(df["dam_id"].astype(str), df["area_km2"]))
+
+
 def _build_dam_data_list(gdf_dams, translit_map):
     """Convert GeoDataFrame rows into serialisable dicts for workers."""
+    upstream_lookup = _load_upstream_area_lookup()
     dam_data_list = []
     for idx in range(len(gdf_dams)):
         dam = gdf_dams.iloc[idx]
@@ -57,6 +78,7 @@ def _build_dam_data_list(gdf_dams, translit_map):
         dam_id = gj_id.lower() if gj_id else ""
         dam_dict["dam_id"] = dam_id
         dam_dict["dam_name_latin"] = translit_map.get(dam_id, "")
+        dam_dict["upstream_area_km2"] = upstream_lookup.get(dam_id, np.nan)
         dam_data_list.append(dam_dict)
     return dam_data_list
 
@@ -70,7 +92,7 @@ def _run_plots_and_regionalization(summary_df, failures, dam_data_list):
 _SOURCE_SUFFIX = {
     "srtm_derived": "srtm",
     "regr_derived": "regr",
-    "regi_derived": "regi",
+    "regi_multi":   "regi",
 }
 
 
@@ -188,8 +210,9 @@ def main():
 
     os.makedirs(_cfg.EAV_DIR, exist_ok=True)
     os.makedirs(_cfg.CSV_DIR, exist_ok=True)
-    os.makedirs(_cfg.PLOT_DIR, exist_ok=True)
     os.makedirs(_cfg.FLOOD_DIR, exist_ok=True)
+    # PLOT_DIR (2_results_plots/) is created lazily by the panels step --
+    # it should not appear at all when the pipeline runs without --panels.
 
     # ------------------------------------------------------------------
     # --panels-only: short-circuit; skip the pipeline entirely.
@@ -249,6 +272,7 @@ def main():
         if len(summary_df) > 0:
             add_uncertainty_flags(summary_df)
             summary_df = add_sedimentation_columns(summary_df, getattr(_cfg, "SEDIMENTATION_DIR", None))
+            summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
             summary_df.to_csv(summary_path, index=False)
 
         failures = []
@@ -344,6 +368,7 @@ def main():
                 "construction_year": result["construction_year"],
                 "dam_height_m": result["dam_height_m"],
                 "spillway_height_m": result["spillway_height_m"],
+                "dam_length_m": float(dam_dict.get("dam_length_m") or np.nan),
                 "capacity_mcm": result["capacity_mcm"],
                 "curve_type": result["curve_type"],
                 "srtm_water_level_m": result["srtm_water_level_m"],
@@ -363,6 +388,7 @@ def main():
                 "valley_ratio": result.get("valley_ratio", np.nan),
                 "channel_slope": result.get("channel_slope", np.nan),
                 "mean_catchment_slope": result.get("mean_catchment_slope", np.nan),
+                "upstream_area_km2": dam_dict.get("upstream_area_km2", np.nan),
                 "lat": dam_dict["_lat"],
                 "lon": dam_dict["_lon"],
             })
@@ -398,6 +424,7 @@ def main():
         else:
             summary_df = old_sum
 
+    summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
     summary_df.to_csv(summary_path, index=False)
     print(f"\nSummary saved: {len(summaries)} dams succeeded.")
     if len(summary_df) > 0:
@@ -409,14 +436,26 @@ def main():
             print(f"  Capacity-capped: {n_capped} dams")
         print_flag_tally(summary_df)
 
+    # fit_failed: the worker succeeded with a summary row but the power-law
+    # fit returned NaN. Carry the full feature set from the summary so the
+    # failure record is self-contained (same columns as placement_failed
+    # rows -- see workers.py).
+    _FEATURE_KEYS = (
+        "capacity_mcm", "dam_height_m", "spillway_height_m", "dam_length_m",
+        "valley_width_m", "valley_ratio", "channel_slope",
+        "mean_catchment_slope", "upstream_area_km2",
+    )
     for s in summaries:
         if np.isnan(s.get("b", np.nan)) or np.isnan(s.get("c", np.nan)):
-            failures.append({
+            rec = {
                 "dam_id": s["dam_id"],
                 "dam_name": s.get("dam_name", ""),
                 "reason": "fit_failed",
                 "detail": f"Power-law fit returned NaN (n_pixels={s['n_pixels']})",
-            })
+            }
+            for k in _FEATURE_KEYS:
+                rec[k] = s.get(k, np.nan)
+            failures.append(rec)
 
     if failures:
         fail_df = pd.DataFrame(failures)
@@ -436,6 +475,8 @@ def main():
         else:
             fail_df = old_fail
 
+    if len(fail_df) > 0:
+        fail_df = fail_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
     fail_df.to_csv(fail_path, index=False)
     print(f"Failed/flagged dams: {len(failures)}")
 

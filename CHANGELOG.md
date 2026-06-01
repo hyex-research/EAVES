@@ -4,7 +4,7 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.1] — 2026-06-01
 
 ### Changed
 
@@ -26,6 +26,15 @@ project adheres to [Semantic Versioning](https://semver.org/).
   across all 526 KSA dams): the flat-water check returned "bare valley" for
   every missing-year SRTM dam, so each kept `curve_type = full` and the same
   fit path.
+
+### Added
+
+- **`test_curves_helpers.py`** — locks construction-year parsing, including a
+  guard that a missing year never returns the old 2001 sentinel.
+- **`test_uncertainty.py`** — unit coverage for the uncertainty module
+  (`compute_b_sigma`, anchor back-solve, V-band algebra) backing panel S3.
+- Extracted `curves._parse_construction_year()` as a directly testable helper
+  (pipeline output verified unchanged).
 
 ## [1.0.0] — 2026-05-18
 
@@ -98,4 +107,5 @@ downstream simulation (RUSH).
   sediment-loss budget beyond the first-order estimate currently
   reported.
 
+[1.0.1]: https://github.com/ivanovn/eaves/releases/tag/v1.0.1
 [1.0.0]: https://github.com/ivanovn/eaves/releases/tag/v1.0.0

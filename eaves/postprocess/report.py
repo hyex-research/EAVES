@@ -131,6 +131,10 @@ def compute_characterization(data: dict, ref_year: int | None = None,
             stats["n_1980_2000"]              = int(((cy >= 1980) & (cy < 2000)).sum())
             stats["n_2000_2010"]              = int(((cy >= 2000) & (cy < 2010)).sum())
             stats["n_post_2010"]              = int((cy >= 2010).sum())
+            # Dams that exist and are used but carry no catalogue construction
+            # year. Kept visible here rather than dropped, since the era counts
+            # above otherwise silently exclude them.
+            stats["n_year_unknown"]           = int(summary["construction_year"].isna().sum())
 
         if "dam_height_m" in summary.columns:
             dh = summary["dam_height_m"].dropna()
@@ -501,6 +505,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         A("")
 
     if "construction_year_min" in stats:
+        n_unknown = stats.get("n_year_unknown", 0)
         A(f"Construction years span {_yr(stats['construction_year_min'])}–"
           f"{_yr(stats['construction_year_max'])} with the median dam built "
           f"in {_yr(stats['construction_year_median'])}. Era breakdown:")
@@ -511,7 +516,15 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         A(f"| 1980–2000 | {_fmt(stats.get('n_1980_2000'))} |")
         A(f"| 2000–2010 | {_fmt(stats.get('n_2000_2010'))} |")
         A(f"| Post-2010 | {_fmt(stats.get('n_post_2010'))} |")
+        A(f"| Year unknown | {_fmt(n_unknown)} |")
         A("")
+        if n_unknown:
+            A(f"The {_fmt(n_unknown)} year-unknown dams carry no catalogue "
+              "construction date. They are retained in the population and in "
+              "every EAV product; only the age-dependent statistics (era "
+              "assignment above, sediment budget below) exclude them, since "
+              "fabricating a year would bias those figures.")
+            A("")
 
     # ---- operational fill behavior ----
     A("### Operational fill behavior")

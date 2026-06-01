@@ -425,6 +425,13 @@ def main():
             summary_df = old_sum
 
     summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
+    # Nullable Int32 keeps known years as e.g. 2009 (not 2009.0) while
+    # unknown-year dams stay blank, rather than promoting the whole column
+    # to float because of the NaNs. (Plain int32 cannot hold the NAs.)
+    if "construction_year" in summary_df.columns:
+        summary_df["construction_year"] = (
+            summary_df["construction_year"].round().astype("Int32")
+        )
     summary_df.to_csv(summary_path, index=False)
     print(f"\nSummary saved: {len(summaries)} dams succeeded.")
     if len(summary_df) > 0:

@@ -4,6 +4,29 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **Missing construction years are no longer fabricated as 2001.** Dams with
+  no catalogue year now carry `construction_year = <NA>` (nullable `Int32`,
+  blank in `eaves_summary.csv`) instead of a sentinel 2001. The flat-water
+  detector now runs for unknown-year dams as well as pre-2000 dams, so the
+  SRTM surface itself decides full vs partial — removing the circular
+  assumption that an absent year implied a post-2000, bare-valley capture.
+- **Domain characterization keeps unknown-year dams visible.** A
+  `n_year_unknown` count and a "Year unknown" row in the era breakdown retain
+  them in the population; only age-dependent statistics (era assignment,
+  sediment budget) exclude them, since computing those without a build year
+  would require fabricating one.
+
+### Notes
+
+- EAV parameters $(c, b)$ are unchanged by this edit (verified bit-identical
+  across all 526 KSA dams): the flat-water check returned "bare valley" for
+  every missing-year SRTM dam, so each kept `curve_type = full` and the same
+  fit path.
+
 ## [1.0.0] — 2026-05-18
 
 First tagged release. Production-ready EAV curve assignment for

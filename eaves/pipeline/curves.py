@@ -45,6 +45,20 @@ from .placement import (
 )
 
 
+def _parse_construction_year(cy_raw):
+    """Parse a catalogue construction year, or ``None`` if missing/non-numeric.
+
+    A genuinely unknown year is left as ``None`` rather than fabricated: the
+    flat-water check in :func:`process_dam` runs for unknown-year dams so the
+    SRTM surface itself decides whether the reservoir was already impounded
+    (partial curve) or captured as a bare valley (full curve).
+    """
+    try:
+        return int(cy_raw)
+    except (TypeError, ValueError):
+        return None
+
+
 def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 override_lat=None, override_lon=None):
     from pyproj import Transformer
@@ -74,12 +88,8 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     sh_ov = _ov_float(ov, "spillway_height_m")
     if sh_ov is not None and sh_ov > 0:
         spillway_height = sh_ov
-    cy_raw = dam_row_data.get("construction_year")
-    try:
-        construction_year = int(cy_raw)
-    except (TypeError, ValueError):
-        # Catalogue convention: missing construction_year = post-2000 incomplete record.
-        construction_year = 2001
+    construction_year = _parse_construction_year(
+        dam_row_data.get("construction_year"))
 
     target_epsg = utm_epsg_from_lon(dam_lon)
     radius = buffer_deg_for_dam(capacity_m3)
@@ -420,12 +430,16 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
             n_pixels = int(footprint.sum())
             capped = True
 
-    is_pre2000 = construction_year < 2000
+    year_unknown = construction_year is None
+    is_pre2000 = (not year_unknown) and construction_year < 2000
     curve_type = "full"
     srtm_water_level = np.nan
     coverage_fraction = 1.0
 
-    if is_pre2000:
+    # Detect flat water for pre-2000 dams AND for dams with no known year:
+    # in both cases the reservoir may have been impounded when SRTM flew
+    # (Feb 2000), which a flat water surface in the footprint reveals.
+    if is_pre2000 or year_unknown:
         is_flat, water_level = detect_flat_water(dem_fp)
         if is_flat:
             curve_type = "partial"
@@ -476,7 +490,8 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
 
     return {
         "dam_id": dam_id,
-        "construction_year": construction_year,
+        "construction_year": (construction_year
+                              if construction_year is not None else np.nan),
         "dam_height_m": dam_height,
         "spillway_height_m": spillway_height,
         "capacity_mcm": capacity_mcm,

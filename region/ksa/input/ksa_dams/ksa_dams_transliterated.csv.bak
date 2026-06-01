@@ -232,7 +232,7 @@ id_030034,Al-Tar'ah,الترعه,24.015,39.049722,Madinah,Badr,Wadi Al-Hamad Bas
 id_030035,Al-Far'ah,الفرعه,24.480833,38.493333,Madinah,Yanbu,Wadi Al-Hamad Basin,,concrete,completed,drinking_water,recharge,600.0,18.5,13.5,20000000,1983
 id_030036,Hadhawadha,حظوظا,24.420556,39.980556,Madinah,Madinah,Wadi Al-Hamad Basin,,earthfill,completed,drinking_water,protection,595.0,7.0,4.5,40000000,1999
 id_030037,Qusayba' Al-Tad'imi,قصيباء التدعيمي,25.049046,40.473171,Madinah,Al-Hanakiyah,Wadi Al-Rumah Basin,,concrete,completed,drinking_water,protection,192.0,6.5,4.0,224127,2015
-id_030038,Al-Hasid,الحصيد,25.551061,39.385829,Madinah,Khaybar,Wadi Al-Hamad Basin,,stone_masonry,completed,drinking_water,recharge,91.0,8.0,4.5,400000,historical
+id_030038,Al-Hasid,الحصيد,25.551061,39.385829,Madinah,Khaybar,Wadi Al-Hamad Basin,,stone_masonry,completed,drinking_water,recharge,91.0,8.0,4.5,400000,
 id_030039,Al-Aqul Al-Hajari,العاقول الحجري,24.31816,39.448696,Madinah,Madinah,Wadi Al-Hamad Basin,,stone_masonry,completed,drinking_water,protection,200.0,4.5,3.0,17000000,1950
 id_040000,Aba Al-Hiyas,ابا الحياص,25.522692,42.815416,Qassim,Al-Nabhaniyah,Wadi Al-Rumah Basin,,earthfill,completed,drinking_water,protection,157.0,9.5,6.0,79473,2017
 id_040001,Al-Rubiqah,الربيقة,25.445556,43.831944,Qassim,Al-Rass,Wadi Hanifah Basin,,earthfill,completed,drinking_water,recharge,688.0,4.5,2.0,112151,2011

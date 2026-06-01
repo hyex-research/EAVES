@@ -1,6 +1,6 @@
 # EAVES domain report — Saudi Arabia
 
-_Generated: 2026-05-17 20:16 UTC_
+_Generated: 2026-06-01 09:00 UTC_
 
 _Source code: `eaves/` package; this report: `eaves.postprocess.report`._
 
@@ -12,7 +12,7 @@ This document characterizes the reservoir population in the configured region an
 - **DEM-derived curves**: 322 dams have curves fit directly from SRTM-clipped flood-fills (these are the trusted population).
 - **Regionalized curves**: 204 dams have curves assigned via a region-trained empirical recipe because the DEM fit failed quality gates — of which 24 are placement failures regionalized with topographic features captured at failure time.
 - **Operational fill behavior**: the median ratio $A_\mathrm{sat}^{P95} / A_\mathrm{DEM}$ is **0.18**, meaning a typical reservoir's observed maximum extent reaches only ~17.9% of its DEM-derived design footprint. This is the central physical fact behind the regionalization method choice below.
-- **Sediment budget**: assuming a sediment delivery ratio of 0.50 and a deposited bulk density of 1.30 t m$^{-3}$, the median predicted capacity loss by 2026 is **22.7%** of the catalogue value.
+- **Sediment budget**: assuming a sediment delivery ratio of 0.50 and a deposited bulk density of 1.30 t m$^{-3}$, the median predicted capacity loss by 2026 is **23.7%** of the catalogue value.
 - **Regionalization accuracy (LOO on trusted dams, multi-feature LR anchor)**: 89.4% of predictions within a factor of 2 of the SRTM-derived truth, median bias 0.03 dex.
 
 ## Pipeline overview
@@ -67,8 +67,11 @@ Construction years span 1955–2020 with the median dam built in 2008. Era break
 | --- | --- |
 | Pre-1980 | 39 |
 | 1980–2000 | 139 |
-| 2000–2010 | 158 |
+| 2000–2010 | 137 |
 | Post-2010 | 168 |
+| Year unknown | 21 |
+
+The 21 year-unknown dams carry no catalogue construction date. They are retained in the population and in every EAV product; only the age-dependent statistics (era assignment above, sediment budget below) exclude them, since fabricating a year would bias those figures.
 
 ### Operational fill behavior
 
@@ -84,7 +87,7 @@ This is the central physical fact that motivates the regionalization recipe in t
 
 A first-order sediment budget is computed from catchment-specific yield estimates (`sed_yield_t_ha_yr`) and upstream catchment areas, propagated to the reference year (2026) under a uniform sediment delivery ratio $\mathrm{SDR} = 0.50$ and deposited bulk density $\rho_\mathrm{sed} = 1.30\,\mathrm{t\,m^{-3}}$. The accumulated trap volume is $V_\mathrm{sed} = Y \cdot A_\mathrm{cat} \cdot (t - t_\mathrm{built}) \cdot \mathrm{SDR} / \rho_\mathrm{sed}$.
 
-Across $n = 504$ dams with all required inputs, the predicted median capacity loss is **22.7%** of design capacity, with P16–P84 = [5.75%, 104.8%]. 153 reservoirs are predicted to have lost $\ge 50\%$ of their capacity, and 85 have a predicted loss exceeding $100\%$ of design (i.e. the integrated sediment trap volume exceeds the original storage, typically very small headwater impoundments).
+Across $n = 483$ dams with all required inputs, the predicted median capacity loss is **23.7%** of design capacity, with P16–P84 = [6.11%, 106.8%]. 149 reservoirs are predicted to have lost $\ge 50\%$ of their capacity, and 83 have a predicted loss exceeding $100\%$ of design (i.e. the integrated sediment trap volume exceeds the original storage, typically very small headwater impoundments).
 
 The single bathymetric ground-truth comparison available (Baysh, id_120000) suggests this first-order budget under-predicts the operational loss by a factor of 2–3 for that catchment, consistent with $\mathrm{SDR}$ approaching 1 in small mountainous catchments rather than the conservative 0.5 used here. The numbers above should therefore be treated as a lower bound. A region-specific calibration would benefit from comparative bathymetry on a small panel of reservoirs spanning the size range.
 

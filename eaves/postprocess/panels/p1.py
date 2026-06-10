@@ -1,4 +1,9 @@
-"""Panel set p1 — KSA domain map (a) + EAVES pipeline flowchart (b)."""
+"""Panel set p1 — domain map (a) + EAVES pipeline flowchart (b).
+
+The map reads ``eaves_summary.csv``, ``eaves_params.csv``, and
+``failed_dams.csv``; the flowchart is drawn from static stage
+definitions.
+"""
 
 from __future__ import annotations
 
@@ -270,16 +275,16 @@ def _draw_panel_b(ax) -> None:
     (no fixed-width forcing) so nothing overflows; Yes/No labels sit beside
     or above their arrows, never on the line."""
     ax.set_xlim(0, 100)
-    ax.set_ylim(-3, 100)
+    ax.set_ylim(-5, 100)
     ax.set_axis_off()
     ax.set_aspect("auto")
 
     cx = 50.0
     w_proc = 95.0      # processing-step box width
     w_six = 95.0       # 6-stage box width
-    w_out = 95.0       # output / regionalisation box width
+    w_out = 95.0       # output / regionalization box width
     h_std = 5.0        # uniform sequential-box height
-    arrow = 4.0        # uniform arrow length (centre-to-centre minus halves)
+    arrow = 4.0        # uniform arrow length (center-to-center minus halves)
 
     # ---- Inputs (ellipses) ------------------------------------------------
     in_y = 95.0
@@ -309,11 +314,8 @@ def _draw_panel_b(ax) -> None:
          facecolor=COL_BOX_PROC, edgecolor=COL_BOX_PROC_EDGE,
          fontsize=10)
 
-    # ---- 6-stage wall-placement (2-column stage list) --------------------
-    # 1 axis unit ~= 1.035 mm at the current figure size, so row_step here
-    # is set to put ~1 mm of clear vertical space between successive stage
-    # rows; six_h grows to keep the box around the (now-taller) text block.
-    six_y = 67.5
+    # ---- 6-stage list: row_step gives ~1 mm row clearance (1 axis unit ~ 1.035 mm) ----
+    six_y = 66.0
     six_h = 17.0
     ax.add_patch(FancyBboxPatch(
         (cx - w_six / 2.0, six_y - six_h / 2.0),
@@ -342,10 +344,10 @@ def _draw_panel_b(ax) -> None:
 
     # ---- Sequential processing steps -------------------------------------
     proc = [
-        ("Flood fill to spillway height",                  54.0),
-        ("EAV curve: 0.5 m bins",                          45.0),
-        ("Power-law fit: $V = c \\cdot A^{b}$",            36.0),
-        ("Quality grade: A, B, C, D, F",                   27.0),
+        ("Flood fill to spillway height",                  51.0),
+        ("EAV curve: 0.5 m bins",                          42.0),
+        ("Power-law fit: $V = c \\cdot A^{b}$",            33.0),
+        ("Quality grade: A, B, C, D, F",                   24.0),
     ]
     proc_ys = []
     for (text, y) in proc:
@@ -363,20 +365,18 @@ def _draw_panel_b(ax) -> None:
                cx, proc_ys[i + 1] + h_std / 2.0)
 
     # ---- Decision (rhombus / diamond) -----------------------------------
-    dec_y = 16.5
+    dec_y = 13.5
     dec_w = 30.0
     dec_h = 8.0
     _diamond(ax, cx, dec_y, dec_w, dec_h, "Reliable?", fontsize=10)
     _arrow(ax, cx, proc_ys[-1] - h_std / 2.0,
            cx, dec_y + dec_h / 2.0)
 
-    # ---- Yes branch (right) — arrow same length as the spine arrows -----
-    # yes_w is sized so the SRTM-derived box right edge aligns with the
-    # spine and Regionalization right edges (cx + w_proc/2).
-    yes_w = 28.5
+    # ---- Yes branch (right): arrow matches spine length, yes_w snug around "SRTM" ----
+    yes_w = 15.0
     yes_h = 9.0
     yes_x = cx + dec_w / 2.0 + arrow + yes_w / 2.0
-    _box(ax, yes_x, dec_y, yes_w, yes_h, "SRTM-derived",
+    _box(ax, yes_x, dec_y, yes_w, yes_h, "SRTM",
          facecolor=COL_BOX_OUT_SRTM, edgecolor=COL_SRTM, fontsize=10)
     _arrow(
         ax,
@@ -386,7 +386,7 @@ def _draw_panel_b(ax) -> None:
     )
 
     # ---- No branch (down) — Regionalization box: title + recipe ---------
-    regi_y = 3.0
+    regi_y = 1.0
     regi_h = 9.0
     _box(ax, cx, regi_y, w_out, regi_h, "",
          facecolor=COL_BOX_OUT_REGI, edgecolor=COL_REGI)
@@ -417,8 +417,7 @@ def make_p1_domain(output_dir: str | os.PathLike) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "p1_domain_flowchart.png"
 
-    # p1 ships with a uniform 10 pt base across every text element; the
-    # panel label sits at 10 * 1.2 = 12 pt (overridden at the call site).
+    # Uniform 10 pt base; the panel label is 12 pt, overridden at the call site.
     with plt.rc_context({
         "font.size":       10,
         "axes.labelsize":  10,

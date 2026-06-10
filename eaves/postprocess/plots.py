@@ -1,4 +1,4 @@
-"""All plotting functions — styled for Nature Water submission.
+"""QC plotting helpers — styled for the Scientific Data submission.
 
 Panel labels use bold lowercase letters (a, b, c, ...).
 Font sizes: 5-7 pt (Nature max 7 pt), Arial / Helvetica.
@@ -18,9 +18,7 @@ import matplotlib.pyplot as plt
 import eaves.config as _cfg
 
 
-# ---------------------------------------------------------------------------
-# Flood map (QC only — not publication, 100 DPI)
-# ---------------------------------------------------------------------------
+# --- Flood map (QC only, 100 DPI, not publication) ---
 
 _QC_RC = {
     "font.size": 12,

@@ -1,4 +1,11 @@
-"""Per-dam EAV curve construction (``process_dam``)."""
+"""Per-dam EAV curve construction (:func:`process_dam`).
+
+Clips the DEM around the dam, runs the staged wall placement, floods the
+basin to the spillway elevation, integrates the hypsometry into (z, A, V)
+bins with the volume capped at catalogue capacity, and fits the power law
+V = c*A^b with a quality grade. Pre-2000 and unknown-year dams get a
+flat-water check and, where it triggers, a partial curve.
+"""
 
 from __future__ import annotations
 
@@ -249,11 +256,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 ds2 = get_downstream_direction_from_dem(dem_utm, dr2, dc2)
                 bad2 = _pool_downstream_skewed(fp2, dr2, dc2, ds2)
                 approx_v2 = _approx_cone_volume_m3(n2, pixel_area, spillway_height)
-                # Stage-3 acceptance rules. `approx_v0`/`approx_v2` are cone-volume
-                # estimates from the nominal and retried placements. Ratios below
-                # were hand-tuned together on the KSA catalogue and are intentionally
-                # asymmetric (different thresholds for "geometry recovered" vs
-                # "volume still short"). Change them as a set, not individually.
+                # Stage-3 acceptance ratios, hand-tuned as a set on the KSA catalogue.
                 take = False
                 if geom_bad and (not bad2) and approx_v2 >= approx_v0 * 0.82:
                     take = True
@@ -402,11 +405,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     if z_max <= z_min:
         raise ValueError(f"z_max ({z_max:.1f}) <= z_min ({z_min:.1f})")
 
-    # Snap z_min to the nearest 0.5 m so every bin elevation in the output
-    # EAV table lands on a half-integer boundary. The displacement is
-    # ≤ 0.25 m -- well below SRTM's ~2 m vertical accuracy -- and produces
-    # noticeably cleaner publication tables without changing the curve
-    # within its uncertainty.
+    # Snap z_min to the bin grid; the <=0.25 m shift is well below SRTM's ~3.6 m sigma.
     z_min = round(float(z_min) * 2.0) / 2.0
     elev_bins = np.arange(z_min, z_max + BIN_Z, BIN_Z)
     area_m2 = np.array([
@@ -436,9 +435,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     srtm_water_level = np.nan
     coverage_fraction = 1.0
 
-    # Detect flat water for pre-2000 dams AND for dams with no known year:
-    # in both cases the reservoir may have been impounded when SRTM flew
-    # (Feb 2000), which a flat water surface in the footprint reveals.
+    # Pre-2000 and unknown-year dams may be impounded in the Feb 2000 SRTM scene.
     if is_pre2000 or year_unknown:
         is_flat, water_level = detect_flat_water(dem_fp)
         if is_flat:

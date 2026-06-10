@@ -1,4 +1,9 @@
-"""DEM loading, clipping, reprojection, flow direction, and topographic features."""
+"""SRTM terrain utilities.
+
+Tile loading and mosaicking, clip and UTM reprojection around a dam, flow
+direction from the river network or the DEM gradient, and the topographic
+feature extraction used by regionalization.
+"""
 
 from __future__ import annotations
 
@@ -14,9 +19,7 @@ import eaves.config as _cfg
 from ..utils import srtm_tile_name
 
 
-# ---------------------------------------------------------------------------
-# SRTM tile loading & mosaic
-# ---------------------------------------------------------------------------
+# --- SRTM tile loading and mosaic ---
 
 def load_srtm_tiles(lat, lon, buffer_deg=0.15):
     lat_min = np.floor(lat - buffer_deg)
@@ -51,9 +54,7 @@ def load_srtm_tiles(lat, lon, buffer_deg=0.15):
     return data, out_transform, datasets[0].crs
 
 
-# ---------------------------------------------------------------------------
-# DEM clipping & reprojection
-# ---------------------------------------------------------------------------
+# --- DEM clipping and reprojection ---
 
 def clip_and_reproject_dem(dem_data, dem_transform, dem_crs,
                            center_lat, center_lon, radius_deg, target_epsg):
@@ -104,9 +105,7 @@ def clip_and_reproject_dem(dem_data, dem_transform, dem_crs,
     return dst_data, dst_transform, pixel_area, dst_crs
 
 
-# ---------------------------------------------------------------------------
-# Flow direction from river segment geometry
-# ---------------------------------------------------------------------------
+# --- Flow direction from river segment geometry ---
 
 def get_flow_direction_from_segment(gdf_rivers, segment_id, dam_lon, dam_lat,
                                     smooth_m=500.0):
@@ -245,9 +244,7 @@ def _flood_river_overlay_from_segment(
     }
 
 
-# ---------------------------------------------------------------------------
-# DEM-gradient downstream direction
-# ---------------------------------------------------------------------------
+# --- DEM-gradient downstream direction ---
 
 def get_downstream_direction_from_dem(dem, dam_row, dam_col, search_radius=5):
     nrows, ncols = dem.shape
@@ -276,12 +273,10 @@ def get_downstream_direction_from_dem(dem, dam_row, dam_col, search_radius=5):
     return downstream / norm
 
 
-# ---------------------------------------------------------------------------
-# Topographic feature extraction (for regionalization)
-# ---------------------------------------------------------------------------
+# --- Topographic feature extraction (for regionalization) ---
 
 def compute_valley_width(dem_utm, dam_r, dam_c, spillway_height, dam_elev, pixel_size):
-    """Minimum cross-section gap width at spillway level (metres).
+    """Minimum cross-section gap width at spillway level (meters).
 
     Casts rays at 2-degree intervals from the dam pixel and looks for terrain
     that rises above ``z_spillway`` on both sides. The minimum two-sided gap
@@ -292,7 +287,7 @@ def compute_valley_width(dem_utm, dam_r, dam_c, spillway_height, dam_elev, pixel
     the search window. This is the conservative lower bound for floodplain or
     wide-pan reservoirs where spillway-level terrain is genuinely farther
     away than the search radius and is the right physical answer for those
-    sites (rather than the not-a-number sentinel that the old behaviour
+    sites (rather than the not-a-number sentinel that the old behavior
     produced and that propagated downstream as a missing feature).
     """
     z_spillway = dam_elev + spillway_height

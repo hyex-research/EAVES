@@ -28,11 +28,11 @@ def main(argv: list[str] | None = None) -> None:
         "--figures",
         nargs="+",
         type=str,
-        choices=["1", "2", "3", "4", "5", "s1", "s2", "s3"],
-        default=["1", "2", "3", "4", "5", "s1", "s2", "s3"],
+        choices=["1", "2", "3", "4", "5", "s1", "s2", "s3", "s4", "s5"],
+        default=["1", "2", "3", "4", "5", "s1", "s2", "s3", "s4", "s5"],
         metavar="ID",
         help="Subset of panel IDs to render (default: all, including the "
-             "supplementary s1, s2, and s3 figures).",
+             "supplementary s1-s5 figures).",
     )
     args = parser.parse_args(argv)
 

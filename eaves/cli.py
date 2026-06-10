@@ -1,4 +1,10 @@
-"""Command-line interface. Exposed as ``python -m eaves`` or ``python run_eaves.py``."""
+"""Command-line interface, exposed as ``python -m eaves``.
+
+Drives the full pipeline from a settings JSON: preprocessing (river clip +
+dam snap), the per-dam worker pool, the summary/params/failure CSVs,
+regionalization, and optionally the publication panels. ``--plot-only``
+and ``--panels-only`` re-enter from existing outputs.
+"""
 
 from __future__ import annotations
 
@@ -211,12 +217,9 @@ def main():
     os.makedirs(_cfg.EAV_DIR, exist_ok=True)
     os.makedirs(_cfg.CSV_DIR, exist_ok=True)
     os.makedirs(_cfg.FLOOD_DIR, exist_ok=True)
-    # PLOT_DIR (2_results_plots/) is created lazily by the panels step --
-    # it should not appear at all when the pipeline runs without --panels.
+    # PLOT_DIR is created lazily by the panels step, absent without --panels.
 
-    # ------------------------------------------------------------------
-    # --panels-only: short-circuit; skip the pipeline entirely.
-    # ------------------------------------------------------------------
+    # --- --panels-only: render panels from existing outputs and exit ---
     if args.panels_only:
         print("--panels-only: rendering panel figures from existing outputs.")
         make_panels()
@@ -231,9 +234,7 @@ def main():
     rivers_path, dams_path = ensure_inputs(rebuild=args.rebuild_domain)
     gdf_dams = gpd.read_file(dams_path)
 
-    # ------------------------------------------------------------------
-    # --plot-only: reload existing CSVs and skip to plots/regionalization
-    # ------------------------------------------------------------------
+    # --- --plot-only: reload existing CSVs, skip to plots/regionalization ---
     summary_path = os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")
     fail_path = os.path.join(_cfg.CSV_DIR, "failed_dams.csv")
 
@@ -294,9 +295,7 @@ def main():
         print("--------------------------------")
         return
 
-    # ------------------------------------------------------------------
-    # Normal run: compute EAV curves
-    # ------------------------------------------------------------------
+    # --- normal run: compute EAV curves ---
     if only_ids is not None:
         id_col = "dam_id" if "dam_id" in gdf_dams.columns else "id"
         id_series = gdf_dams[id_col].astype(str).str.strip().str.lower()
@@ -425,9 +424,7 @@ def main():
             summary_df = old_sum
 
     summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
-    # Nullable Int32 keeps known years as e.g. 2009 (not 2009.0) while
-    # unknown-year dams stay blank, rather than promoting the whole column
-    # to float because of the NaNs. (Plain int32 cannot hold the NAs.)
+    # Nullable Int32: known years stay integral, unknown stay blank (int32 cannot hold NA).
     if "construction_year" in summary_df.columns:
         summary_df["construction_year"] = (
             summary_df["construction_year"].round().astype("Int32")
@@ -443,10 +440,7 @@ def main():
             print(f"  Capacity-capped: {n_capped} dams")
         print_flag_tally(summary_df)
 
-    # fit_failed: the worker succeeded with a summary row but the power-law
-    # fit returned NaN. Carry the full feature set from the summary so the
-    # failure record is self-contained (same columns as placement_failed
-    # rows -- see workers.py).
+    # fit_failed: fit returned NaN; attach the summary features so the row is self-contained.
     _FEATURE_KEYS = (
         "capacity_mcm", "dam_height_m", "spillway_height_m", "dam_length_m",
         "valley_width_m", "valley_ratio", "channel_slope",

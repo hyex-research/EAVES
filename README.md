@@ -4,7 +4,7 @@
 
 ---
 
-[![Python](https://img.shields.io/badge/python-3.14-blue.svg)](environment.yml)
+[![Python](https://img.shields.io/badge/python-3.13-blue.svg)](environment.yml)
 [![DOI](https://img.shields.io/badge/DOI-pending-yellow.svg)](#)
 [![KAUST](https://img.shields.io/badge/KAUST-HYEX-red.svg)](https://github.com/hyex-research)
 
@@ -24,7 +24,7 @@ For each dam the pipeline:
 
 The resulting `eaves_params.csv` provides the area–volume relationship for every dam in the study domain, enabling satellite-observed water extent to be converted into storage estimates for downstream hydrological modelling.
 
-> **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia**. The codebase is region-agnostic — it can be applied to any country for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalogue, and satellite water-extent time series) are available.
+> **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia**. The codebase is portable — it can be applied to any region for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalogue, and satellite water-extent time series) are available.
 
 ## ⚙️ **Method**
 
@@ -52,7 +52,7 @@ Dams with reliable SRTM-derived curves (quality grades A–B, $R^2 \geq 0.98$, $
 - **Exponent $b$** — regional median over the trusted dams (or a multivariate regression on `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `dam_height_m` if its leave-one-out $R^2 \geq 0.25$, which rarely holds for arid catchments).
 - **Coefficient $c$** — back-solved as $c = V_\mathrm{cap}/A_\mathrm{cap}^{b}$ from catalogue capacity and a multi-feature linear regression that predicts $\log A_\mathrm{cap}$ from seven log-space features: `capacity_mcm`, `dam_height_m`, `spillway_height_m`, `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `upstream_area_km2`. Any feature that is missing for a given dam is imputed with the training-set median so the regression always returns a finite value.
 
-Leave-one-out cross-validation on the trusted set quantifies the recipe's accuracy. For the Saudi Arabia deployment: median bias $\times 1.07$ of SRTM truth, $1\sigma$ spread $0.18$ dex, 90% of predictions within a factor of 2 and 98% within a factor of 3. See `eaves.postprocess.validation` and panel `p5` for the full per-recipe comparison and the rationale for retiring two earlier candidates (a satellite-anchored recipe and a single-feature log–log regression).
+Leave-one-out cross-validation on the trusted set quantifies the recipe's accuracy. For the Saudi Arabia deployment: median bias $\times 1.07$ of the SRTM-derived reference, $1\sigma$ spread $0.18$ log10 units, 89% of predictions within a factor of 2 and 98% within a factor of 3. See `eaves.postprocess.validation` and panel `p5` for the full per-recipe comparison and the rationale for retiring two earlier candidates (a satellite-anchored recipe and a single-feature log–log regression).
 
 ### Post-placement QC
 
@@ -62,7 +62,7 @@ Automated quality gates detect displaced flood centroids and negligible fill vol
 
 EAVES reconstructs reservoir geometry from a pre-impoundment DEM — it is not a surveyed bathymetric record. Users should treat outputs as a best-effort approximation rather than absolute capacity.
 
-- **Valley-geometry approximation, not bathymetry**: curves follow the SRTM valley surface up to the spillway, not a measured reservoir bottom. They are sensitive to DEM noise (±2 m vertical, ~10 m horizontal LE90) in the same way the underlying terrain is.
+- **Valley-geometry approximation, not bathymetry**: curves follow the SRTM valley surface up to the spillway, not a measured reservoir bottom. They are sensitive to DEM noise (vertical LE90 ≈ 6 m for low-relief terrain) in the same way the underlying terrain is.
 - **Synthetic dam wall**: the wall orientation and length come from a terrain-alignment search at or near the catalogue coordinates — it is the best-fit crest for that SRTM patch, not necessarily the engineered as-built structure. Small placement shifts can meaningfully change the reconstructed footprint.
 - **SRTM snapshot (Feb 2000)**: dams constructed after 2000 get a clean pre-impoundment valley (ideal); dams predating 2000 carry whatever sediment and reservoir infill had already accumulated by the acquisition date, so their curves are partial rather than pre-dam.
 - **Resolution-limited regimes**: sub-pixel reservoirs (`n_pixels < 30`), narrow valleys (`valley_width_m < 3 × pixel_size`), shallow depressions (`spillway_height_m < 5 m`), and urban-modified terrain produce curves with elevated uncertainty — see the `uncertainty_flags` column in `eaves_summary.csv` for per-dam tagging.
@@ -97,6 +97,26 @@ Defaults to `region/ksa/ksa.json` if no settings file is supplied. Runs five ste
 | `--plot-only` | Skip per-dam calculation and regenerate plots from existing results |
 | `--only id_120000 id_020017 ...` | Process only the listed dam IDs |
 | `--rebuild-domain` | Rebuild the preprocessing cache (MERIT clip + segment split + dam snap) instead of loading from `<domain_dir>/` |
+
+### Validation diagnostics
+
+`eaves.postprocess.validation` runs three cheap, internal-consistency diagnostics by default — LOO regionalization evaluation, the $A_\mathrm{DEM}$ vs satellite-P95 area check, and the deployed-direction goodness-of-fit residual — each skippable with `--skip-loo`, `--skip-area-check`, `--skip-gof`. It also hosts two heavier diagnostics that are **opt-in (off by default)** because each re-runs the real flood-fill many times. Both are param-safe: they never call regionalization, never overwrite `eaves_params.csv` or any released artefact, and write only their own CSV under `validation/`.
+
+```bash
+# Cheap defaults only (what run_all.sh invokes):
+python -m eaves.postprocess.validation --settings region/ksa/ksa.json
+
+# Constant sensitivity sweep -> validation/sensitivity_sweep.csv
+python -m eaves.postprocess.validation --settings region/ksa/ksa.json \
+    --sensitivity [--sensitivity-n-dams 60] [--sensitivity-seed 7]
+
+# SRTM vertical-error Monte-Carlo -> validation/dem_error_montecarlo.csv
+python -m eaves.postprocess.validation --settings region/ksa/ksa.json \
+    --dem-mc [--dem-mc-n-dams 36] [--dem-mc-n-real 32] \
+    [--dem-mc-sigma-m 3.6] [--dem-mc-corr-px 2.0] [--dem-mc-workers 8]
+```
+
+`--sensitivity` perturbs the three hand-tuned placement/acceptance constants (`ALIGN_WEIGHT`, `MAX_CREST_FLOW_DOT`, `VOID_THRESHOLD`) one at a time by $\pm20$/$30\%$ over a trusted-dam sample and reports how the trusted-set size, grade distribution, and median $b$ move. `--dem-mc` perturbs the SRTM mosaic with spatially-correlated Gaussian noise (point $\sigma\approx3.6~\mathrm{m}$, LE90 $\approx 6~\mathrm{m}$) and re-fits, reporting the fractional spread of recovered volume and $b$. The DEM-MC writes each dam's row incrementally with a per-dam wall-clock budget, so a killed run is resumable — re-launch to skip dams already in the CSV, or pass `--dem-mc-fresh` to start over.
 
 ### Testing
 
@@ -150,7 +170,9 @@ Unknown keys raise `ValueError` — a typo in a settings file fails loudly rathe
 │       ├── regionalization.py   # Reliability tagging, threshold analysis, parameter assignment
 │       ├── reliability.py       # Physical uncertainty flags (sub-pixel, narrow valley, etc.)
 │       ├── external_data.py     # Merge optional sedimentation / OWE columns into summary
-│       ├── validation.py        # LOO regionalization validation + DEM-vs-sat-area diagnostic
+│       ├── validation.py        # LOO regionalization validation + DEM-vs-sat-area diagnostic; opt-in --sensitivity / --dem-mc steps
+│       ├── sensitivity.py       # Opt-in: placement/acceptance constant sensitivity sweep (writes validation/sensitivity_sweep.csv)
+│       ├── dem_error.py         # Opt-in: SRTM vertical-error Monte-Carlo (writes validation/dem_error_montecarlo.csv)
 │       ├── uncertainty.py       # Propagate b_sigma to per-dam V uncertainty at standard fill levels
 │       ├── report.py            # Domain-characterization CSV + Markdown report
 │       └── panels/              # Publication panels (p1-p5 main, s1-s3 supplementary; PNG + PDF)
@@ -181,7 +203,8 @@ Unknown keys raise `ValueError` — a typo in a settings file fails loudly rathe
 │
 ├── pytest.ini                   # Pytest config (registers `slow` marker)
 ├── environment.yml              # Conda environment specification
-├── LICENSE                      # CC BY 4.0
+├── LICENSE                      # Apache-2.0 (code)
+├── LICENSE-DATA                 # CC BY 4.0 (data products)
 └── README.md
 ```
 
@@ -191,15 +214,17 @@ Unknown keys raise `ValueError` — a typo in a settings file fails loudly rathe
 
 | File | Description |
 | ---- | ----------- |
-| `eaves_summary.csv` | One row per successfully processed dam: fitted $c$, $b$, $R^2$, footprint area, quality grade, placement method, reliability flags (`uncertainty_flags`, `uncertainty_score`), `upstream_area_km2`, and — when `sedimentation_dir` is provided — `sed_yield_t_ha_yr`, `owe_mm_year`. Sorted by `dam_id`. |
+| `eaves_summary.csv` | One row per successfully processed dam: fitted $c$, $b$, $R^2$, footprint area, quality grade, placement method, reliability flags (`uncertainty_flags`, `uncertainty_score`), `upstream_area_km2`, and — when `sedimentation_dir` is provided — `sed_yield_t_ha_yr` (delivered yield), `owe_mm_year`, plus the derived `predicted_silt_fraction` and `sediment_risk`. Sorted by `dam_id`. |
 | `eaves_params.csv` | Lean per-dam parameter table: six columns (`dam_id`, `dam_name`, `capacity_mcm`, `c`, `b`, `source`) with no NaN cells. `source` is `srtm_derived` (DEM-fit) or `regi_multi` (multi-feature LR anchor). Sorted by `dam_id`. The 1$\sigma$ uncertainty on $b$ is a region-level scalar stored in `validation/v_uncertainty.csv` and `domain_characterization.csv` — not duplicated per row. |
-| `failed_dams.csv` | Dams that failed placement or fit, with failure reason and the full feature set attached at failure time so the row is self-contained for regionalisation. Sorted by `dam_id`. |
+| `failed_dams.csv` | Dams that failed placement or fit, with failure reason and the full feature set attached at failure time so the row is self-contained for regionalization. Sorted by `dam_id`. |
 | `threshold_analysis.csv` | Capacity-threshold sweep used to select the reliability cut. |
 | `domain_characterization.csv` | Key/value table of the domain statistics surfaced in `report.md`. |
-| `validation/regionalization_loo.csv` | Per-dam LOO residuals of every regionalisation recipe evaluated by `eaves.postprocess.validation`. |
+| `validation/regionalization_loo.csv` | Per-dam LOO residuals of every regionalization recipe evaluated by `eaves.postprocess.validation`. |
 | `validation/dem_vs_sat_area.csv` | Per-dam $A_\mathrm{DEM}$ vs satellite-P95 area comparison (diagnostic only). |
 | `validation/b_clustering_diagnostic.csv` | Silhouette and LOO $\sigma(\Delta b)$ over $k$ for the raw-morphometry feature set; written by the s1 panel on first invocation. Backs supplementary figure S1 (justifies the global-median choice for $b$). |
-| `validation/v_uncertainty.csv` | Per-dam V uncertainty propagated from `b_sigma` at half, quarter, and tenth pool (in dex and as +%/-% bands). Written by `eaves.postprocess.uncertainty`. Backs supplementary figure S3. |
+| `validation/v_uncertainty.csv` | Per-dam V uncertainty propagated from `b_sigma` at half, quarter, and tenth pool (in log10 units and as +%/-% bands). Written by `eaves.postprocess.uncertainty`. Backs supplementary figure S3. |
+| `validation/sensitivity_sweep.csv` | Per-cell trusted-set size, A–F grade counts, and median trusted $b$ as each of three placement/acceptance constants is perturbed $\pm20$/$30\%$. Written only by the opt-in `--sensitivity` step (see [Validation diagnostics](#validation-diagnostics)). |
+| `validation/dem_error_montecarlo.csv` | Per-dam spread of recovered max volume and $b$ across SRTM vertical-error realizations, relative to the unperturbed reference. Written only by the opt-in `--dem-mc` step (see [Validation diagnostics](#validation-diagnostics)). |
 | `eav_tables/{dam_id}_eav.csv` | Per-dam tabulated $(z, A, V)$ on half-integer-snapped elevation bins. |
 
 ### Panel figures (`output/2_results_plots/`, written only when `--panels` is requested)
@@ -212,7 +237,7 @@ Every panel is emitted as both a 300-dpi PNG (embedded in `report.md`) and a vec
 | `p2_placement.png` | Three worked placement examples illustrating the six-stage cascade |
 | `p3_baish_example.png` | Worked example for the bathymetry-cross-referenced reservoir |
 | `p4_comparison.png` | Cross-reference against sonar bathymetry (Baysh) and GRDL (3 reference dams). Methodologically distinct datasets — not validation in the strict sense |
-| `p5_regionalization_validation.png` | LOO validation of the shipped regionalisation recipe (the only true internal validation) |
+| `p5_regionalization_validation.png` | LOO validation of the shipped regionalization recipe (the only true internal validation) |
 | `s1_b_clustering_silhouette.png` | Supplementary: K-means clustering diagnostic for $b$ — silhouette vs $k$ and LOO $\sigma(\Delta b)$ vs $k$ on the raw morphometry feature set. Justifies the global-median choice for $b$. |
 | `s2_threshold_analysis.png` | Supplementary: capacity-threshold sweep behind the reliability cut — $R^2$ vs reservoir size by quality grade, and fraction-reliable vs candidate cutoff. |
 | `s3_uncertainty_band.png` | Supplementary: V uncertainty band derived from `b_sigma`. (a) Worked example on Baysh with the $\pm b_\sigma$ band pinned through the catalogue anchor; (b) the universal $\sigma(\log_{10}V)$ curve vs normalised area with the regional typical operational fill marked. |
@@ -221,7 +246,7 @@ Pipeline runs without `--panels` produce **no** files in `2_results_plots/`; onl
 
 ### Flood QC maps (`output/0_check_dams/`)
 
-One PNG per dam showing the DEM, flood footprint, river network overlay, a red triangle at the dam location, and a darkorange line indicating the chosen dam-wall orientation and length. After regionalisation each plot is renamed to reflect the parameter source: `{dam_id}_srtm.png` (direct SRTM fit), `{dam_id}_regi.png` (multi-feature LR anchor).
+One PNG per dam showing the DEM, flood footprint, river network overlay, a red triangle at the dam location, and a darkorange line indicating the chosen dam-wall orientation and length. After regionalization each plot is renamed to reflect the parameter source: `{dam_id}_srtm.png` (direct SRTM fit), `{dam_id}_regi.png` (multi-feature LR anchor).
 
 ## 📥 **Data dependencies**
 
@@ -258,6 +283,7 @@ Key dependencies: `numpy`, `scipy`, `pandas`, `geopandas`, `rasterio`, `pyproj`,
 
 ## 📜 **License**
 
-This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+The source code is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (`LICENSE`). The data products — the EAVES dataset and the files under `region/<country>/output/`, archived on Zenodo — are licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) (`LICENSE-DATA`).
 
-[![CC BY 4.0](https://licensebuttons.net/l/by/4.0/88x31.png)](https://creativecommons.org/licenses/by/4.0/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Data: CC BY 4.0](https://licensebuttons.net/l/by/4.0/88x31.png)](https://creativecommons.org/licenses/by/4.0/)

@@ -2,7 +2,7 @@
 
 Panel a — SRTM DEM with inundated footprint.
 Panel b — Area–volume curve on log-log axes with the fitted power law.
-Panel c — Histogram of the power-law exponent ``b`` across grade-A/B reservoirs.
+Panel c — Histogram of the power-law exponent ``b`` across the trusted set.
 """
 
 from __future__ import annotations
@@ -203,7 +203,7 @@ def _draw_panel_b(ax) -> None:
 
 
 def _draw_panel_c(ax) -> None:
-    """Histogram of the power-law exponent b across grade-A/B reservoirs."""
+    """Histogram of the power-law exponent b across the trusted-set reservoirs."""
     _, summary_csv = example_paths()
     summary = pd.read_csv(summary_csv)
     ex_row = example_summary_row()
@@ -214,8 +214,15 @@ def _draw_panel_c(ax) -> None:
         or example_dam_id()
     )
 
-    ab = summary[summary["quality"].isin(["A", "B"])]
-    b_values = ab["b"].to_numpy()
+    # Canonical trusted-set gates, so n and median b match domain_characterization.csv.
+    trusted = summary[
+        summary["quality"].isin(["A", "B"])
+        & (summary["r_squared"] >= 0.98)
+        & summary["vol_ratio"].between(0.3, 5.0)
+        & (summary["n_pixels"] >= 50)
+        & summary["b"].notna()
+    ]
+    b_values = trusted["b"].to_numpy()
     n_ab = b_values.size
     median_b = float(np.median(b_values))
 
@@ -274,9 +281,9 @@ def make_p3_baish(output_dir: str | os.PathLike) -> Path:
         fig = plt.figure(figsize=(mm_to_in(230), mm_to_in(170)))
         gs = fig.add_gridspec(
             2, 2,
-            width_ratios=[1.0, 1.0],
+            width_ratios=[1.0, 1.28],
             height_ratios=[1.05, 0.85],
-            wspace=0.32, hspace=0.32,
+            wspace=0.24, hspace=0.32,
             left=0.07, right=0.985, top=0.95, bottom=0.09,
         )
         ax_a = fig.add_subplot(gs[0, 0])
@@ -285,10 +292,7 @@ def make_p3_baish(output_dir: str | os.PathLike) -> Path:
         ax_c = fig.add_subplot(gs[1, :])
         _draw_panel_c(ax_c)
 
-        # plt.colorbar(ax=ax) steals width from ax_a's right side, leaving
-        # ax_a + its colorbar visually centred a few percent right of ax_c's
-        # left edge. Re-anchor ax_a (and its colorbar) so their combined
-        # left edge sits flush with ax_c's left edge.
+        # Re-anchor ax_a and its colorbar flush with ax_c's left edge (colorbar steals width).
         fig.canvas.draw()
         pos_a = ax_a.get_position()
         pos_c = ax_c.get_position()

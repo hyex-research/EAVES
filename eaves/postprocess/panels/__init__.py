@@ -1,6 +1,6 @@
 """Multi-panel publication figures for the EAVES Data Descriptor.
 
-Renders four publication figures from existing EAVES outputs into the
+Renders the publication figures (p1-p5 main + s1-s5 supplementary) from existing EAVES outputs into the
 plot directory (``<OUTPUT_DIR>/2_results_plots``). All figures share a single
 matplotlib rcParams block (Scientific Data / Nature portfolio conventions)
 defined in :mod:`._shared`. Every panel is drawn directly from CSV data or
@@ -11,11 +11,11 @@ Panel sets
 ----------
 p1   Domain map (a) and pipeline flowchart (b).
 p2   Dam wall placement on three exemplar reservoirs illustrating the six
-     pipeline stages: Stage 1 fast path (a), Stage 4 river-direction retry
-     (b), Stage 6 synthetic fallback (c).
+     pipeline stages: Stage 1 direct placement (a), Stage 4 river-direction
+     retry (b), Stage 6 fallback (c).
 p3   Worked example for the bathymetry-validated reservoir: SRTM DEM (a),
      area--volume log--log curve with power-law fit (b), histogram of the
-     volume--area exponent ``b`` over grade-A/B reservoirs (c).
+     volume--area exponent ``b`` over the trusted set (c).
 p4   Cross-reference comparison: sonar vs. SRTM (a), EAVES vs. GRDL for three reference
      reservoirs (b), volume-ratio distribution across the domain (c).
 
@@ -47,6 +47,8 @@ from .p5 import make_p5_validation
 from .s1 import make_s1_clustering
 from .s2 import make_s2_threshold
 from .s3 import make_s3_uncertainty
+from .s4 import make_s4_dem_error
+from .s5 import make_s5_sensitivity
 
 
 __all__ = [
@@ -60,6 +62,8 @@ __all__ = [
     "make_s1_clustering",
     "make_s2_threshold",
     "make_s3_uncertainty",
+    "make_s4_dem_error",
+    "make_s5_sensitivity",
     "make_panels",
 ]
 
@@ -88,7 +92,7 @@ def _default_output_dir() -> Path:
 
 def make_panels(
     output_dir: str | os.PathLike | None = None,
-    figures: tuple = ("1", "2", "3", "4", "5", "s1", "s2", "s3"),
+    figures: tuple = ("1", "2", "3", "4", "5", "s1", "s2", "s3", "s4", "s5"),
 ) -> dict:
     """Render the requested panel figures into ``output_dir``.
 
@@ -97,8 +101,8 @@ def make_panels(
     output_dir
         Destination directory. Defaults to ``<OUTPUT_DIR>/2_results_plots``.
     figures
-        Subset of ``{"1", "2", "3", "4", "5", "s1", "s2", "s3"}`` to render;
-        defaults to all eight. Integer items are accepted too and
+        Subset of ``{"1", "2", "3", "4", "5", "s1", "s2", "s3", "s4", "s5"}``
+        to render; defaults to all ten. Integer items are accepted too and
         converted to strings.
 
     Returns
@@ -122,6 +126,8 @@ def make_panels(
         "s1": make_s1_clustering,
         "s2": make_s2_threshold,
         "s3": make_s3_uncertainty,
+        "s4": make_s4_dem_error,
+        "s5": make_s5_sensitivity,
     }
     for pid, fn in builders.items():
         if pid not in figures:
@@ -129,9 +135,6 @@ def make_panels(
         try:
             rendered[pid] = [fn(out_dir)]
         except Exception as e:
-            # Panel render failures should not abort sibling panels.
-            # The most common cause is a missing input (e.g. fixture runs
-            # with no bathymetry CSV); the failure is logged once and the
-            # remaining panels still render.
+            # A panel failure (usually a missing input) must not abort sibling panels.
             print(f"[panels] skipped {pid}: {type(e).__name__}: {e}")
     return rendered

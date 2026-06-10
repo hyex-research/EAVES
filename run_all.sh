@@ -59,7 +59,8 @@ python -m eaves.postprocess.panels --settings "$SETTINGS"
 
 echo
 echo "[run_all] (5/5) Report --------------------------------------------"
-python -m eaves.postprocess.report --settings "$SETTINGS"
+# --ref-year pinned so the sediment budget is reproducible (paper states 2026).
+python -m eaves.postprocess.report --settings "$SETTINGS" --ref-year 2026
 
 if [[ "${RUN_TESTS:-0}" == "1" ]]; then
     echo

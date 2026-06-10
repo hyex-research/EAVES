@@ -33,9 +33,7 @@ RIVERS_SPLIT_GEOJSON = "rivers_split.geojson"
 DAMS_SNAPPED_GEOJSON = "dams_snapped.geojson"
 
 
-# ---------------------------------------------------------------------------
-# Segment splitting
-# ---------------------------------------------------------------------------
+# --- Segment splitting ---
 def _split_long_segments(gdf_rivers: gpd.GeoDataFrame, max_seg_len_m: float) -> gpd.GeoDataFrame:
     """Split segments longer than ``max_seg_len_m`` and rewire up1..up4."""
     gdf_proj = gdf_rivers.to_crs(epsg=3857).copy()
@@ -78,8 +76,7 @@ def _split_long_segments(gdf_rivers: gpd.GeoDataFrame, max_seg_len_m: float) -> 
 
     gdf_new = gpd.GeoDataFrame(new_segments, crs=gdf_proj.crs).to_crs(gdf_rivers.crs)
 
-    # Rewire cross-segment references so downstream parts point to the first
-    # part of whatever split-up segment used to be their upstream neighbour.
+    # Rewire cross-segment references to the first part of each split segment.
     split_map: dict[str, list[str]] = {}
     for idx in gdf_new.index:
         if "_part" in str(idx):
@@ -98,9 +95,7 @@ def _split_long_segments(gdf_rivers: gpd.GeoDataFrame, max_seg_len_m: float) -> 
     return gdf_new
 
 
-# ---------------------------------------------------------------------------
-# Dam snapping
-# ---------------------------------------------------------------------------
+# --- Dam snapping ---
 def _snap_search_bounds_wgs84(point: Point, max_snap_distance_m: float):
     """Metric-padded bounding box around a WGS84 point for spatial-index prefilter."""
     lat = float(point.y)
@@ -174,8 +169,7 @@ def _snap_dams_to_nearest_segment(
 
     out = gdf_dams.copy()
     out["snapped_segment_id"] = snapped_ids
-    # Replace catalogue geometry with the snapped node where available; leave
-    # the original point intact otherwise so downstream code can still run.
+    # Use the snapped node where available, otherwise keep the original point.
     out["geometry"] = [
         sp if sp is not None else g
         for sp, g in zip(snapped_pts, out.geometry)
@@ -185,9 +179,7 @@ def _snap_dams_to_nearest_segment(
     return out.reset_index(drop=True), n_unsnapped
 
 
-# ---------------------------------------------------------------------------
-# Orchestrator
-# ---------------------------------------------------------------------------
+# --- Orchestrator ---
 def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
     """Build (or load from cache) the preprocessed rivers + snapped dams.
 
@@ -270,10 +262,7 @@ def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
     print(f"    {n_snapped} snapped; {n_unsnapped} kept on catalogue coords "
           f"(further than {_cfg.MAX_SNAP_DISTANCE_M:.0f} m from MERIT — stage-4 retry skipped).")
 
-    # --- Persist ---
-    # GeoJSON doesn't store custom indices; reset to a plain RangeIndex and
-    # keep the split-segment ID in a column named "index" (terrain.py and
-    # curves.py look up segments via gdf_rivers["index"]).
+    # GeoJSON drops custom indices; keep the segment ID in the "index" column read downstream.
     gdf_split_out = gdf_split.reset_index()
     gdf_split_out.to_file(rivers_path, driver="GeoJSON")
     gdf_snapped.to_file(dams_path, driver="GeoJSON")

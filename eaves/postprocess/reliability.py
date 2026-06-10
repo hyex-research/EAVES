@@ -4,8 +4,8 @@ Each flag marks a geometry regime where SRTM can't reliably resolve
 the reservoir (grid resolution, vertical noise, or topographic edge cases).
 Flags are additive — a dam can be tagged by several at once.
 
-Thresholds are calibrated to SRTM 1 arc-sec (~30 m grid, ~2 m vertical noise,
-~10 m horizontal LE90).
+Thresholds are calibrated to SRTM 1 arc-sec (~30 m grid, LE90 ~6 m vertical
+accuracy, i.e. sigma ~3.6 m, ~10 m horizontal LE90).
 """
 
 from __future__ import annotations

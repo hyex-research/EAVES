@@ -16,6 +16,7 @@ from eaves.postprocess.regionalization import (
     _log_feature_vector,
     _fit_multi_anchor_lr,
     _predict_multi_anchor_lr,
+    acap_regression_diagnostics,
 )
 
 
@@ -161,9 +162,9 @@ class TestMultiAnchorPredict:
             if a_pred is not None and a_pred > 0:
                 errors.append(np.log(a_pred / row["footprint_area_km2"]))
         errors = np.asarray(errors)
-        # Median residual sits on zero (well within 0.05 dex of zero)
+        # Median residual sits on zero (well within 0.05 log10 units of zero)
         assert abs(float(np.median(errors))) < 0.05
-        # 1-sigma residual matches the injected noise (0.1 dex) reasonably
+        # 1-sigma residual matches the injected noise (0.1 log10 units) reasonably
         sigma = float((np.quantile(errors, 0.84) - np.quantile(errors, 0.16)) / 2)
         assert sigma < 0.2
 
@@ -268,3 +269,47 @@ class TestExampleRegionalizedDams:
         dam = dict(self.EXAMPLE_DAMS[0])
         del dam["valley_ratio"]
         assert _predict_multi_anchor_lr(dam, coefs) is None
+
+
+# ---------------------------------------------------------------------------
+# acap_regression_diagnostics (collinearity + incremental skill)
+# ---------------------------------------------------------------------------
+
+class TestAcapRegressionDiagnostics:
+
+    def _frame(self, n: int = 120) -> pd.DataFrame:
+        df = _synthetic_trusted(n=n)
+        df["dam_id"] = [f"id_{i:06d}" for i in range(len(df))]
+        df["reliable"] = True   # diagnostics consume the trusted subset
+        return df
+
+    def test_writes_csv_and_returns_frame(self, tmp_path):
+        out = acap_regression_diagnostics(self._frame(), str(tmp_path))
+        assert (tmp_path / "acap_regression_diagnostics.csv").is_file()
+        assert {"diagnostic", "feature", "value", "metric"}.issubset(out.columns)
+
+    def test_reports_all_seven_vifs_and_condition_number(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            out = acap_regression_diagnostics(self._frame(), d)
+        vif = out[out["diagnostic"] == "vif"]
+        assert len(vif) == len(_REGIONAL_FEATURES)
+        assert (vif["value"] >= 1.0).all()           # VIF is >= 1 by definition
+        cn = out[out["diagnostic"] == "condition_number"]
+        assert len(cn) == 1 and np.isfinite(cn["value"].iloc[0])
+
+    def test_incremental_loo_full_has_seven_steps(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            out = acap_regression_diagnostics(self._frame(), d)
+        inc = out[out["diagnostic"] == "incremental_loo"]
+        assert len(inc) == len(_REGIONAL_FEATURES)
+        assert (inc["value"] > 0).all()              # LOO RMS in log10 units is positive
+
+    def test_no_capacity_variant_drops_capacity(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            out = acap_regression_diagnostics(self._frame(), d)
+        nc = out[out["diagnostic"] == "incremental_loo_no_capacity"]
+        assert len(nc) == len(_REGIONAL_FEATURES) - 1
+        assert "capacity_mcm" not in set(nc["feature"])

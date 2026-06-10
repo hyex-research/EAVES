@@ -73,6 +73,8 @@ def _load_bathy_validation_data() -> dict:
         "elev_srt": eav["elevation_m"].to_numpy(),
         "area_srt_km2": eav["area_m2"].to_numpy() / 1e6,
         "vol_srt_mcm": eav["volume_m3"].to_numpy() / 1e6,
+        "area_des_km2": bathy["area_m2_design"].to_numpy() / 1e6,
+        "vol_des_mcm": bathy["volume_m3_design"].to_numpy() / 1e6,
     }
 
 
@@ -130,24 +132,25 @@ def _draw_bathy_va(ax, data: dict, panel_label_char=None) -> None:
     v_son = data["vol_son_mcm"]
     a_srt = data["area_srt_km2"]
     v_srt = data["vol_srt_mcm"]
+    a_des = data["area_des_km2"]
+    v_des = data["vol_des_mcm"]
 
-    ax.plot(a_son, v_son, color=P4_BLUE, lw=1.4, label="Bathymetry (2025 sonar)")
-    ax.plot(a_srt, v_srt, color=P4_VERM, lw=1.4, label="SRTM (pre-dam valley)")
+    ax.plot(a_son, v_son, color="#6495ED", lw=1.4, label="Bathymetry (2025 sonar)")
+    ax.plot(a_srt, v_srt, color="#FFA500", lw=1.4, label="SRTM (pre-dam valley)")
+    ax.plot(a_des, v_des, color="#228B22", lw=1.4, label="Design (documented)")
 
-    # Use the canonical pipeline fit (linear NLS via curve_fit) so that
-    # c, b match what is shipped in eaves_params.csv / eaves_summary.csv.
+    # Canonical pipeline fit so c, b match the shipped eaves_params.csv.
     from ...utils import fit_power_law as _canon_fit
     c_son_si, b_son, _ = _canon_fit(a_son * 1e6, v_son * 1e6)
     c_srt_si, b_srt, _ = _canon_fit(a_srt * 1e6, v_srt * 1e6)
-    # Convert c from m^2/m^3 system to km^2/MCM system for plotting:
-    # V_mcm = c_si * 1e6^(b-1) * A_km2^b
+    # Convert c to the km^2/MCM system: V_mcm = c_si * 1e6^(b-1) * A_km2^b.
     c_son = c_son_si * 1e6 ** (b_son - 1)
     c_srt = c_srt_si * 1e6 ** (b_srt - 1)
     a_g = np.linspace(0, a_son.max(), 200)
-    ax.plot(a_g, c_son * a_g ** b_son, color=P4_BLUE, ls="--", lw=0.8, alpha=0.7,
+    ax.plot(a_g, c_son * a_g ** b_son, color="#6495ED", ls="--", lw=0.8, alpha=0.7,
             label=f"Bathy fit: c={c_son_si:.4g}, b={b_son:.4f}")
     a_g = np.linspace(0, a_srt.max(), 200)
-    ax.plot(a_g, c_srt * a_g ** b_srt, color=P4_VERM, ls="--", lw=0.8, alpha=0.7,
+    ax.plot(a_g, c_srt * a_g ** b_srt, color="#FFA500", ls="--", lw=0.8, alpha=0.7,
             label=f"SRTM fit: c={c_srt_si:.4g}, b={b_srt:.4f}")
 
     ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
@@ -166,9 +169,11 @@ def _draw_bathy_va(ax, data: dict, panel_label_char=None) -> None:
 def _draw_bathy_ea(ax, data: dict) -> None:
     """Elevation vs A for sonar vs SRTM."""
     ax.plot(data["area_son_km2"], data["elev_son"],
-            color=P4_BLUE, lw=1.4, label="Bathymetry")
+            color="#6495ED", lw=1.4, label="Bathymetry")
     ax.plot(data["area_srt_km2"], data["elev_srt"],
-            color=P4_VERM, lw=1.4, label="SRTM")
+            color="#FFA500", lw=1.4, label="SRTM")
+    ax.plot(data["area_des_km2"], data["elev_son"],
+            color="#228B22", lw=1.4, label="Design")
     ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
     ax.set_ylabel("Elevation (m asl)", fontsize=10)
     ax.tick_params(labelsize=10, length=2.5)
@@ -184,9 +189,9 @@ def _draw_grdl_va(ax, comp: dict, show_xlabel: bool = False,
                   panel_label_char=None) -> None:
     """V vs A — GRDL vs EAVES."""
     ax.plot(comp["grdl_area_km2"], comp["grdl_vol_mcm"],
-            color=P4_BLUE, marker="o", lw=1.2, ms=3, label="GRDL")
+            color="#9370DB", marker="o", lw=1.2, ms=3, label="GRDL")
     ax.plot(comp["eaves_area_km2"], comp["eaves_vol_mcm"],
-            color=P4_VERM, lw=1.2, label="SRTM")
+            color="#FFA500", lw=1.2, label="SRTM")
     if show_xlabel:
         ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
     ax.set_ylabel("Volume (MCM)", fontsize=10)
@@ -206,9 +211,9 @@ def _draw_grdl_da(ax, comp: dict, show_xlabel: bool = True,
                   show_ylabel: bool = True) -> None:
     """Depth vs A — GRDL vs EAVES."""
     ax.plot(comp["grdl_area_km2"], comp["grdl_depth"],
-            color=P4_BLUE, marker="o", lw=1.2, ms=3, label="GRDL")
+            color="#9370DB", marker="o", lw=1.2, ms=3, label="GRDL")
     ax.plot(comp["eaves_area_km2"], comp["eaves_depth"],
-            color=P4_VERM, lw=1.2, label="SRTM")
+            color="#FFA500", lw=1.2, label="SRTM")
     if show_xlabel:
         ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
     if show_ylabel:
@@ -239,9 +244,9 @@ def _draw_panel_c(ax) -> None:
     x_lo, x_hi = 0.01, 100.0
     bins = np.logspace(np.log10(x_lo), np.log10(x_hi), 41)
 
-    ax.axvspan(0.5, 2.0, color=COL_GRADE_A_BAND, alpha=0.7, zorder=1,
+    ax.axvspan(0.5, 2.0, color="#FBC678", alpha=0.6, zorder=1,
                label=f"Grade A [0.5, 2.0]   (n = {n_grade_a}, {pct_a:.0f}%)")
-    ax.axvspan(0.3, 5.0, color=COL_GRADE_B_BAND, alpha=0.55, zorder=0,
+    ax.axvspan(0.3, 5.0, color="#FCEAC0", alpha=0.5, zorder=0,
                label=f"Grade B [0.3, 5.0]   (n = {n_grade_b}, {pct_b:.0f}%)")
 
     ax.hist(

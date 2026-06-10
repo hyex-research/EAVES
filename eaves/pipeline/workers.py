@@ -1,4 +1,11 @@
-"""Multiprocessing workers: _process_dam_worker, _worker_indexed."""
+"""Per-dam multiprocessing workers.
+
+One dam per call: load and reproject the SRTM tiles, extract topographic
+features, run :func:`eaves.pipeline.curves.process_dam` (with a
+snapped-coordinate fallback), write the per-dam EAV table and QC flood
+map, and return a summary dict or a self-contained failure record.
+Top-level functions so the spawn-context Pool can pickle them.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,10 @@
-"""Paths, processing constants, caches, and matplotlib rcParams."""
+"""Module-level configuration shared by every pipeline stage.
+
+Matplotlib rcParams, processing constants (bin size, placement tolerances,
+acceptance gates), module-level caches shared across workers, and the path
+attributes populated from the settings JSON by :func:`configure`
+(see :mod:`eaves.settings`).
+"""
 
 from __future__ import annotations
 
@@ -14,9 +20,7 @@ import rasterio
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-# ---------------------------------------------------------------------------
-# Nature Water figure style (Arial/Helvetica, 5-7 pt, 300 DPI)
-# ---------------------------------------------------------------------------
+# --- Nature-style figure settings (Arial/Helvetica, 5-7 pt, 300 DPI) ---
 _BASE_FS = 7
 _mpl.rcParams.update({
     "font.family": "sans-serif",
@@ -31,19 +35,11 @@ _mpl.rcParams.update({
     "figure.dpi": 300,
 })
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
-# All path attributes (SRTM_DIR, DAMS_CSV, OUTPUT_DIR, FLOOD_DIR, etc.) are
-# populated by :func:`configure` from the settings JSON — see
-# :mod:`eaves.settings`. Consumers should either have settings loaded before
-# reading them, or use ``getattr(_cfg, "X", None)`` for optional ones.
+# --- Paths: populated by configure() from the settings JSON (see eaves.settings) ---
 
 COUNTRY_NAME_COL = "NAME"
 
-# ---------------------------------------------------------------------------
-# Processing parameters
-# ---------------------------------------------------------------------------
+# --- Processing parameters ---
 BIN_Z = 0.5
 VOID_THRESHOLD = 0.05
 WALL_BUFFER_PX = 5
@@ -61,14 +57,11 @@ MAX_CREST_FLOW_DOT = 0.74
 TERRAIN_WALL_TOP_K = 18
 ALIGN_WEIGHT = 2.35
 
-# Acceptance tolerances for per-dam terrain-based placement (stage 2/5):
-#   volume error := |log(approx_vol / catalogue_capacity)|
-# GOOD_ENOUGH lets the upstream-walk loop early-exit once a candidate is close
-# enough; UPSTREAM_MAX_VOL_ERR is the loose fallback when no early-exit winner
-# was found. FALLBACK_MIN_PIXELS is the minimum footprint size (in SRTM pixels)
-# for a candidate fill to be considered in the stage-6 multi-direction fallback.
+# Stage-2/5 early-exit tolerance on the volume error |log(approx_vol / catalogue_capacity)|.
 PLACEMENT_GOOD_ENOUGH_VOL_ERR = 0.26
+# Loose fallback tolerance when no early-exit candidate wins the upstream walk.
 PLACEMENT_UPSTREAM_MAX_VOL_ERR = 1.5
+# Minimum footprint pixels for a stage-6 multi-direction fallback fill.
 FALLBACK_MIN_PIXELS = 10
 
 _PLACEMENT_BUDGET_S = 300.0
@@ -85,16 +78,12 @@ GRDL_NAME_MAP = {
     "rabigh": "id_020018",
 }
 
-# ---------------------------------------------------------------------------
-# Module-level caches (shared across workers via import)
-# ---------------------------------------------------------------------------
+# --- Module-level caches (shared across workers via import) ---
 _srtm_cache: dict = {}
 _placement_overrides_cache = None
 
 
-# ---------------------------------------------------------------------------
-# Runtime reconfiguration (for programmatic / CLI overrides)
-# ---------------------------------------------------------------------------
+# --- Runtime reconfiguration (programmatic / CLI overrides) ---
 def configure(
     *,
     output_dir: str | None = None,

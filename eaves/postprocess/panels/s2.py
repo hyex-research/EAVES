@@ -81,7 +81,7 @@ def make_s2_threshold(out_dir: Path) -> Path:
     fig.subplots_adjust(left=0.07, right=0.93, top=0.90, bottom=0.13,
                         wspace=0.45)
 
-    # ---- panel a: R^2 vs capacity, coloured by quality grade ----
+    # ---- panel a: R^2 vs capacity, colored by quality grade ----
     s = summary_df[summary_df["capacity_mcm"] > 0].copy()
     for grade in ["A", "B", "C", "D", "F"]:
         sub = s[s["quality"] == grade]
@@ -103,7 +103,7 @@ def make_s2_threshold(out_dir: Path) -> Path:
     )
 
     ax_a.set_xscale("log")
-    ax_a.set_xlabel("Storage capacity [MCM]")
+    ax_a.set_xlabel("Storage capacity (MCM)")
     ax_a.set_ylabel(r"Fit quality $R^2$")
     ax_a.grid(True, linewidth=0.3, color="0.88")
     ax_a.set_axisbelow(True)
@@ -125,10 +125,10 @@ def make_s2_threshold(out_dir: Path) -> Path:
     ax_b.axvline(cutoff, color="0.30", linewidth=0.9, linestyle="--",
                  zorder=2, label=f"chosen = {cutoff:.1f} MCM")
 
-    ax_b.set_xlabel("Capacity threshold [MCM]")
+    ax_b.set_xlabel("Capacity threshold (MCM)")
     ax_b.set_ylabel("Fraction reliable\n"
                     "(grade A/B, $R^2 \\geq 0.98$, "
-                    "$v_\\mathrm{ratio} \\in [0.3, 5]$)")
+                    "$v_\\mathrm{ratio} \\in [0.3, 5]$, $\\geq 50$ px)")
     ax_b.set_ylim(0.84, 1.0)
     ax_b.set_zorder(ax_b_bars.get_zorder() + 1)
     ax_b.patch.set_visible(False)

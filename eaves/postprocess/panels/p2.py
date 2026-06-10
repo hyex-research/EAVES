@@ -1,8 +1,8 @@
 """Panel set p2 — dam wall placement, three exemplars from the six-stage algorithm.
 
-Panel a — Stage 1 fast path (King Fahad).
+Panel a — Stage 1 direct placement (King Fahad).
 Panel b — Stage 4 river-direction retry (Hafar Al-Batin).
-Panel c — Stage 6 synthetic fallback (Marat).
+Panel c — Stage 6 fallback (Marat).
 """
 
 from __future__ import annotations
@@ -38,9 +38,9 @@ _EXPECTED_METHODS: dict[str, str] = {
 }
 
 _STAGE_TITLES: dict[str, str] = {
-    "a": "Stage 1: fast path",
+    "a": "Stage 1: direct placement",
     "b": "Stage 4: river-direction retry",
-    "c": "Stage 6: multi-direction fallback",
+    "c": "Stage 6: fallback",
 }
 
 # Preferred exemplar dam IDs (tried first; automatic ranking used as fallback).
@@ -143,7 +143,7 @@ def _compute_placement_result(dam_id: str, gdf_dams: gpd.GeoDataFrame,
 
 
 def _dem_extent_m(dem_transform, dem_shape: tuple) -> tuple[float, float, float, float]:
-    """Return (left, right, bottom, top) in DEM CRS metres for ``imshow``."""
+    """Return (left, right, bottom, top) in DEM CRS meters for ``imshow``."""
     h, w = dem_shape
     left = dem_transform.c
     top = dem_transform.f

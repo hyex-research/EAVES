@@ -1,24 +1,46 @@
 """Validation of EAV parameter assignment.
 
-Two diagnostics, both mirroring the logic in :mod:`regionalization`:
+Default diagnostics (cheap, run unless skipped), all mirroring the logic in
+:mod:`regionalization`:
 
 * :func:`loo_regionalization_eval` -- leave-one-out evaluation of the
   regionalization recipe on the "trusted" SRTM-derived dams. For each
   trusted dam, hide its SRTM curve, re-run the regionalization step
-  (regional-median ``b``, satellite-anchored or fallback ``A_cap`` to
-  back-solve ``c``) using the other trusted dams as training data, then
+  (regional-median ``b``; the shipped multi-feature LR anchor for
+  ``A_cap``, plus the retired satellite and log-log anchors for
+  comparison, to back-solve ``c``) using the other trusted dams as
+  training data, then
   compare the regionalized curve against the SRTM "truth".
 
 * :func:`dem_vs_sat_area_check` -- per-dam comparison of the DEM-derived
   full-pool area ``footprint_area_km2`` against the satellite 95th
   percentile ``water_area_km2``. Flags placement / satellite disagreement.
 
-Both write CSVs into ``OUTPUT_DIR/1_results_csv/validation/`` and print a
-summary. Neither modifies ``eaves_params.csv`` or any existing artefact.
+* :func:`goodness_of_fit_check` -- deployed-direction fractional volume
+  residual of every fitted curve, reported alongside ``r_squared``.
 
-Run with:
-    python -m eaves.postprocess.validation \\
-        --settings region/ksa/ksa.json
+Opt-in diagnostics (expensive, OFF by default; each re-runs the real
+flood-fill many times and is enabled by its own flag):
+
+* ``--sensitivity`` -- :mod:`eaves.postprocess.sensitivity`. Perturbs the three
+  hand-tuned placement/acceptance constants and reports how the trusted-set
+  size, grade distribution and median ``b`` move (theme T6).
+
+* ``--dem-mc`` -- :mod:`eaves.postprocess.dem_error`. SRTM vertical-error
+  Monte-Carlo: propagates DEM noise into recovered volumes and ``b`` over a
+  trusted-dam sample (DEM reviewer #1).
+
+All write CSVs into ``OUTPUT_DIR/1_results_csv/validation/`` and print a
+summary. None modifies ``eaves_params.csv`` or any existing released artefact.
+
+Run with (cheap defaults only)::
+
+    python -m eaves.postprocess.validation --settings region/ksa/ksa.json
+
+Add the expensive steps explicitly when needed::
+
+    python -m eaves.postprocess.validation --settings region/ksa/ksa.json \\
+        --sensitivity --dem-mc
 """
 
 from __future__ import annotations
@@ -122,12 +144,7 @@ def loo_regionalization_eval(
 
         a_sat_p95, n_obs = _read_sat_p95(water_extent_dir, dam_id)
 
-        # ---- Three recipes evaluated for every dam ----
-        # current_sat : satellite P95 anchor; fall back to log-log only if
-        #               satellite is missing (mirrors the historical recipe).
-        # alt_loglog  : single-feature log-log A_cap(capacity) anchor.
-        # multi_lr    : multi-feature linear regression on log features --
-        #               the recipe shipped in regionalization.py.
+        # Recipes: current_sat (P95 anchor), alt_loglog (single-feature), multi_lr (shipped).
         anchors: dict[str, tuple[float, str]] = {}
 
         a_curr = np.nan
@@ -231,7 +248,7 @@ def _print_loo_summary(out: pd.DataFrame, fracs, out_path: str) -> None:
             print(
                 f"      V at {int(frac*100):3d}% A_DEM: "
                 f"median={bias:+.3f} (factor {10**bias:.2f}x), "
-                f"1-sigma={spread:.3f} dex, "
+                f"1-sigma={spread:.3f} log10 units, "
                 f"|err|<=2x: {within_factor2:.0f}%, "
                 f"|err|<=3x: {within_factor3:.0f}%"
             )
@@ -299,11 +316,108 @@ def dem_vs_sat_area_check(
     if len(paired) > 0:
         print(f"  median A_sat / A_DEM:        {paired.median():.2f}")
         print(f"  log10 ratio: median={out['log10_ratio'].median():+.3f}, "
-              f"1-sigma={(out['log10_ratio'].quantile(0.84) - out['log10_ratio'].quantile(0.16))/2.0:.3f} dex")
+              f"1-sigma={(out['log10_ratio'].quantile(0.84) - out['log10_ratio'].quantile(0.16))/2.0:.3f} log10 units")
     print(f"  Flag breakdown:")
     for flag, n in out["flag"].value_counts(dropna=False).items():
         flag_label = flag if flag else "(within {0:.0f}x)".format(flag_ratio)
         print(f"    {flag_label}: {n}")
+    print(f"\n  Saved: {out_path}")
+    print("=" * 70)
+    return out
+
+
+def goodness_of_fit_check(
+    summary_csv: str,
+    params_csv: str,
+    eav_tables_dir: str,
+    out_dir: str,
+) -> pd.DataFrame:
+    """Non-mechanical goodness-of-fit for every fitted EAV curve.
+
+    The reported ``r_squared`` is a least-squares fit on the cumulative
+    volume integral, so it is close to unity by construction (an
+    integral-vs-integrand artefact) and tells us little about how faithfully
+    the deployed curve $V = c\\,A^{b}$ reproduces the hypsometry. This routine
+    re-reads each per-dam EAV table and reports two fit-direction metrics
+    *alongside* (not replacing) ``r_squared``:
+
+    * ``max_frac_resid`` -- the maximum absolute fractional volume residual
+      $\\max_i |c A_i^b - V_i| / V_i$ over the fitted elevation bins.
+    * ``rms_frac_resid`` -- the root-mean-square of the same per-bin
+      fractional residual.
+
+    Both are evaluated in the **deployed** A$\\to$V direction over exactly the
+    bins the power law was fit on: bins above ``srtm_water_level_m`` for the
+    ``partial`` curves, all positive-area/positive-volume bins otherwise
+    (mirroring :func:`eaves.pipeline.curves` ). This is a diagnostic CSV only;
+    it neither alters the grade gates nor the trusted-set filter, and writes
+    nothing back into ``eaves_summary.csv``.
+
+    Writes ``goodness_of_fit.csv`` and prints a distribution summary over the
+    trusted set.
+    """
+    summary = pd.read_csv(summary_csv)
+    params = pd.read_csv(params_csv).set_index("dam_id")
+    summary["trusted"] = _reliable_mask(summary)
+
+    rows = []
+    for _, row in summary.iterrows():
+        dam_id = row["dam_id"]
+        table_path = os.path.join(eav_tables_dir, f"{dam_id}_eav.csv")
+        rec = {
+            "dam_id":        dam_id,
+            "source":        params.at[dam_id, "source"] if dam_id in params.index else "",
+            "quality":       row.get("quality", ""),
+            "r_squared":     float(row["r_squared"]) if np.isfinite(row.get("r_squared", np.nan)) else np.nan,
+            "is_trusted":    bool(row["trusted"]),
+            "n_fit_bins":    0,
+            "max_frac_resid": np.nan,
+            "rms_frac_resid": np.nan,
+        }
+        if dam_id in params.index and os.path.isfile(table_path):
+            c = float(params.at[dam_id, "c"])
+            b = float(params.at[dam_id, "b"])
+            tab = pd.read_csv(table_path)
+            A = tab["area_m2"].to_numpy(dtype=float)
+            V = tab["volume_m3"].to_numpy(dtype=float)
+            z = tab["elevation_m"].to_numpy(dtype=float)
+            base = (A > 0) & (V > 0)
+            ct = str(row.get("curve_type", ""))
+            wl = row.get("srtm_water_level_m", np.nan)
+            if ct == "partial" and np.isfinite(wl):
+                fit_mask = base & (z >= wl)
+            else:
+                fit_mask = base
+            if (fit_mask.sum() >= 1 and np.isfinite(c) and np.isfinite(b)
+                    and c > 0 and b > 0):
+                Af = A[fit_mask]
+                Vf = V[fit_mask]
+                v_pred = c * np.power(Af, b)
+                frac = np.abs(v_pred - Vf) / Vf
+                rec["n_fit_bins"]     = int(fit_mask.sum())
+                rec["max_frac_resid"] = float(np.max(frac))
+                rec["rms_frac_resid"] = float(np.sqrt(np.mean(frac ** 2)))
+        rows.append(rec)
+
+    out = pd.DataFrame(rows)
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "goodness_of_fit.csv")
+    out.to_csv(out_path, index=False)
+
+    print("\n" + "=" * 70)
+    print("  GOODNESS-OF-FIT (deployed A->V fractional volume residual)")
+    print("=" * 70)
+    trusted = out[out["is_trusted"] & out["max_frac_resid"].notna()]
+    print(f"  Dams with a curve:           {int(out['max_frac_resid'].notna().sum())}")
+    print(f"  Trusted dams:                {len(trusted)}")
+    if len(trusted) > 0:
+        for col, label in (("r_squared", "R^2"),
+                           ("max_frac_resid", "max |dV|/V"),
+                           ("rms_frac_resid", "RMS |dV|/V")):
+            s = trusted[col].dropna()
+            print(f"  {label:<12s} median={s.median():.3f}  "
+                  f"P16={s.quantile(0.16):.3f}  P84={s.quantile(0.84):.3f}  "
+                  f"P95={s.quantile(0.95):.3f}  max={s.max():.3f}")
     print(f"\n  Saved: {out_path}")
     print("=" * 70)
     return out
@@ -320,6 +434,24 @@ def _resolve_paths(settings_json: str | None) -> Tuple[str, str, str]:
     return summary_csv, water_extent_dir, out_dir
 
 
+def _load_dams_and_rivers():
+    """Build the worker dam-dict list and the split river network.
+
+    Shared setup for the two opt-in steps (sensitivity, DEM-MC), which both
+    re-run the real flood-fill. Reuses the production CLI helpers so the dam
+    inputs are byte-identical to a normal pipeline run.
+    """
+    import geopandas as gpd
+    from eaves.cli import _load_translit_map, _build_dam_data_list
+
+    translit = _load_translit_map()
+    gdf_dams = gpd.read_file(os.path.join(_cfg.DOMAIN_DIR, "dams_snapped.geojson"))
+    dam_data_list = _build_dam_data_list(gdf_dams, translit)
+    rivers_path = os.path.join(_cfg.DOMAIN_DIR, "rivers_split.geojson")
+    gdf_rivers = gpd.read_file(rivers_path) if os.path.isfile(rivers_path) else None
+    return dam_data_list, gdf_rivers
+
+
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
@@ -334,6 +466,62 @@ def main(argv=None) -> None:
         "--skip-area-check", action="store_true",
         help="Skip the A_DEM vs A_sat^P95 consistency check.",
     )
+    p.add_argument(
+        "--skip-gof", action="store_true",
+        help="Skip the deployed-direction goodness-of-fit check.",
+    )
+    # --- Opt-in expensive steps (OFF by default; each re-runs the flood-fill) ---
+    p.add_argument(
+        "--sensitivity", action="store_true",
+        help="OPT-IN: run the placement/acceptance constant sensitivity sweep "
+        "(eaves.postprocess.sensitivity). Expensive -- off by default.",
+    )
+    p.add_argument(
+        "--sensitivity-n-dams", type=int, default=60,
+        help="Trusted-dam sample size for --sensitivity.",
+    )
+    p.add_argument(
+        "--sensitivity-seed", type=int, default=7,
+        help="RNG seed for the --sensitivity sample draw.",
+    )
+    p.add_argument(
+        "--dem-mc", action="store_true",
+        help="OPT-IN: run the SRTM vertical-error Monte-Carlo "
+        "(eaves.postprocess.dem_error). Expensive -- off by default.",
+    )
+    p.add_argument(
+        "--dem-mc-n-dams", type=int, default=36,
+        help="Trusted-dam sample size for --dem-mc.",
+    )
+    p.add_argument(
+        "--dem-mc-n-real", type=int, default=32,
+        help="Perturbed realizations drawn per dam for --dem-mc.",
+    )
+    p.add_argument(
+        "--dem-mc-sigma-m", type=float, default=3.6,
+        help="Point sigma of SRTM vertical noise for --dem-mc (LE90 6 m / 1.6449).",
+    )
+    p.add_argument(
+        "--dem-mc-corr-px", type=float, default=2.0,
+        help="Spatial correlation length in SRTM pixels for --dem-mc.",
+    )
+    p.add_argument(
+        "--dem-mc-seed", type=int, default=12345,
+        help="Master RNG seed for --dem-mc (sample draw + per-dam seeds).",
+    )
+    p.add_argument(
+        "--dem-mc-budget-s", type=float, default=600.0,
+        help="Max wall-clock seconds per dam's realizations for --dem-mc.",
+    )
+    p.add_argument(
+        "--dem-mc-workers", type=int, default=8,
+        help="Parallel dam workers for --dem-mc (1 = serial).",
+    )
+    p.add_argument(
+        "--dem-mc-fresh", action="store_true",
+        help="Ignore any existing dem_error_montecarlo.csv and start over "
+        "(default: resume, skipping dams already in the CSV).",
+    )
     args = p.parse_args(argv)
 
     summary_csv, water_extent_dir, out_dir = _resolve_paths(args.settings)
@@ -342,6 +530,31 @@ def main(argv=None) -> None:
         loo_regionalization_eval(summary_csv, water_extent_dir, out_dir)
     if not args.skip_area_check:
         dem_vs_sat_area_check(summary_csv, water_extent_dir, out_dir)
+    if not args.skip_gof:
+        params_csv = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
+        eav_tables_dir = os.path.join(_cfg.CSV_DIR, "eav_tables")
+        goodness_of_fit_check(summary_csv, params_csv, eav_tables_dir, out_dir)
+
+    if args.sensitivity:
+        from .sensitivity import sensitivity_sweep
+        dam_data_list, gdf_rivers = _load_dams_and_rivers()
+        sensitivity_sweep(
+            summary_csv, _cfg.DOMAIN_DIR, out_dir,
+            dam_data_list=dam_data_list, gdf_rivers=gdf_rivers,
+            n_dams=args.sensitivity_n_dams, seed=args.sensitivity_seed,
+        )
+
+    if args.dem_mc:
+        from .dem_error import dem_error_montecarlo
+        dam_data_list, gdf_rivers = _load_dams_and_rivers()
+        dem_error_montecarlo(
+            summary_csv, args.settings, _cfg.DOMAIN_DIR, out_dir,
+            dam_data_list=dam_data_list, gdf_rivers=gdf_rivers,
+            n_dams=args.dem_mc_n_dams, n_real=args.dem_mc_n_real,
+            sigma_m=args.dem_mc_sigma_m, corr_px=args.dem_mc_corr_px,
+            seed=args.dem_mc_seed, per_dam_budget_s=args.dem_mc_budget_s,
+            workers=args.dem_mc_workers, fresh=args.dem_mc_fresh,
+        )
 
 
 if __name__ == "__main__":

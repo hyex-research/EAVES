@@ -1,4 +1,10 @@
-"""Dam wall placement, flood fill, upstream walk, and all 6 placement stages."""
+"""Dam wall placement and flood fill (stages 1-6).
+
+Snaps the wall to the cross-channel barrier, scores wall orientations
+against the local terrain, rasterizes the accepted wall, and floods the
+basin from an upstream seed. Later stages retry with river-direction
+walls, an extended upstream walk, and a multi-direction fallback fill.
+"""
 
 from __future__ import annotations
 
@@ -29,9 +35,7 @@ from ..utils import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Cross-channel barrier snapping
-# ---------------------------------------------------------------------------
+# --- Cross-channel barrier snapping ---
 
 def _snap_cross_channel_barrier_px(
     dem, r0, c0, pixel_size_m, half_width_m=120.0, step_m=15.0,
@@ -77,9 +81,7 @@ def _snap_cross_channel_barrier_px(
     return best_r, best_c
 
 
-# ---------------------------------------------------------------------------
-# Wall orientation scoring & iteration
-# ---------------------------------------------------------------------------
+# --- Wall orientation scoring and iteration ---
 
 def _wall_pair_from_crest(wr, wc, ds_dem):
     """Crest unit vector -> (crest_xy, upstream_xy) in pixel row/col space."""
@@ -292,9 +294,7 @@ def iter_wall_placements_from_terrain(
                 yield rp_wall, rp_up
 
 
-# ---------------------------------------------------------------------------
-# Wall rasterisation & flood fill
-# ---------------------------------------------------------------------------
+# --- Wall rasterization and flood fill ---
 
 def place_wall(dem, dam_row, dam_col, perp_vec_px,
                wall_elev, spillway_elev, thickness=2):
@@ -397,9 +397,7 @@ def detect_flat_water(dem_footprint, min_pixels=FLAT_MIN_PIXELS,
     return True, float(np.nanmean(cluster_vals))
 
 
-# ---------------------------------------------------------------------------
-# Fill seed finder & validation helpers
-# ---------------------------------------------------------------------------
+# --- Fill seed finder and validation helpers ---
 
 def _find_seed_upstream(dem_walled, dam_r, dam_c, upstream_vec, seed_dist, z_spillway):
     seed_r = int(round(dam_r + upstream_vec[0] * seed_dist))
@@ -516,9 +514,7 @@ def _snap_dam_elev(dem_utm, dam_r, dam_c):
     return dam_r, dam_c, np.nan
 
 
-# ---------------------------------------------------------------------------
-# Upstream valley walk
-# ---------------------------------------------------------------------------
+# --- Upstream valley walk ---
 
 def _iter_upstream_positions_walked(dem_utm, dam_r0, dam_c0, upstream_offsets,
                                     pixel_size, walk_step_m=None, downstream_walk=False):
@@ -546,9 +542,7 @@ def _iter_upstream_positions_walked(dem_utm, dam_r0, dam_c0, upstream_offsets,
         yield target, ri, ci
 
 
-# ---------------------------------------------------------------------------
-# Single-try terrain placement
-# ---------------------------------------------------------------------------
+# --- Single-try terrain placement ---
 
 def _try_terrain_placement_once(
     dem_utm, dam_r, dam_c, dam_elev,
@@ -640,9 +634,7 @@ def _try_terrain_placement_once(
     return best_up or best_dn
 
 
-# ---------------------------------------------------------------------------
-# Extended upstream search
-# ---------------------------------------------------------------------------
+# --- Extended upstream search ---
 
 def search_terrain_wall_extended_upstream(
     dem_utm, dam_r0, dam_c0, dam_length_base_m,
@@ -752,9 +744,7 @@ def search_terrain_wall_extended_upstream(
     return None, 0, 0.0, dam_r0, dam_c0, np.nan, np.nan, None, np.nan
 
 
-# ---------------------------------------------------------------------------
-# Fallback multi-direction fill
-# ---------------------------------------------------------------------------
+# --- Fallback multi-direction fill ---
 
 def fallback_multidirection_fill(
     dem_utm, dam_r, dam_c, dam_elev, z_spillway, z_wall,

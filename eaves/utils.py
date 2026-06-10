@@ -1,4 +1,9 @@
-"""Math helpers, override loaders, SRTM / UTM utilities."""
+"""Shared helpers.
+
+Placement-override loaders, upstream walk distances, coordinate and tile
+helpers (UTM EPSG selection, buffer sizing), the canonical power-law fit,
+and failure classification.
+"""
 
 from __future__ import annotations
 
@@ -15,9 +20,7 @@ from .config import (
 import eaves.config as _cfg
 
 
-# ---------------------------------------------------------------------------
-# Placement-override loaders
-# ---------------------------------------------------------------------------
+# --- Placement-override loaders ---
 
 def _load_placement_overrides():
     """Load ``dam_placement_overrides.csv`` once; keyed by dam_id.
@@ -119,9 +122,7 @@ def _ov_preferred_crest_angles_deg(ov):
     return out
 
 
-# ---------------------------------------------------------------------------
-# Upstream walk distances
-# ---------------------------------------------------------------------------
+# --- Upstream walk distances ---
 
 def _upstream_sample_distances_m(pixel_size_m, max_shift_px=None):
     """Distances (m) along the valley walk at which we try a wall."""
@@ -139,9 +140,7 @@ def _upstream_sample_distances_m(pixel_size_m, max_shift_px=None):
     return np.array(out, dtype=float)
 
 
-# ---------------------------------------------------------------------------
-# Coordinate / tile helpers
-# ---------------------------------------------------------------------------
+# --- Coordinate / tile helpers ---
 
 def utm_epsg_from_lon(lon):
     zone = int((lon + 180) / 6) + 1
@@ -154,9 +153,7 @@ def srtm_tile_name(lat, lon):
     return f"{ns}{abs(int(np.floor(lat))):02d}{ew}{abs(int(np.floor(lon))):03d}.hgt"
 
 
-# ---------------------------------------------------------------------------
-# Power-law fit
-# ---------------------------------------------------------------------------
+# --- Power-law fit ---
 
 def power_law_2p(area, c, b):
     return c * np.power(area, b)
@@ -180,9 +177,7 @@ def fit_power_law(area_m2, vol_m3):
         return np.nan, np.nan, np.nan
 
 
-# ---------------------------------------------------------------------------
-# Misc helpers
-# ---------------------------------------------------------------------------
+# --- Misc helpers ---
 
 def interpolate_nans(data):
     from scipy.ndimage import distance_transform_edt

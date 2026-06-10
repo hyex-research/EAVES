@@ -38,6 +38,45 @@ If you add a dam to the fixture, the slow test will fail because the CSVs change
 
 If you need to run the tests on a different machine, override those paths in `settings.json` or set the corresponding environment variables before `pytest`.
 
+## Running the regression test in CI (current limitation and the path to closing it)
+
+Most fixture inputs are already self-contained and committed with relative
+paths under `test/fixture/input/`: the 15-dam catalog (`dams_example.csv`),
+the per-dam water-extent series (`water_extent_ts/`), the
+sedimentation/evaporation inputs (`sedimentation_owe/`), and the **cached**
+clipped river/dam geometry (`domain_inputs/dams_snapped.geojson`,
+`rivers_split.geojson`). Because the domain cache is committed, the raw MERIT
+shapefiles (`merit_rivers_shp`, `merit_basins_shp`) and the country shapefile
+(`country_shp`) are only touched if the cache is rebuilt with
+`--rebuild-domain`, so they are not needed for a normal regression run.
+
+Two settings still block an out-of-the-box CI run:
+
+1. **`srtm_dir`** points at absolute, non-shipped SRTM GL1 tiles
+   (`/mnt/datawaha/...`). This is the one true blocker — without the DEM the
+   flood-fill cannot run.
+2. **`grdl_dir`** is referenced but does not exist; it is only consumed by the
+   `--panels` step, which the regression fixture intentionally skips (see
+   `conftest.py`), so it does not affect the CSV golden-hash check.
+
+**Sketch of a self-contained fixture.** To let `pytest -m slow` run in CI with
+no machine-specific paths:
+
+- Commit a tiny clipped SRTM GL1 stack covering only the 15 fixture dams (a few
+  small GeoTIFF windows, public USGS/NASA SRTM, redistributable) under
+  `test/fixture/input/srtm/`, and point `srtm_dir` there with a path relative
+  to the repo root.
+- Keep the already-committed `domain_inputs/` cache so the MERIT and country
+  shapefiles are never needed; document that `--rebuild-domain` is a
+  maintainer-only path requiring the full datasets.
+- Drop or stub the unused `grdl_dir` entry.
+
+With those clipped DEM windows committed and `settings.json` rewritten to
+repo-relative paths, the golden-hash regression becomes runnable by any
+outsider and in CI. Until the clipped SRTM tiles are added, the slow regression
+test only verifies byte stability on the authors' reference environment and
+cannot be exercised in the open.
+
 ## Golden hashes
 
 `golden_hashes.json` stores SHA-256 hashes of every CSV the fixture produces. The regression test compares actual hashes to these expected values.

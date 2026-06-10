@@ -1,7 +1,7 @@
-"""Shared style + colour palette for the EAVES Data Descriptor panel figures.
+"""Shared style + color palette for the EAVES Data Descriptor panel figures.
 
 All figure modules in this package import from here so that fontsizes,
-panel-label placement, and the colour vocabulary stay consistent across
+panel-label placement, and the color vocabulary stay consistent across
 figures 1-4.
 """
 
@@ -10,9 +10,7 @@ from __future__ import annotations
 import matplotlib as mpl
 
 
-# ---------------------------------------------------------------------------
-# Shared style — Scientific Data / Nature portfolio conventions.
-# ---------------------------------------------------------------------------
+# --- Shared style (Scientific Data / Nature portfolio conventions) ---
 _PANEL_LBL_FS = 16
 
 PANEL_RCPARAMS: dict = {
@@ -78,11 +76,8 @@ def save_panel(fig, out_png, *, dpi: int = 300, bbox: str = "tight") -> None:
     fig.savefig(p.with_suffix(".pdf"), bbox_inches=bbox)
 
 
-# ---------------------------------------------------------------------------
-# Colour palettes
-# ---------------------------------------------------------------------------
-# Parameter source — srtm-derived blue, regionalised orange, failed red
-# (Vega-10 categorical palette: only the three slots panel 1 actually uses).
+# --- Color palettes ---
+# Parameter source: SRTM blue, regionalized orange, failed red (the Vega-10 slots panel 1 uses).
 COL_SRTM = "#4C78A8"
 COL_REGI = "#F58518"
 COL_FAILED = "#E45756"
@@ -107,7 +102,7 @@ COL_DATA_ORANGE = "#ff7f0e"
 COL_FIT_BLACK = "black"
 COL_GRADE_A_BAND = "olive"
 COL_GRADE_B_BAND = "darkkhaki"
-# Placement panel colours (p2).
+# Placement panel colors (p2).
 COL_DAM = "#E45756"              # red star — catalogue dam location (Vega slot 3)
 COL_WALL = "#FFB300"             # amber — accepted wall segment
 COL_BASIN = "#4C78A8"            # Vega blue — flooded basin fill + edge

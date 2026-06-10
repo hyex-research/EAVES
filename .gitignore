@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.nbc
 *.nbi
+*.log
 .pytest_cache/
 
 # Exclude graphify from the root

@@ -1,21 +1,21 @@
 """Panel set p5 -- regionalization accuracy.
 
 Single-method validation panel for the regionalization recipe shipped in
-``regionalization.py``. The recipe anchors each non-trusted dam's
-area--volume curve at ``A_cap = exp(alpha + beta * log V_cap)`` -- a log--log
-fit of the DEM full-pool area against catalogue capacity trained on the
-trusted SRTM-derived dams -- and back-solves the coefficient
-``c = V_cap / A_cap^b``. Accuracy is measured by leave-one-out cross-
-validation on the 320 trusted dams: each in turn is masked, the recipe is
-re-trained on the remaining 319 and re-predicted, and the resulting curve is
-compared against the SRTM "truth".
+``regionalization.py``. The recipe anchors each non-trusted dam at the
+full-pool area predicted by the multi-feature linear regression (seven
+log-space catalog/topographic features, trained on the trusted SRTM-derived
+dams) and back-solves the coefficient ``c = V_cap / A_cap^b``. Accuracy is
+measured by leave-one-out cross-validation on the trusted dams: each in turn
+is masked, the regression is re-trained on the remaining trusted dams and
+re-predicted, and the resulting curve is compared against the SRTM
+"truth".
 
 Panel a -- Predicted vs SRTM-truth volume at the dam's DEM full-pool area
            on log axes, with the 1:1 identity and shaded ±factor-2 and
            dashed ±factor-3 bands. Boxed stats give the headline accuracy
            numbers.
-Panel b -- Signed prediction error distribution (log10 V_pred / V_SRTM in
-           dex), with the zero line, the median, and the ±1-sigma band
+Panel b -- Signed prediction error distribution (log10 V_pred / V_SRTM),
+           with the zero line, the median, and the ±1-sigma band
            marked.
 Panel c -- Error stability across the catalogue: signed error vs catalogue
            capacity, scatter plus a robust binned median line, on the same
@@ -44,8 +44,7 @@ from ._shared import (
 )
 
 
-# Which recipe is the "final" one. Keeping this configurable so the panel
-# tracks whatever the regionalization module actually ships with.
+# Recipe prefix treated as final; tracks what regionalization.py ships.
 _METHOD_PREFIX = "multi"
 
 _FRAC = 100      # evaluate at DEM full pool
@@ -84,7 +83,7 @@ def _accuracy_stats(df: pd.DataFrame) -> dict:
         "within_10x": 100.0 * float(np.mean(np.abs(r) <= np.log10(10.0))),
         "v_true": v_true[m],
         "v_pred": v_pred[m],
-        "residuals_dex": r,
+        "residuals_log10": r,
     }
 
 
@@ -123,15 +122,15 @@ def _draw_panel_a(ax, stats: dict) -> None:
     for t in leg.get_texts():
         t.set_color("0.10")
 
-    factor = 10 ** stats["median"]
+    _r = stats["residuals_log10"]
+    bias_frac = 10 ** stats["median"] - 1.0
+    medape = float(np.median(np.abs(10 ** _r - 1.0)))
+    relrmse = float(np.sqrt(np.mean((10 ** _r - 1.0) ** 2)))
     txt = (
-        f"n                    = {stats['n']}\n"
-        f"median bias   = {stats['median']:+.2f} dex  (×{factor:.2f})\n"
-        f"MAE               = {stats['mae']:.2f} dex\n"
-        f"RMSE             = {stats['rmse']:.2f} dex\n"
-        f"within 2×       = {stats['within_2x']:.0f}%\n"
-        f"within 3×       = {stats['within_3x']:.0f}%\n"
-        f"within 10×     = {stats['within_10x']:.0f}%"
+        f"n                       = {stats['n']}\n"
+        f"median bias      = {bias_frac:+.2f}\n"
+        f"median abs err = {medape:.2f}\n"
+        f"rel. RMSE          = {relrmse:.2f}"
     )
     ax.text(
         0.03, 0.97, txt,
@@ -145,7 +144,7 @@ def _draw_panel_a(ax, stats: dict) -> None:
 
 
 def _draw_panel_b(ax, stats: dict) -> None:
-    r = stats["residuals_dex"]
+    r = stats["residuals_log10"]
     edges = np.linspace(-1.5, 1.5, 41)
 
     ax.hist(
@@ -155,14 +154,15 @@ def _draw_panel_b(ax, stats: dict) -> None:
     )
     ax.axvline(0.0, color="black", lw=1.3, zorder=4, label="zero error")
     ax.axvline(stats["median"], color="red", lw=1.4, ls="--", zorder=4,
-               label=f"median =\n{stats['median']:+.2f} dex")
+               label=f"median =\n{(10 ** stats['median'] - 1.0):+.2f}")
     ax.axvspan(stats["p16"], stats["p84"], color="red", alpha=0.10, zorder=1,
-               label=f"P16–P84:\n[{stats['p16']:+.2f}, {stats['p84']:+.2f}]")
+               label=f"P16–P84:\n[{(10 ** stats['p16'] - 1.0):+.2f}, "
+                     f"{(10 ** stats['p84'] - 1.0):+.2f}]")
     ax.axvline(np.log10(2.0), color="0.45", lw=0.6, ls=":", zorder=3)
     ax.axvline(-np.log10(2.0), color="0.45", lw=0.6, ls=":", zorder=3)
 
     ax.set_xlim(edges[0], edges[-1])
-    ax.set_xlabel(r"$\log_{10}(V_\mathrm{pred}\,/\,V_\mathrm{SRTM})$  at $A_\mathrm{DEM}$  (dex)",
+    ax.set_xlabel(r"$\log_{10}(V_\mathrm{pred}\,/\,V_\mathrm{SRTM})$  at $A_\mathrm{DEM}$",
                   fontsize=10)
     ax.set_ylabel("Number of dams", fontsize=10)
     ax.tick_params(labelsize=10, length=2.5)
@@ -222,7 +222,7 @@ def _draw_panel_c(ax, df: pd.DataFrame, stats: dict) -> None:
     ax.set_xscale("log")
     ax.set_ylim(-1.5, 1.5)
     ax.set_xlabel("Catalogue capacity (MCM)", fontsize=10)
-    ax.set_ylabel(r"$\log_{10}(V_\mathrm{pred}\,/\,V_\mathrm{SRTM})$  (dex)",
+    ax.set_ylabel(r"$\log_{10}(V_\mathrm{pred}\,/\,V_\mathrm{SRTM})$",
                   fontsize=10)
     ax.tick_params(labelsize=10, length=2.5)
     ax.grid(True, which="both", ls=":", lw=0.4, alpha=0.5)

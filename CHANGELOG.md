@@ -4,6 +4,39 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-06-10
+
+### Fixed
+
+- **Clamped exponents now re-solve $c$ through the SRTM full-pool anchor.**
+  The released $b$ is clamped to $[1.1, 2.0]$; previously the raw $c$ was
+  kept, so the 39 clamped SRTM-derived curves missed their own full-pool
+  volume by factors of 0.004–11. $c$ is now re-solved so that
+  $V(A_\mathrm{DEM}) = V_\mathrm{SRTM}$ exactly for every clamped dam
+  (`regionalization.py`; `eaves_params.csv` updated for the 39 dams, all
+  other rows bit-identical).
+- **Sediment budget no longer double-counts delivery.** The
+  `sed_yield_t_ha_yr` input is *delivered* yield — Dash et al. (2025,
+  Eqs. 2–4) already multiply RUSLE gross erosion by the Boyce (1974)
+  delivery ratio at the source — so the additional Vanoni (1975) SDR was
+  removed from the budget. `predicted_silt_fraction` and `sediment_risk`
+  recomputed (median predicted loss 13.7% → 47.5%; fully-silted count
+  44 → 149). Verified at Baish (budget now within ~1.6× of the 2025 sonar
+  loss, previously ~10× under) and nationally (implied 32% capacity loss
+  matches the figure published with the same yields). `--sediment-sdr`
+  remains available as a constant factor for gross-erosion inputs.
+- **Panel S3 SRTM band formula.** The SRTM-derived uncertainty tier now
+  includes the catalog-capacity term ($\sigma_{\log V_\mathrm{cap}}$),
+  matching `validation/v_uncertainty.csv`; it was previously drawn from
+  $b_\sigma$ alone and appeared to vanish at the anchor.
+
+### Changed
+
+- Report and data-dictionary text: the catalog-capacity cap on the flood
+  fill is disclosed explicitly, the SRTM uncertainty tier is described as
+  floored by the catalog-capacity term rather than vanishing at the anchor,
+  and the software-versions table was dropped from `report.md`.
+
 ## [1.0.1] — 2026-06-01
 
 ### Changed
@@ -50,7 +83,7 @@ downstream simulation (RUSH).
   `upstream_area_km2`). Trained on the regional trusted set, applied to
   every regionalized dam via closed-form back-solve
   $c = V_\mathrm{cap} / A_\mathrm{cap}^b$. LOO accuracy on trusted
-  dams: 89% within $2\times$, $1\sigma = 0.18$ dex, median bias 0.03 dex.
+  dams: 89% within $2\times$, median absolute error 28%, median bias +7%.
 - **`eaves.postprocess.uncertainty` module** and CLI. Propagates the
   LOO-derived $b_\sigma$ to a per-dam V band at half / quarter / tenth
   pool; writes `validation/v_uncertainty.csv`.
@@ -107,5 +140,6 @@ downstream simulation (RUSH).
   sediment-loss budget beyond the first-order estimate currently
   reported.
 
-[1.0.1]: https://github.com/ivanovn/eaves/releases/tag/v1.0.1
-[1.0.0]: https://github.com/ivanovn/eaves/releases/tag/v1.0.0
+[1.1.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.1.0
+[1.0.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.0.1
+[1.0.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.0.0

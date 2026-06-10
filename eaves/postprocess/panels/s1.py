@@ -31,9 +31,7 @@ import eaves.config as _cfg
 from ._shared import apply_style, mm_to_in, panel_label, save_panel
 
 
-# ---------------------------------------------------------------------------
-# Feature set + k range
-# ---------------------------------------------------------------------------
+# --- Feature set and k range ---
 _FEATURES: list[str] = [
     "valley_ratio", "channel_slope", "mean_catchment_slope",
     "dam_height_m", "spillway_height_m", "dam_length_m",
@@ -42,9 +40,7 @@ _K_RANGE = list(range(2, 13))
 _CURVE_COLOR = "#D62728"   # red
 
 
-# ---------------------------------------------------------------------------
-# Pre-processing
-# ---------------------------------------------------------------------------
+# --- Preprocessing ---
 def _trusted(df: pd.DataFrame) -> pd.DataFrame:
     m = (df["quality"].isin(["A", "B"])
          & (df["r_squared"] >= 0.98)
@@ -61,9 +57,7 @@ def _design_matrix(df: pd.DataFrame, feats: list[str]) -> np.ndarray:
     return (X - mu) / sd
 
 
-# ---------------------------------------------------------------------------
-# Silhouette + LOO sigma(delta_b)
-# ---------------------------------------------------------------------------
+# --- Silhouette and LOO sigma(delta b) ---
 def _silhouette_curve(X: np.ndarray, ks: list[int], seed: int = 42) -> list[float]:
     from sklearn.cluster import KMeans
     from sklearn.metrics import silhouette_score
@@ -82,7 +76,7 @@ def _loo_cluster_sigma(T: pd.DataFrame, feats: list[str], k: int,
     Uses ``n_init=3`` (rather than the silhouette curve's 10) because each
     LOO fold runs an independent KMeans on ~n-1 points; ``n_init=3`` keeps
     the cumulative cost tractable (~3,500 fits for n=322) and the resulting
-    ``sigma`` is stable to <0.005 dex against ``n_init=10``.
+    ``sigma`` is stable to <0.005 against ``n_init=10``.
     """
     from sklearn.cluster import KMeans
     from sklearn.model_selection import LeaveOneOut
@@ -137,9 +131,7 @@ def _compute(summary_csv: str, out_csv_dir: str) -> pd.DataFrame:
     return df
 
 
-# ---------------------------------------------------------------------------
-# Figure
-# ---------------------------------------------------------------------------
+# --- Figure ---
 def make_s1_clustering(out_dir: Path) -> Path:
     """Compute the b-clustering diagnostic and render the supplementary figure.
 
@@ -225,7 +217,7 @@ def make_s1_clustering(out_dir: Path) -> Path:
         )
 
     ax_b.set_xlabel(r"Number of clusters $k$")
-    ax_b.set_ylabel(r"LOO $\sigma(\Delta b)$  [dex]")
+    ax_b.set_ylabel(r"LOO $\sigma(\Delta b)$")
     ax_b.set_xticks(_K_RANGE)
     ax_b.set_xlim(1.7, 12.3)
     ax_b.grid(True, linewidth=0.3, color="0.88")

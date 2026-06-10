@@ -1,0 +1,22 @@
+diagnostic,feature,n_features,value,metric,delta_loo_rms_log10
+vif,capacity_mcm,,3.1124957915319933,VIF,
+vif,dam_height_m,,34.151589027924224,VIF,
+vif,spillway_height_m,,31.107347246156735,VIF,
+vif,valley_ratio,,2.884696624348797,VIF,
+vif,channel_slope,,1.6193578069197214,VIF,
+vif,mean_catchment_slope,,2.2518284423853343,VIF,
+vif,upstream_area_km2,,1.691258622809103,VIF,
+condition_number,(7 log-features),7,15.089036201596596,condition_number_standardized_design,
+incremental_loo,capacity_mcm,1,0.23115655049926917,loo_rms_log10,
+incremental_loo,dam_height_m,2,0.18829342115662834,loo_rms_log10,0.04286312934264083
+incremental_loo,spillway_height_m,3,0.18894068464636588,loo_rms_log10,-0.0006472634897375373
+incremental_loo,valley_ratio,4,0.17402523682609833,loo_rms_log10,0.014915447820267547
+incremental_loo,channel_slope,5,0.17127830605447167,loo_rms_log10,0.00274693077162666
+incremental_loo,mean_catchment_slope,6,0.1651195952811376,loo_rms_log10,0.006158710773334075
+incremental_loo,upstream_area_km2,7,0.16212214091797647,loo_rms_log10,0.002997454363161123
+incremental_loo_no_capacity,dam_height_m,1,0.48953713532944154,loo_rms_log10,
+incremental_loo_no_capacity,spillway_height_m,2,0.4892218566193635,loo_rms_log10,0.0003152787100780263
+incremental_loo_no_capacity,valley_ratio,3,0.40717427912475396,loo_rms_log10,0.08204757749460956
+incremental_loo_no_capacity,channel_slope,4,0.3981769564816988,loo_rms_log10,0.008997322643055139
+incremental_loo_no_capacity,mean_catchment_slope,5,0.3913711189420961,loo_rms_log10,0.006805837539602733
+incremental_loo_no_capacity,upstream_area_km2,6,0.3287479269773597,loo_rms_log10,0.06262319196473637

@@ -13,7 +13,7 @@ import pytest
 from eaves.postprocess.uncertainty import (
     _FILL_LEVELS,
     _a_cap_m2,
-    _v_sigma_dex,
+    _v_sigma_log10,
     compute_b_sigma,
     compute_uncertainty_table,
 )
@@ -68,18 +68,18 @@ class TestAnchorBackSolve:
         assert _a_cap_m2(0.005, 1.8, 0.4) > 0
 
 
-class TestVSigmaDex:
+class TestVSigmaLog10:
 
     def test_zero_at_full_pool(self):
-        assert _v_sigma_dex(0.26, 1.0) == pytest.approx(0.0)
+        assert _v_sigma_log10(0.26, 1.0) == pytest.approx(0.0)
 
     def test_equals_b_sigma_at_tenth_pool(self):
         # |log10(0.1)| = 1, so sigma == b_sigma at a tenth of full-pool area.
-        assert _v_sigma_dex(0.26, 0.10) == pytest.approx(0.26)
+        assert _v_sigma_log10(0.26, 0.10) == pytest.approx(0.26)
 
     def test_widens_as_area_drops(self):
-        s_half = _v_sigma_dex(0.26, 0.5)
-        s_tenth = _v_sigma_dex(0.26, 0.1)
+        s_half = _v_sigma_log10(0.26, 0.5)
+        s_tenth = _v_sigma_log10(0.26, 0.1)
         assert 0 < s_half < s_tenth
 
 
@@ -98,16 +98,16 @@ class TestUncertaintyTable:
         out = compute_uncertainty_table(self._params(), b_sigma=0.26)
         for label in _FILL_LEVELS:
             assert f"V_pred_{label}_mcm" in out.columns
-            assert f"V_sigma_dex_{label}" in out.columns
-            assert f"V_pct_up_{label}" in out.columns
+            assert f"V_sigma_log10_{label}" in out.columns
+            assert f"V_frac_up_{label}" in out.columns
         assert len(out) == 2
 
     def test_sigma_increases_toward_low_pool(self):
         out = compute_uncertainty_table(self._params(), b_sigma=0.26)
         row = out.iloc[0]
-        assert (row["V_sigma_dex_half_pool"]
-                < row["V_sigma_dex_quarter_pool"]
-                < row["V_sigma_dex_tenth_pool"])
+        assert (row["V_sigma_log10_half_pool"]
+                < row["V_sigma_log10_quarter_pool"]
+                < row["V_sigma_log10_tenth_pool"])
 
     def test_a_cap_matches_back_solve(self):
         p = self._params()
@@ -116,7 +116,7 @@ class TestUncertaintyTable:
             expected_km2 = _a_cap_m2(r["c"], r["b"], r["capacity_mcm"]) / 1e6
             assert out.at[r["dam_id"], "A_cap_km2"] == pytest.approx(expected_km2)
 
-    def test_pct_bounds_are_positive(self):
+    def test_frac_bounds_are_positive(self):
         out = compute_uncertainty_table(self._params(), b_sigma=0.26)
         for label in _FILL_LEVELS:
-            assert (out[f"V_pct_up_{label}"] >= 0).all()
+            assert (out[f"V_frac_up_{label}"] >= 0).all()

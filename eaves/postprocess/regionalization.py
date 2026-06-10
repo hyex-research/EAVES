@@ -1,4 +1,12 @@
-"""Regionalization: reliability tagging, threshold analysis, parameter assignment."""
+"""Regionalization: reliability tagging and parameter assignment.
+
+Tags trusted SRTM fits (grade, R^2, volume-ratio, and pixel gates), sweeps
+the capacity threshold behind the reliability cut, assigns (c, b) to the
+remaining dams from the regional median b and a multi-feature linear
+regression anchor for A_cap, clamps b to [1.1, 2.0] with c re-solved
+through the full-pool anchor, and writes ``eaves_params.csv`` plus the
+threshold and clustering diagnostics.
+"""
 
 from __future__ import annotations
 
@@ -8,9 +16,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
-# note: diagnostic plots (threshold_analysis, regression_diagnostics) are
-# rendered by the panels step in production, not by run_regionalization
-# itself, so this module emits CSVs only.
+# Diagnostic plots are rendered by the panels step; this module emits CSVs only.
 
 try:
     from sklearn.linear_model import LinearRegression
@@ -22,10 +28,7 @@ except ImportError:
     HAS_SKLEARN = False
 
 
-# Features used by the multi-feature LR anchor for A_cap. All entered in
-# log-space. Missing features are median-imputed at predict time so the
-# regression always returns a finite value. The trusted-set LOO accuracy of
-# this recipe is documented in panel p5 and in the EAVES report.
+# Log-space features for the multi-LR A_cap anchor; missing values median-imputed at predict time.
 _REGIONAL_FEATURES = (
     "capacity_mcm",
     "dam_height_m",
@@ -131,6 +134,158 @@ def _predict_multi_anchor_lr(row, coefs, features=_REGIONAL_FEATURES):
     return float(np.exp(log_a))
 
 
+
+
+def acap_regression_diagnostics(summary_df, out_dir):
+    """Collinearity + incremental-skill diagnostics for the A_cap regression.
+
+    Pure diagnostic. Reports, for the multi-feature $\\log A_\\mathrm{cap}$
+    anchor used in deployment (see :data:`_REGIONAL_FEATURES`), three things
+    the statistician asked for, **without dropping any feature** from the
+    deployed recipe:
+
+    1. **Variance-inflation factors (VIF) and the condition number** of the
+       7 standardized log-features on the trusted training set. A VIF above
+       ~5--10, or a condition number above ~30, signals collinearity.
+    2. **Incremental leave-one-out skill** as features are added one at a time
+       in the deployed order (1 -> 7). Skill is the LOO root-mean-square
+       residual of $\\log_{10} A_\\mathrm{cap}$ (log10 units), so smaller is better;
+       the marginal value of each extra feature is ``delta_loo_rms``.
+    3. The same incremental sweep **with catalogue capacity** ($V_\\mathrm{cap}$,
+       the ``capacity_mcm`` feature) **excluded**, to show how much skill the
+       six purely-geometric features retain once the anchor target's own
+       capacity is removed from the inputs.
+
+    Writes ``acap_regression_diagnostics.csv`` (one row per diagnostic) and
+    returns the DataFrame. The deployed model in
+    :func:`run_regionalization` is untouched.
+    """
+    feats = list(_REGIONAL_FEATURES)
+    reliable = (summary_df["reliable"] if "reliable" in summary_df.columns
+                else _reliable_default(summary_df))
+    rows_X, y = [], []
+    for _, r in summary_df[reliable].iterrows():
+        v = _log_feature_vector(r, feats)
+        a = r.get("footprint_area_km2")
+        try:
+            a = float(a)
+        except (TypeError, ValueError):
+            a = np.nan
+        if v is None or not np.isfinite(a) or a <= 0:
+            continue
+        rows_X.append(v)
+        y.append(np.log(a))
+    X = np.asarray(rows_X, dtype=float)
+    y = np.asarray(y, dtype=float)
+    n = len(y)
+
+    records = []
+
+    # --- (1) VIF and condition number on standardized log-features ---
+    if n > len(feats) + 1:
+        Xc = X - X.mean(axis=0)
+        sd = Xc.std(axis=0, ddof=1)
+        sd[sd == 0] = 1.0
+        Xs = Xc / sd
+        # condition number of the standardized design (no intercept):
+        sv = np.linalg.svd(Xs, compute_uv=False)
+        cond_number = float(sv.max() / sv.min()) if sv.min() > 0 else np.inf
+        corr = np.corrcoef(Xs, rowvar=False)
+        try:
+            vif = np.diag(np.linalg.inv(corr))
+        except np.linalg.LinAlgError:
+            vif = np.full(len(feats), np.nan)
+        for f, v in zip(feats, vif):
+            records.append({
+                "diagnostic": "vif", "feature": f, "n_features": "",
+                "value": float(v), "metric": "VIF",
+            })
+        records.append({
+            "diagnostic": "condition_number", "feature": "(7 log-features)",
+            "n_features": len(feats), "value": cond_number,
+            "metric": "condition_number_standardized_design",
+        })
+
+    # --- (2) + (3) incremental leave-one-out skill ---
+    def _loo_rms_log10(Xsub):
+        """LOO RMS residual of log10 A_cap (log10 units) for an OLS with intercept."""
+        if Xsub.shape[1] == 0:
+            Xi = np.ones((n, 1))
+        else:
+            Xi = np.column_stack([np.ones(n), Xsub])
+        if n <= Xi.shape[1]:
+            return np.nan
+        resid = np.empty(n)
+        idx = np.arange(n)
+        for i in range(n):
+            tr = idx != i
+            coef, *_ = np.linalg.lstsq(Xi[tr], y[tr], rcond=None)
+            resid[i] = y[i] - Xi[i] @ coef
+        # natural-log residual -> log10 units
+        return float(np.sqrt(np.mean(resid ** 2)) / np.log(10.0))
+
+    def _incremental(order_idx, tag):
+        prev = None
+        for k in range(1, len(order_idx) + 1):
+            cols = order_idx[:k]
+            rms = _loo_rms_log10(X[:, cols])
+            delta = (prev - rms) if (prev is not None and np.isfinite(rms)
+                                     and np.isfinite(prev)) else np.nan
+            records.append({
+                "diagnostic": tag,
+                "feature": feats[order_idx[k - 1]],
+                "n_features": k,
+                "value": rms,
+                "metric": "loo_rms_log10",
+                "delta_loo_rms_log10": delta,
+            })
+            prev = rms
+
+    # full deployed order, 1->7
+    _incremental(list(range(len(feats))), "incremental_loo")
+    # capacity (V_cap) excluded: keep the other six in deployed order
+    cap_i = feats.index("capacity_mcm")
+    no_cap_order = [i for i in range(len(feats)) if i != cap_i]
+    _incremental(no_cap_order, "incremental_loo_no_capacity")
+
+    out = pd.DataFrame(records)
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "acap_regression_diagnostics.csv")
+    out.to_csv(out_path, index=False)
+
+    print("\n" + "=" * 70)
+    print("  A_cap REGRESSION DIAGNOSTICS (collinearity + incremental skill)")
+    print("=" * 70)
+    print(f"  Trusted training dams: {n}")
+    vif_rows = out[out["diagnostic"] == "vif"]
+    if len(vif_rows):
+        print("  VIF (standardized log-features):")
+        for _, r in vif_rows.iterrows():
+            print(f"    {r['feature']:<22s} {r['value']:6.2f}")
+    cn = out[out["diagnostic"] == "condition_number"]
+    if len(cn):
+        print(f"  Condition number (standardized design): {cn['value'].iloc[0]:.1f}")
+    for tag, lab in (("incremental_loo", "1->7 features"),
+                     ("incremental_loo_no_capacity", "V_cap excluded")):
+        sub = out[out["diagnostic"] == tag]
+        print(f"  Incremental LOO RMS (log10 units), {lab}:")
+        for _, r in sub.iterrows():
+            d = "" if not np.isfinite(r.get("delta_loo_rms_log10", np.nan)) else f"  (delta {r['delta_loo_rms_log10']:+.4f})"
+            print(f"    +{r['feature']:<22s} k={int(r['n_features'])}  LOO_RMS={r['value']:.4f}{d}")
+    print(f"\n  Saved: {out_path}")
+    print("=" * 70)
+    return out
+
+
+def _reliable_default(df):
+    """Trusted-set mask, identical to run_regionalization step A."""
+    return (
+        df["quality"].isin(["A", "B"])
+        & (df["r_squared"] >= 0.98)
+        & df["vol_ratio"].between(0.3, 5.0)
+        & (df["n_pixels"] >= 50)
+        & df["b"].notna()
+    )
 
 
 def assign_quality(row):
@@ -269,9 +424,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
                 if imp_sum > 0:
                     importances = importances / imp_sum
 
-            # Diagnostic plot of the regression is rendered separately by
-            # the panels step, not here -- run_regionalization stays a pure
-            # parameter-assignment function.
+            # The regression diagnostic plot is rendered by the panels step, not here.
         else:
             print("  Both models below R\u00b2=0.25, falling back to regional median b.")
     elif not HAS_SKLEARN:
@@ -284,15 +437,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
     print(f"  Regional median b = {regional_median_b:.4f}")
 
     # --- Step D: multi-feature LR anchor for A_cap ---
-    # Single recipe: log A_cap regressed on every feature in
-    # `_REGIONAL_FEATURES` in log space, trained on the trusted DEM
-    # footprints. Any feature missing for a regionalised dam is imputed with
-    # the training-set median so the predictor never short-circuits.
-    #
-    # The anchor uses the FULL trusted set (every dam tagged ``reliable``),
-    # not the capacity-thresholded ``train_clean`` subset that drives the
-    # b-regression: small fixtures and small regions otherwise drop below
-    # the multi-LR's min_n and lose the recipe entirely.
+    # Trained on the full trusted set: the capacity-thresholded subset starves small regions below min_n.
     trusted_full = summary_df[summary_df["reliable"]].copy()
     multi_fit = _fit_multi_anchor_lr_full(trusted_full)
     a_cap_multi_coef = multi_fit["coefs"] if multi_fit is not None else None
@@ -305,8 +450,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
               "8 trusted dams with all features). Regionalization will fail "
               "loudly only if a dam actually needs regionalising.")
 
-    # 1-sigma uncertainty in b from the trusted-set distribution. Used by
-    # quadrature to inflate the c uncertainty (since c = V_cap / A_cap^b).
+    # 1-sigma b spread from the trusted set, used to inflate the c uncertainty in quadrature.
     b_sigma = (float((trusted_full["b"].quantile(0.84)
                        - trusted_full["b"].quantile(0.16)) / 2.0)
                if len(trusted_full) else 0.25)
@@ -333,10 +477,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
     # (b) Unreliable SRTM dams
     need_region = summary_df[~summary_df["reliable"]].copy()
 
-    # (c) Failed dams with topo features. Skip any dam already represented in
-    # summary_df: a fit_failed dam still has a summary row (with NaN b), which
-    # means it's already in need_region — adding it again from failures would
-    # write a duplicate params row.
+    # (c) Failed dams with features; skip those already in summary_df to avoid duplicate rows.
     summary_ids = set(summary_df["dam_id"])
     fail_feature_rows = []
     for f in failures:
@@ -394,18 +535,14 @@ def run_regionalization(summary_df, failures, dam_data_list):
             region_df["b"] = regional_median_b
             region_df["source"] = "regi_multi"
 
-        # Median-impute any missing regionalisation feature so the multi-LR
-        # never short-circuits at predict time.
+        # Median-impute missing features so the multi-LR never short-circuits at predict time.
         for feat, med in feature_medians.items():
             if feat in region_df.columns:
                 region_df[feat] = region_df[feat].where(
                     region_df[feat].notna() & (region_df[feat] > 0), med,
                 )
 
-        # Multi-feature LR anchor for A_cap, back-solving c = V_cap / A_cap^b.
-        # The anchor enforces V(A_cap_pred) = V_cap exactly; uncertainty
-        # away from the anchor is driven by b_sigma and is propagated
-        # downstream by the dedicated uncertainty module.
+        # Back-solve c = V_cap / A_cap^b through the predicted anchor.
         for idx_r, row_r in region_df.iterrows():
             capacity_m3_r = row_r["capacity_mcm"] * 1e6
             b_val = row_r["b"]
@@ -432,7 +569,17 @@ def run_regionalization(summary_df, failures, dam_data_list):
             })
 
     params_df = pd.DataFrame(param_rows)
+    # Clamp b to [1.1, 2.0]; for moved SRTM curves re-solve c through the full-pool anchor.
+    _b_raw = params_df["b"].copy()
     params_df["b"] = params_df["b"].clip(1.1, 2.0)
+    _anchor = summary_df.set_index("dam_id")
+    _reclamp = (params_df["b"] != _b_raw) & (params_df["source"] == "srtm_derived")
+    for _i in params_df.index[_reclamp]:
+        _did = params_df.at[_i, "dam_id"]
+        _A = float(_anchor.at[_did, "footprint_area_km2"]) * 1e6
+        _V = float(_anchor.at[_did, "srtm_max_vol_mcm"]) * 1e6
+        if _A > 0 and np.isfinite(_V) and _V > 0:
+            params_df.at[_i, "c"] = _V / (_A ** params_df.at[_i, "b"])
     params_df = params_df[[
         "dam_id", "dam_name", "capacity_mcm", "c", "b", "source",
     ]]

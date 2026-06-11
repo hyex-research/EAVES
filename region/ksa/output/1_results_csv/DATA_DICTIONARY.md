@@ -171,6 +171,8 @@ Note the units are m^2 / m^3 here, NOT MCM. `volume_m3 = 0` at the bottom row.
 | `channel_slope` | Local channel slope | m/m | float | may be NaN |
 | `mean_catchment_slope` | Mean catchment slope | m/m | float | may be NaN |
 | `construction_year` | Catalog construction year | year | float | blank when unknown |
+| `latitude` | Catalog dam latitude (WGS84) | deg | float | never |
+| `longitude` | Catalog dam longitude (WGS84) | deg | float | never |
 
 `reason` controlled vocabulary: `placement_failed` (13), `bad_fill_auto` (9),
 `fit_failed` (2). These dams carry catalog and topographic attributes so the

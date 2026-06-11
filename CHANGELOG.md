@@ -4,6 +4,14 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `latitude` / `longitude` columns in `failed_dams.csv`, completing the
+  paper's data-availability promise (coordinates for all 526 cataloged
+  dams, including the 22 without a recovered footprint).
+
 ## [1.2.0] — 2026-06-11
 
 ### Changed

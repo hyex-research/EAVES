@@ -72,6 +72,8 @@ def _catalogue_features(dam_data):
         "dam_length_m":        _f("dam_length_m"),
         "upstream_area_km2":   _f("upstream_area_km2"),
         "construction_year":   _f("construction_year"),
+        "latitude":            _f("latitude"),
+        "longitude":           _f("longitude"),
     }
 
 

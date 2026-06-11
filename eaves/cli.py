@@ -456,6 +456,8 @@ def main():
             }
             for k in _FEATURE_KEYS:
                 rec[k] = s.get(k, np.nan)
+            rec["latitude"] = s.get("lat", np.nan)
+            rec["longitude"] = s.get("lon", np.nan)
             failures.append(rec)
 
     if failures:

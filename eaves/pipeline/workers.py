@@ -48,7 +48,7 @@ class DamRow:
 def _catalogue_features(dam_data):
     """Catalogue-available features attached to every failure record.
 
-    Returns the four catalogue/external columns that we can populate without
+    Returns the catalogue/external columns that can be populated without
     running placement (capacity, dam height, spillway height, upstream catchment
     area). Non-numeric or missing values come through as NaN.
     """
@@ -71,6 +71,7 @@ def _catalogue_features(dam_data):
         "spillway_height_m":   _f("spillway_height_m"),
         "dam_length_m":        _f("dam_length_m"),
         "upstream_area_km2":   _f("upstream_area_km2"),
+        "construction_year":   _f("construction_year"),
     }
 
 

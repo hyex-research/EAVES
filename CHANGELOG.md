@@ -4,6 +4,62 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-06-11
+
+### Changed
+
+- **Regionalization now trains only on post-SRTM dams.** The training set is
+  the trusted fits whose construction year is 2000 or later (200 of 322):
+  pre-2000 and unknown-year dams may sit on an already partially silted
+  valley floor, so they ship their own SRTM curves but no longer train the
+  recipe, the exponent spread $b_\sigma$, the clustering diagnostic, the
+  $A_\mathrm{cap}$ regression, or the leave-one-out validation. Small
+  populations (CI fixtures, data-poor regions) fall back to the full trusted
+  set below 15 training dams. Deployed regionalized exponent moves
+  1.50 -> 1.56 (median over the capacity-thresholded training subset); LOO
+  headline improves to 92%/99% within factor 2/3 (median bias +6%,
+  MedAPE 29%, relRMSE 47%); band terms re-estimated
+  ($b_\sigma$ 0.2657, $\sigma_{\log A_\mathrm{cap}}$ 0.149,
+  $\sigma_{\log V_\mathrm{cap}}$ 0.142).
+- **Catalog-capacity uncertainty term re-estimated without cap censoring.**
+  Capped fills pin the SRTM-to-catalog volume ratio near unity, so the term
+  is now the spread over the uncapped training fills only
+  (0.074 -> 0.142, i.e. the SRTM-derived band floor moves from +19%/-16%
+  to a deliberately conservative +39%/-28%).
+- **Baish capacity sourced from the design documentation.** `id_120000`
+  now carries the design-table storage at the maximum water level
+  (198.072 MCM), the primary source for this dam, in place of the
+  national-catalog spillway-level value (193.644 MCM), so the fill cap
+  reflects the full design envelope. Recovered maximum 201.3 MCM (one-bin overshoot, +1.6%);
+  total catalog storage 2,437 -> 2,442 MCM.
+
+### Added
+
+- **`pre_srtm` uncertainty flag** (6th flag): marks dams built before the
+  February 2000 SRTM acquisition, whose curves describe the as-of-2000
+  (possibly partially silted) surface. 178 dams flagged on the Saudi domain.
+- **`in_training` column** in `validation/goodness_of_fit.csv`.
+- **`documentation/` folder** (method, structure, outputs, data
+  dependencies, usage); `README.md` slimmed to overview, quickstart, and
+  links.
+- **Open-axes panel style**: top/right spines removed across p3 (b, c),
+  p4, p5, and s1-s5 (s2 panel b keeps its right spine for the twin bar
+  axis).
+- Central `trusted_mask` / `training_mask` helpers in
+  `postprocess/reliability.py`, replacing five duplicated gate definitions.
+
+### Fixed
+
+- Log-log anchor residual factor was rendered as `10**rms` on natural-log
+  residuals in `report.md` (a factor of ~3.4 instead of the correct ~1.7).
+- `acap_regression_diagnostics` now evaluates on the training population.
+- `domain_characterization.csv` log-log anchor stats (`loglog_alpha`,
+  `loglog_resid_rms`) are now in log10 units, matching the stated error
+  convention (previously natural log, and the report rendered the residual
+  factor with the wrong base).
+- `failed_dams.csv` gains a `construction_year` column so the pre-2000
+  status of footprint-less dams is recoverable.
+
 ## [1.1.0] — 2026-06-10
 
 ### Fixed
@@ -140,6 +196,7 @@ downstream simulation (RUSH).
   sediment-loss budget beyond the first-order estimate currently
   reported.
 
+[1.2.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.2.0
 [1.1.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.1.0
 [1.0.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.0.1
 [1.0.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.0.0

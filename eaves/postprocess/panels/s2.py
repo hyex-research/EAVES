@@ -5,8 +5,8 @@ Two questions:
 1.  How does fit quality (``r_squared``) vary with reservoir size? Smaller
     reservoirs are systematically harder for SRTM to resolve.
 2.  Where should the capacity cutoff for the reliable / training subset
-    sit? The chosen threshold is the lowest capacity at which the fraction
-    of reliable dams reaches a stable plateau.
+    sit? The chosen threshold is the smallest one sustaining at least 80%
+    reliability over at least 30 dams (1 MCM on the Saudi domain).
 
 Reads:
 
@@ -142,6 +142,12 @@ def make_s2_threshold(out_dir: Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "s2_threshold_analysis.png"
+    # Open axes on panel a (panel b keeps its right spine for the twin bar axis).
+    ax_a.spines["top"].set_visible(False)
+    ax_a.spines["right"].set_visible(False)
+    ax_b.spines["top"].set_visible(False)
+    ax_b_bars.spines["top"].set_visible(False)
+
     save_panel(fig, out_png)
     plt.close(fig)
     rc_stack.__exit__(None, None, None)

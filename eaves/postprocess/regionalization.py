@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
+from .reliability import training_mask
 # Diagnostic plots are rendered by the panels step; this module emits CSVs only.
 
 try:
@@ -145,7 +146,7 @@ def acap_regression_diagnostics(summary_df, out_dir):
     deployed recipe:
 
     1. **Variance-inflation factors (VIF) and the condition number** of the
-       7 standardized log-features on the trusted training set. A VIF above
+       7 standardized log-features on the training set. A VIF above
        ~5--10, or a condition number above ~30, signals collinearity.
     2. **Incremental leave-one-out skill** as features are added one at a time
        in the deployed order (1 -> 7). Skill is the LOO root-mean-square
@@ -161,10 +162,14 @@ def acap_regression_diagnostics(summary_df, out_dir):
     :func:`run_regionalization` is untouched.
     """
     feats = list(_REGIONAL_FEATURES)
-    reliable = (summary_df["reliable"] if "reliable" in summary_df.columns
-                else _reliable_default(summary_df))
+    if "training" in summary_df.columns:
+        m = summary_df["training"]
+    elif "reliable" in summary_df.columns:
+        m = summary_df["reliable"]
+    else:
+        m = training_mask(summary_df)
     rows_X, y = [], []
-    for _, r in summary_df[reliable].iterrows():
+    for _, r in summary_df[m].iterrows():
         v = _log_feature_vector(r, feats)
         a = r.get("footprint_area_km2")
         try:
@@ -277,17 +282,6 @@ def acap_regression_diagnostics(summary_df, out_dir):
     return out
 
 
-def _reliable_default(df):
-    """Trusted-set mask, identical to run_regionalization step A."""
-    return (
-        df["quality"].isin(["A", "B"])
-        & (df["r_squared"] >= 0.98)
-        & df["vol_ratio"].between(0.3, 5.0)
-        & (df["n_pixels"] >= 50)
-        & df["b"].notna()
-    )
-
-
 def assign_quality(row):
     """Grade a dam's EAV curve quality A..F."""
     vr = row["vol_ratio"]
@@ -330,6 +324,10 @@ def run_regionalization(summary_df, failures, dam_data_list):
         & (summary_df["n_pixels"] >= 50)
         & summary_df["b"].notna()
     )
+    # Training keeps only trusted dams built after the SRTM acquisition
+    # (pre-2000 and unknown-year dams may sit on already-silted topography),
+    # falling back to the full trusted set for very small populations.
+    summary_df["training"] = training_mask(summary_df)
 
     # --- Step B: Determine reliability threshold ---
     thresholds = np.arange(1.0, 20.5, 0.5)
@@ -366,7 +364,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
     # --- Step C: Fit regression for b ---
     features = ["valley_ratio", "channel_slope", "mean_catchment_slope", "dam_height_m"]
     train = summary_df[
-        (summary_df["capacity_mcm"] >= chosen_threshold) & (summary_df["reliable"])
+        (summary_df["capacity_mcm"] >= chosen_threshold) & (summary_df["training"])
     ].copy()
     train_clean = train.dropna(subset=features + ["b"])
 
@@ -437,8 +435,9 @@ def run_regionalization(summary_df, failures, dam_data_list):
     print(f"  Regional median b = {regional_median_b:.4f}")
 
     # --- Step D: multi-feature LR anchor for A_cap ---
-    # Trained on the full trusted set: the capacity-thresholded subset starves small regions below min_n.
-    trusted_full = summary_df[summary_df["reliable"]].copy()
+    # Trained on the full training set (trusted AND post-2000): the
+    # capacity-thresholded subset starves small regions below min_n.
+    trusted_full = summary_df[summary_df["training"]].copy()
     multi_fit = _fit_multi_anchor_lr_full(trusted_full)
     a_cap_multi_coef = multi_fit["coefs"] if multi_fit is not None else None
     if multi_fit is not None:

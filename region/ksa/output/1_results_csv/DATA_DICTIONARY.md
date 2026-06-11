@@ -12,8 +12,8 @@ files.
   `*_mcm`). The conversion is `1 MCM = 1e6 m^3`. Watch this 10^6 factor when
   joining `eav_tables` against the MCM tables. The power-law coefficient `c`
   is fit in SI units, so `V = c·A^b` takes area in m^2 and returns volume in
-  m^3 (e.g. Baish: `c=0.00767`, `b=1.506`, `A=8.13e6 m^2` -> `1.96e8 m^3`,
-  i.e. 196 MCM). Divide by 1e6 to obtain MCM.
+  m^3 (e.g. Baish: `c=0.00762`, `b=1.507`, `A=8.25e6 m^2` -> `2.01e8 m^3`,
+  i.e. 201 MCM). Divide by 1e6 to obtain MCM.
 - **Missing values.** Numeric blanks are empty cells (`NaN` on read).
   `construction_year` is a nullable integer; absent years are left blank (NOT
   imputed to a sentinel year). `uncertainty_flags` uses the literal string `-`
@@ -41,6 +41,8 @@ full statement.
 | --- | --- | --- |
 | `lat`, `lon` | `eaves_summary.csv` | Catalog value passed through verbatim (decimal degrees, WGS84). Most rows carry 6 decimal places (~0.1 m); a minority carry 2–8. No fixed rounding is applied. |
 | `capacity_mcm` | `eaves_params.csv`, `eaves_summary.csv`, `failed_dams.csv`, `validation/*` | Design capacity, MCM, full catalog precision (up to 6 decimals). |
+
+Note: for Baish (`id_120000`), the one dam with full design documentation, the capacity is sourced directly from the design table: 198.072 MCM at the maximum water level (`baish_bathymetry/baysh_area_elev_vol.csv`). See the paper's Input data section.
 | `dam_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 2 decimals). |
 | `spillway_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 3 decimals). |
 | `dam_length_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 2 decimals). |
@@ -67,7 +69,7 @@ full statement.
 ## `eaves_summary.csv` — full per-dam diagnostics (504 rows)
 
 The 504 dams that produced a curve (`526 − 22` regionalized-only without a DEM
-footprint; the 24 placement failures live in `failed_dams.csv`, of which 2
+footprint; the 24 pipeline failures live in `failed_dams.csv`, of which 2
 were recovered into this summary).
 
 | Column | Definition | Unit | dtype | Missing |
@@ -101,12 +103,12 @@ were recovered into this summary).
 | `lat` | Catalog latitude (WGS84) | deg | float | catalog-derived |
 | `lon` | Catalog longitude (WGS84) | deg | float | catalog-derived |
 | `srtm_max_vol_mcm` | Maximum volume of the SRTM-derived curve at spillway level | MCM | float | never |
-| `vol_ratio` | `srtm_max_vol_mcm / capacity_mcm` | — | float | never |
+| `vol_ratio` | `srtm_max_vol_mcm / capacity_mcm`, evaluated on the bin-resolution fill (the cap stops the fill at the first 0.5 m bin reaching capacity, so capped dams sit slightly above 1) | — | float | never |
 | `z_range` | `z_max − z_min` | m | float | never |
 | `z_range_ratio` | `z_range / spillway_height_m` | — | float | NaN if spillway 0 |
 | `quality` | Per-dam quality grade | — | str | never |
 | `uncertainty_flags` | `;`-joined active reliability flags, or `-` if none | — | str | `-` when none |
-| `uncertainty_score` | Number of active uncertainty flags (0–5 by construction; 0–3 realized on this domain) | count | int | never |
+| `uncertainty_score` | Number of active uncertainty flags (0–7 by construction; 0–3 realized on this domain) | count | int | never |
 | `sed_yield_t_ha_yr` | Delivered sediment yield at the reservoir inlet (Dash et al. 2025: RUSLE gross erosion x area-dependent delivery ratio, applied at the source) | t ha^-1 yr^-1 | float | may be blank |
 | `owe_mm_year` | Open-water evaporation (external input) | mm yr^-1 | float | blank for 67 dams |
 | `predicted_silt_fraction` | First-order predicted fraction of design capacity lost to sediment by the reference year 2026 (capped at 1.0; computed from the delivered yield with no additional delivery ratio) | fraction | float | blank when catchment-yield inputs are missing |
@@ -127,7 +129,9 @@ Controlled vocabularies:
   - `sub_pixel` — footprint smaller than 30 active pixels (geometry undersampled).
   - `narrow_valley` — valley width below 3 pixels (cross-section undersampled).
   - `height_noise` — spillway height < 5 m, comparable to SRTM vertical noise.
-  - `flat_terrain`, `tall_and_narrow` — defined by construction but not triggered on the Saudi domain (so absent from the released tables here).
+  - `pre_srtm` — built before the February 2000 SRTM acquisition: the curve describes the as-of-2000 (possibly partially silted) surface rather than original design geometry. These dams do not enter regionalization training.
+  - `unknown_year` — no catalog construction year, so the pre- or post-acquisition status cannot be verified. These dams do not enter regionalization training either.
+  - `flat_terrain`, `tall_narrow` — defined by construction but not triggered on the Saudi domain (so absent from the released tables here).
   - `-` — no flags active.
 - `capped`: `True` / `False`.
 - `sediment_risk`: `low`, `moderate`, `high`, `severe`, `fully_silted`, `unknown` (increasing predicted capacity loss; `unknown` = missing catchment-yield inputs). Counts on the Saudi domain: 64 / 89 / 97 / 84 / 149 / 21.
@@ -166,6 +170,7 @@ Note the units are m^2 / m^3 here, NOT MCM. `volume_m3 = 0` at the bottom row.
 | `valley_ratio` | Valley aspect ratio | — | float | may be NaN |
 | `channel_slope` | Local channel slope | m/m | float | may be NaN |
 | `mean_catchment_slope` | Mean catchment slope | m/m | float | may be NaN |
+| `construction_year` | Catalog construction year | year | float | blank when unknown |
 
 `reason` controlled vocabulary: `placement_failed` (13), `bad_fill_auto` (9),
 `fit_failed` (2). These dams carry catalog and topographic attributes so the
@@ -178,7 +183,7 @@ regionalization recipe can still reach them.
 | Column | Definition | Unit | dtype |
 | --- | --- | --- | --- |
 | `threshold_mcm` | Capacity cut-off | MCM | float |
-| `n_above` | Dams with capacity at or above the threshold | count | int |
+| `n_above` | Dams with capacity at or above the threshold, over the 504 processed dams (not the 526-dam catalog) | count | int |
 | `n_reliable` | Of those, dams meeting the trusted/grade criteria | count | int |
 | `frac_reliable` | `n_reliable / n_above` | — | float |
 
@@ -194,10 +199,11 @@ in MCM (`*_mcm`); dimensionless skill metrics are in log10 units.
 
 Selected keys: `n_dams_with_params=526`, `n_dams_summary=504`,
 `n_dams_failed_pipeline=24`, `n_params_source_srtm_derived=322`,
-`n_params_source_regi_multi=204`, `b_median=1.5019…`, `b_sigma=0.2645…`,
-`b_cluster_best_gain_pct=14.0…`,
-`loo_multi_anchor_within_2x_frac=0.8944…` / `_within_3x_frac=0.9845…`
-(stored as decimal fractions).
+`n_params_source_regi_multi=204`, `n_training=200`, `b_median=1.5019…` (trusted,
+descriptive), `b_sigma_training=0.2657…` (the band's b-spread, training set),
+`b_cluster_best_gain_pct=11.0…`,
+`loo_multi_anchor_within_2x_frac=0.915` / `_within_3x_frac=0.99`
+(stored as decimal fractions; LOO rows cover the 200 training dams).
 
 ---
 
@@ -258,8 +264,8 @@ log–log primary, multi-feature LR) against the SRTM-derived reference, at
 | `*_log10_V_ratio_at_{100,050,010}pct` | log10 volume ratio vs the SRTM reference | log10 units |
 | `V_srtm_at_{100,050,010}pct_m3` | SRTM-reference volume at that pool fraction | **m^3** |
 
-Source vocabularies: `current_source ∈ {current_sat_p95 (282),
-current_sat_fallback (40)}`; `alt_source = alt_loglog_primary`;
+Source vocabularies: `current_source ∈ {current_sat_p95 (177),
+current_sat_fallback (23)}` (over the 200 training-dam rows); `alt_source = alt_loglog_primary`;
 `multi_source = multi_lr_primary`. Volumes in this file are in m^3.
 
 ---
@@ -274,10 +280,10 @@ Propagated `b_sigma` band at half / quarter / tenth pool (Supp panel S3).
 | `source` | `srtm_derived` or `regi_multi` | — | str | never |
 | `capacity_mcm` | Catalog design capacity | MCM | float | catalog-derived |
 | `b` | Power-law exponent | — | float | never |
-| `b_sigma` | Regional `b` spread used for the band | — | float | never |
+| `b_sigma` | Regional `b` spread used for the band (P16–P84 half-width over the training set) | — | float | never |
 | `A_cap_km2` | Footprint area at full pool | km^2 | float | never |
 | `sigma_log_acap` | LOO error of the predicted `log10 A_cap` (regionalized anchor term, 0 for `srtm_derived`) | log10 units | float | never |
-| `sigma_log_vcap` | Catalog-capacity error term | log10 units | float | never |
+| `sigma_log_vcap` | Catalog-capacity error term (P16–P84 half-width of log10(V_SRTM/V_cap) over the uncapped training fills; conservative, since the subset also carries sub-pixel shortfall) | log10 units | float | never |
 | `sigma_acap_term` | `b · sigma_log_acap`, the area-anchor term as it enters the volume band | log10 units | float | never |
 | `V_sigma_bspread_{half,quarter,tenth}_pool` | Geometric `b_sigma`-only component of the band | log10 units | float | never |
 | `V_pred_{half,quarter,tenth}_pool_mcm` | Predicted volume at that pool fraction | MCM | float | never |
@@ -299,6 +305,7 @@ Fractional volume residual of the power-law fit in the deployed area-to-volume d
 | `quality` | Letter grade A–F | — | str | never |
 | `r_squared` | Power-law fit R^2 (partly mechanical) | — | float | never |
 | `is_trusted` | In the trusted set | — | bool | never |
+| `in_training` | In the regionalization training set (trusted AND built in/after 2000) | — | bool | never |
 | `n_fit_bins` | Number of elevation bins in the fit | count | int | never |
 | `max_frac_resid` | Maximum fractional volume residual across bins | fraction | float | never |
 | `rms_frac_resid` | RMS fractional volume residual across bins | fraction | float | never |

@@ -199,6 +199,8 @@ def _draw_panel_b(ax) -> None:
     leg = ax.legend(loc="lower right", frameon=False, fontsize=10)
     for txt in leg.get_texts():
         txt.set_color("0.10")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     panel_label(ax, "b", fontsize=12)
 
 
@@ -259,6 +261,8 @@ def _draw_panel_c(ax) -> None:
     leg = ax.legend(loc="upper right", frameon=False, fontsize=10)
     for txt in leg.get_texts():
         txt.set_color("0.10")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
     panel_label(ax, "c", fontsize=12)
 
 

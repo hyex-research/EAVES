@@ -272,6 +272,11 @@ def make_p5_validation(output_dir: str | os.PathLike) -> Path:
         _draw_panel_b(fig.add_subplot(gs[0, 1]), stats)
         _draw_panel_c(fig.add_subplot(gs[0, 2]), df, stats)
 
+        # Open axes: no top/right spines.
+        for _ax in fig.axes:
+            _ax.spines["top"].set_visible(False)
+            _ax.spines["right"].set_visible(False)
+
         save_panel(fig, out_png)
     plt.close(fig)
     print(f"wrote {out_png}")

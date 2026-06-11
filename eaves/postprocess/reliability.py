@@ -22,7 +22,50 @@ _FLAGS = [
     "height_noise",    # spillway depth comparable to SRTM vertical noise
     "flat_terrain",    # low catchment slope AND shallow depression
     "tall_narrow",     # high spillway_height / valley_width ratio
+    "pre_srtm",        # built before the Feb 2000 SRTM acquisition
+    "unknown_year",    # no catalog construction year: pre/post-2000 unverifiable
 ]
+
+# SRTM C-band acquisition: February 2000.
+SRTM_ACQUISITION_YEAR = 2000
+
+
+def post_srtm_construction(df: pd.DataFrame) -> pd.Series:
+    """True where construction is known to postdate the SRTM acquisition.
+
+    Pre-2000 dams may sit on an already partially silted valley floor, and
+    unknown-year dams cannot be verified either way, so regionalization
+    training keeps only dams with construction_year >= 2000.
+    """
+    cy = pd.to_numeric(df.get("construction_year"), errors="coerce")
+    return pd.Series(cy >= SRTM_ACQUISITION_YEAR, index=df.index).fillna(False)
+
+
+def trusted_mask(df: pd.DataFrame) -> pd.Series:
+    """The trusted-set gates: grade A/B, R^2 >= 0.98, volume ratio in
+    [0.3, 5.0], at least 50 footprint pixels, and a defined exponent."""
+    return (
+        df["quality"].isin(["A", "B"])
+        & (df["r_squared"] >= 0.98)
+        & df["vol_ratio"].between(0.3, 5.0)
+        & (df["n_pixels"] >= 50)
+        & df["b"].notna()
+    )
+
+
+_MIN_TRAINING_N = 15
+
+
+def training_mask(df: pd.DataFrame, min_n: int = _MIN_TRAINING_N) -> pd.Series:
+    """Trusted gates AND post-SRTM construction.
+
+    Falls back to the full trusted set when fewer than ``min_n`` dams
+    remain (small regions and CI fixtures), where a handful of clean
+    trainers is worse than a slightly contaminated population.
+    """
+    t = trusted_mask(df)
+    tr = t & post_srtm_construction(df)
+    return tr if int(tr.sum()) >= min_n else t
 
 
 def add_uncertainty_flags(
@@ -33,7 +76,7 @@ def add_uncertainty_flags(
 
     ``uncertainty_flags`` is a ``;``-joined list of active flag names (empty
     string when none apply). ``uncertainty_score`` is the number of active
-    flags (0..5).
+    flags (0..7).
     """
     if len(summary_df) == 0:
         summary_df["uncertainty_flags"] = "-"
@@ -60,6 +103,13 @@ def add_uncertainty_flags(
         active["tall_narrow"] = aspect > 0.2
     else:
         active["tall_narrow"] = pd.Series(False, index=summary_df.index)
+    # pre_srtm marks definite pre-2000 construction: the curve describes the
+    # as-of-2000 valley (possibly already silted), not pristine design geometry.
+    cy = pd.to_numeric(summary_df.get("construction_year"), errors="coerce")
+    active["pre_srtm"] = pd.Series(cy < SRTM_ACQUISITION_YEAR, index=summary_df.index)
+    # unknown_year marks dams whose pre/post-acquisition status cannot be
+    # verified; like pre_srtm dams they are excluded from training.
+    active["unknown_year"] = pd.Series(cy.isna(), index=summary_df.index)
 
     for name in _FLAGS:
         active[name] = active[name].fillna(False).astype(bool)

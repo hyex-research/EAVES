@@ -244,6 +244,11 @@ def make_s3_uncertainty(out_dir: Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "s3_uncertainty_band.png"
+    # Open axes: no top/right spines.
+    for _ax in fig.axes:
+        _ax.spines["top"].set_visible(False)
+        _ax.spines["right"].set_visible(False)
+
     save_panel(fig, out_png)
     plt.close(fig)
     rc_stack.__exit__(None, None, None)

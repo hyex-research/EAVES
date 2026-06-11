@@ -344,6 +344,11 @@ def make_p4_comparison(output_dir: str | os.PathLike) -> Path:
             if not is_last:
                 ax_da.tick_params(labelbottom=False)
 
+        # Open axes: no top/right spines anywhere in the panel set.
+        for _ax in fig.axes:
+            _ax.spines["top"].set_visible(False)
+            _ax.spines["right"].set_visible(False)
+
         save_panel(fig, out_png)
     plt.close(fig)
     print(f"wrote {out_png}")

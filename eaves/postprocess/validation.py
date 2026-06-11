@@ -4,11 +4,12 @@ Default diagnostics (cheap, run unless skipped), all mirroring the logic in
 :mod:`regionalization`:
 
 * :func:`loo_regionalization_eval` -- leave-one-out evaluation of the
-  regionalization recipe on the "trusted" SRTM-derived dams. For each
-  trusted dam, hide its SRTM curve, re-run the regionalization step
+  regionalization recipe on the training dams (trusted SRTM fits built
+  after the SRTM acquisition). For each training dam, hide its SRTM
+  curve, re-run the regionalization step
   (regional-median ``b``; the shipped multi-feature LR anchor for
   ``A_cap``, plus the retired satellite and log-log anchors for
-  comparison, to back-solve ``c``) using the other trusted dams as
+  comparison, to back-solve ``c``) using the other training dams as
   training data, then
   compare the regionalized curve against the SRTM "truth".
 
@@ -53,6 +54,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
+from .reliability import training_mask
 from .regionalization import (
     _REGIONAL_FEATURES,
     _fit_multi_anchor_lr,
@@ -120,9 +122,12 @@ def loo_regionalization_eval(
     """
     df = pd.read_csv(summary_csv)
     df["reliable"] = _reliable_mask(df)
-    trusted = df[df["reliable"]].copy().reset_index(drop=True)
+    # The LOO runs on the training population (trusted AND post-2000, with
+    # the small-population fallback), the dams the recipe is trained on.
+    df["training"] = training_mask(df)
+    trusted = df[df["training"]].copy().reset_index(drop=True)
     if len(trusted) == 0:
-        raise RuntimeError("No reliable dams in summary -- nothing to validate.")
+        raise RuntimeError("No training dams in summary -- nothing to validate.")
 
     rows = []
     for i, row in trusted.iterrows():
@@ -359,6 +364,7 @@ def goodness_of_fit_check(
     summary = pd.read_csv(summary_csv)
     params = pd.read_csv(params_csv).set_index("dam_id")
     summary["trusted"] = _reliable_mask(summary)
+    summary["in_training"] = training_mask(summary)
 
     rows = []
     for _, row in summary.iterrows():
@@ -370,6 +376,7 @@ def goodness_of_fit_check(
             "quality":       row.get("quality", ""),
             "r_squared":     float(row["r_squared"]) if np.isfinite(row.get("r_squared", np.nan)) else np.nan,
             "is_trusted":    bool(row["trusted"]),
+            "in_training":   bool(row["in_training"]),
             "n_fit_bins":    0,
             "max_frac_resid": np.nan,
             "rms_frac_resid": np.nan,

@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
+from ..reliability import training_mask
 
 from ._shared import apply_style, mm_to_in, panel_label, save_panel
 
@@ -42,12 +43,9 @@ _CURVE_COLOR = "#D62728"   # red
 
 # --- Preprocessing ---
 def _trusted(df: pd.DataFrame) -> pd.DataFrame:
-    m = (df["quality"].isin(["A", "B"])
-         & (df["r_squared"] >= 0.98)
-         & df["vol_ratio"].between(0.3, 5.0)
-         & (df["n_pixels"] >= 50)
-         & df["b"].notna())
-    return df[m].copy().reset_index(drop=True)
+    # Training population: trusted gates AND post-SRTM construction, matching
+    # the dams the regionalization recipe is actually trained on.
+    return df[training_mask(df)].copy().reset_index(drop=True)
 
 
 def _design_matrix(df: pd.DataFrame, feats: list[str]) -> np.ndarray:
@@ -206,12 +204,12 @@ def make_s1_clustering(out_dir: Path) -> Path:
         ax_b.scatter([best_k], [best_sigma], s=55, facecolor="none",
                      edgecolor="0.20", linewidth=0.9, zorder=5)
         ax_b.text(
-            0.02, 0.05,
+            0.98, 0.05,
             f"best: $k={best_k}$,  "
             f"$\\sigma(\\Delta b) = {best_sigma:.3f}$\n"
             f"({gain_pct:.0f}% under baseline)",
             transform=ax_b.transAxes,
-            color="0.15", va="bottom", ha="left",
+            color="0.15", va="bottom", ha="right",
             bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
                       edgecolor="0.65", linewidth=0.5),
         )
@@ -222,7 +220,7 @@ def make_s1_clustering(out_dir: Path) -> Path:
     ax_b.set_xlim(1.7, 12.3)
     ax_b.grid(True, linewidth=0.3, color="0.88")
     ax_b.set_axisbelow(True)
-    ax_b.legend(loc="upper right", frameon=True, framealpha=0.95)
+    ax_b.legend(loc="upper left", frameon=True, framealpha=0.95)
 
     panel_label(ax_a, "a", fontsize=12, y_offset_pt=8.0)
     panel_label(ax_b, "b", fontsize=12, y_offset_pt=8.0)
@@ -230,6 +228,11 @@ def make_s1_clustering(out_dir: Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "s1_b_clustering_silhouette.png"
+    # Open axes: no top/right spines.
+    for _ax in fig.axes:
+        _ax.spines["top"].set_visible(False)
+        _ax.spines["right"].set_visible(False)
+
     save_panel(fig, out_png)
     plt.close(fig)
     rc_stack.__exit__(None, None, None)

@@ -28,7 +28,7 @@ The band combines three independent error sources in quadrature:
    full pool and is zero at the anchor.
 3. **Catalog-capacity error** ``sigma_logVcap``. A stated 1$\\sigma$ on the
    published storage capacity that anchors $V_\\mathrm{cap}$, taken from the
-   trusted-set spread of $\\log_{10}(V_\\mathrm{SRTM}/V_\\mathrm{cap})$. Also
+   uncapped-training-fill spread of $\\log_{10}(V_\\mathrm{SRTM}/V_\\mathrm{cap})$. Also
    constant in area, so it too does not vanish at the anchor.
 
 Because terms (1) and (3) are area-independent, the band for regionalized
@@ -56,6 +56,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
+from .reliability import training_mask
 
 
 _FILL_LEVELS = {
@@ -74,17 +75,15 @@ _TRUSTED_FILTER_GATES = {
 
 
 def compute_b_sigma(summary_df: pd.DataFrame) -> float:
-    """Population 1$\\sigma$ half-width on $b$ from the trusted-set.
+    """Population 1$\\sigma$ half-width on $b$ from the training set.
 
-    Equal to the LOO baseline sigma for predicting $b$ from the global
-    median (they are mathematically the same quantity), and the single
-    region-level number that propagates into every per-dam V band below.
+    The training set is the trusted dams built after the SRTM acquisition
+    (the same population the regionalization recipe is trained on). Equal
+    to the LOO baseline sigma for predicting $b$ from the global median,
+    and the single region-level number that propagates into every per-dam
+    V band below.
     """
-    m = (summary_df["quality"].isin(["A", "B"])
-         & (summary_df["r_squared"] >= 0.98)
-         & summary_df["vol_ratio"].between(0.3, 5.0)
-         & (summary_df["n_pixels"] >= 50)
-         & summary_df["b"].notna())
+    m = training_mask(summary_df)
     b = summary_df.loc[m, "b"].dropna()
     if len(b) < 10:
         return 0.25
@@ -115,7 +114,7 @@ def compute_sigma_log_acap(loo_df: pd.DataFrame) -> float:
 def compute_sigma_log_vcap(summary_df: pd.DataFrame) -> float:
     """1$\\sigma$ (log10 units) catalog-capacity error.
 
-    Estimated from the trusted-set spread of
+    Estimated from the uncapped-training-fill spread of
     $\\log_{10}(V_\\mathrm{SRTM}/V_\\mathrm{cap})$: how much the independent
     geometric (SRTM) volume disagrees with the published catalog capacity on
     dams where both are trustworthy. Stands in for the unknown error on the
@@ -124,12 +123,15 @@ def compute_sigma_log_vcap(summary_df: pd.DataFrame) -> float:
     """
     if summary_df is None or "vol_ratio" not in summary_df.columns:
         return 0.08
-    m = (summary_df["quality"].isin(["A", "B"])
-         & (summary_df["r_squared"] >= 0.98)
-         & summary_df["vol_ratio"].between(0.3, 5.0)
-         & (summary_df["n_pixels"] >= 50)
-         & summary_df["b"].notna())
-    vr = summary_df.loc[m, "vol_ratio"].dropna()
+    m = training_mask(summary_df)
+    sub = summary_df.loc[m]
+    # Capped fills are right-censored by the capacity cap (their ratio is
+    # pinned near unity), so only uncapped fills carry usable spread. The
+    # resulting estimate is conservative: the uncapped subset also contains
+    # genuine sub-pixel shortfall, which inflates the spread.
+    if "capped" in sub.columns:
+        sub = sub[~sub["capped"].astype(bool)]
+    vr = sub["vol_ratio"].dropna()
     vr = vr[vr > 0]
     if len(vr) < 10:
         return 0.08

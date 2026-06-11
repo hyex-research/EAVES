@@ -35,6 +35,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
+from .reliability import training_mask
 
 
 # --- Inputs ---
@@ -108,6 +109,9 @@ def compute_characterization(data: dict, ref_year: int | None = None,
         src = params["source"].value_counts().to_dict()
         for k, v in src.items():
             stats[f"n_params_source_{k}"] = int(v)
+        regi_b = params.loc[params["source"] == "regi_multi", "b"].dropna()
+        if len(regi_b):
+            stats["b_regionalized"] = float(regi_b.median())
 
     # Capacity stats span the released catalogue; year stats only dams with an SRTM footprint.
     cap_src = params if (params is not None and "capacity_mcm" in params.columns) else summary
@@ -156,11 +160,28 @@ def compute_characterization(data: dict, ref_year: int | None = None,
             stats["b_min"]      = float(b.min())
             stats["b_max"]      = float(b.max())
 
-        # Log--log area-capacity fit on trusted dams (used by regionalization)
-        if {"capacity_mcm", "footprint_area_km2"}.issubset(T.columns):
-            mask = (T["capacity_mcm"] > 0) & (T["footprint_area_km2"] > 0)
-            x = np.log(T.loc[mask, "capacity_mcm"].values)
-            y = np.log(T.loc[mask, "footprint_area_km2"].values)
+        # Training set: trusted AND post-SRTM construction -- the population
+        # that trains the regionalization and sets the band's b_sigma.
+        TR = summary[training_mask(summary)].copy()
+        bt = TR["b"].dropna()
+        stats["n_training"] = int(len(TR))
+        if len(bt) > 0:
+            stats["b_median_training"] = float(bt.median())
+            stats["b_p16_training"]    = _q(bt, 0.16)
+            stats["b_p84_training"]    = _q(bt, 0.84)
+            stats["b_sigma_training"]  = (stats["b_p84_training"]
+                                          - stats["b_p16_training"]) / 2.0
+            stats["b_p05_training"]    = _q(bt, 0.05)
+            stats["b_p95_training"]    = _q(bt, 0.95)
+            stats["b_min_training"]    = float(bt.min())
+            stats["b_max_training"]    = float(bt.max())
+
+        # Log--log area-capacity fit on the training set (the retired
+        # single-feature recipe trains on the same population as the rest).
+        if {"capacity_mcm", "footprint_area_km2"}.issubset(TR.columns):
+            mask = (TR["capacity_mcm"] > 0) & (TR["footprint_area_km2"] > 0)
+            x = np.log10(TR.loc[mask, "capacity_mcm"].values)
+            y = np.log10(TR.loc[mask, "footprint_area_km2"].values)
             if len(x) >= 10:
                 slope, intercept = np.polyfit(x, y, 1)
                 resid = y - (slope * x + intercept)
@@ -494,13 +515,13 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           f"{_fmt(stats.get('sediment_n_fully_silted'))} reservoirs reach "
           "full siltation).")
     if "loo_multi_anchor_within_2x_frac" in stats:
-        A(f"- **Regionalization accuracy (LOO on trusted dams, multi-feature "
+        A(f"- **Regionalization accuracy (LOO on the training dams, multi-feature "
           f"LR anchor)**: "
           f"{_pctfmt(stats['loo_multi_anchor_within_2x_frac'])} of predictions "
           "within a factor of 2 of the SRTM-derived truth, median bias "
           f"{_relfmt(stats['loo_multi_anchor_median_log10'], signed=True)}.")
     elif "loo_loglog_anchor_within_2x_frac" in stats:
-        A(f"- **Regionalization accuracy (LOO on trusted dams, log-log "
+        A(f"- **Regionalization accuracy (LOO on the training dams, log-log "
           f"anchor)**: "
           f"{_pctfmt(stats['loo_loglog_anchor_within_2x_frac'])} of predictions "
           "within a factor of 2 of the SRTM-derived truth, median bias "
@@ -548,7 +569,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "outside the trusted subset receive $(c, b)$ from a region-trained "
       "empirical recipe described below.")
     A("7. **Validation** (`eaves.postprocess.validation`): leave-one-out on "
-      "the trusted dams gives per-recipe accuracy distributions.")
+      "the training dams (trusted and post-2000) gives per-recipe accuracy distributions.")
     A("")
     A("Outputs land under `<OUTPUT_DIR>/1_results_csv/` and "
       "`<OUTPUT_DIR>/2_results_plots/`.")
@@ -706,7 +727,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "footprint the catalogue capacity refers to, so anchoring "
           "$V_\\mathrm{cap}$ against $A_\\mathrm{sat}^{P95}$ inflates "
           "$c$ by $(A_\\mathrm{DEM}/A_\\mathrm{sat})^{b}$, of order "
-          f"$\\sim {_fmt((1.0/med)**stats.get('b_median', 1.5))}\\times$ "
+          f"$\\sim {_fmt((1.0/med)**stats.get('b_regionalized', stats.get('b_median', 1.5)))}\\times$ "
           "in this region. Anchoring against a DEM-derived $A_\\mathrm{cap}$ "
           "instead keeps both endpoints in the design regime.")
         A("")
@@ -796,13 +817,13 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "wadi geometry that dominates the catalogue.")
         A("")
     if "loglog_alpha" in stats:
-        A("The empirical area–capacity relation, fit on the trusted dams "
+        A("The empirical area–capacity relation, fit on the training dams "
           "as $\\log A_\\mathrm{cap}\\,[\\mathrm{km}^2] = "
           "\\alpha + \\beta \\log V_\\mathrm{cap}\\,[\\mathrm{MCM}]$, "
           f"yields $\\alpha = {_fmt(stats['loglog_alpha'])}$, "
           f"$\\beta = {_fmt(stats['loglog_beta'])}$ with a residual RMS "
           f"of a factor of {_fmt(10**stats['loglog_resid_rms'])} over "
-          f"$n = {_fmt(stats['loglog_n'])}$ trusted dams. The exponent "
+          f"$n = {_fmt(stats['loglog_n'])}$ training dams. The exponent "
           "$\\beta$ is close to the geometric expectation $2/3$ for "
           "cone-like valley fills, which is the structural basis for using "
           "this relation as the regionalization anchor.")
@@ -830,8 +851,8 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "the pre-impoundment valley EAVES integrates -- lies well below the "
       "SRTM curve at intermediate water levels (sonar volume ~30-65% under "
       "SRTM, the expected signature of ~16 yr of accumulated sediment), "
-      "while the design table tracks SRTM within ~11% in volume and ~1% "
-      "in spillway-level area; (ii) three GRDL "
+      "while the design table agrees with SRTM within ~2% in both volume "
+      "and area at the spillway level; (ii) three GRDL "
       "Landsat-derived $A$--$z$ curves -- reconstructed from "
       "Landsat-observed extents with a deep-learning bathymetry model "
       "rather than from SRTM topography "
@@ -881,7 +902,8 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("Dams whose DEM fit fails the trusted-set filter are assigned $(c, b)$ "
       "by a region-trained empirical recipe rather than per-dam DEM fitting. "
       "The recipe has two pieces. Both pieces are *trained on the region's "
-      "own trusted dams*, so the method itself is portable but its "
+      "own training dams (trusted fits built after the SRTM acquisition)*, "
+      "so the method itself is portable but its "
       "coefficients are region-specific.")
     A("")
     A("_Choice of $b$._ The shipped recipe assigns every regionalized dam "
@@ -893,7 +915,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("")
     A("_1. Multivariate regression (linear and random forest)._ "
       "Trained `valley_ratio`, `channel_slope`, `mean_catchment_slope`, "
-      "and `dam_height_m` against $b$ on the trusted set in a "
+      "and `dam_height_m` against $b$ on the training set in a "
       "leave-one-out cross-validation. Both LinearRegression and "
       "RandomForestRegressor were tried. The selection gate requires "
       "$R^2_\\mathrm{LOO} \\ge 0.25$ for a regression to replace the "
@@ -909,7 +931,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
 
     A("_2. Morphological clustering with a per-cluster median._ "
       "Even when features can't drive a smooth regression, they may "
-      "carve the trusted set into morphologically homogeneous clusters "
+      "carve the training set into morphologically homogeneous clusters "
       "whose internal $b$ spread is tighter than the population spread. "
       "We tested this directly: k-means in log-space, $z$-scored, on the "
       "raw-morphometry feature set (released in "
@@ -935,12 +957,12 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     L.extend(_embed_figure(
         "s1_b_clustering_silhouette.png",
         "Supplementary: K-means clustering diagnostic for b",
-        "Figure S1. K-means clustering diagnostic on the trusted SRTM "
+        "Figure S1. K-means clustering diagnostic on the training-set "
         "dams in log-transformed morphometric feature space. "
         "(a) Mean silhouette coefficient versus number of clusters $k$ "
         "for the raw-morphometry feature set. It remains below the "
         "conventional 0.50 _reasonable structure_ threshold for every "
-        "$k \\ge 3$; the $k = 2$ peak at 0.34 reflects a single "
+        f"$k$; the $k = 2$ peak at {_fmt(stats.get('b_cluster_silhouette_max'))} reflects a single "
         "elongated population, not two morphological types. (b) Leave-"
         "one-out $\\sigma(\\Delta b)$ for a per-cluster-median predictor "
         "of $b$ versus the global-median baseline (dashed). The best "
@@ -1012,7 +1034,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "the catalogue $V_\\mathrm{cap}$ refers to. Mixing a design "
           "volume with an operational area inflates $c$ by "
           f"$\\sim (1/{_fmt(med)})^{{b}} \\approx "
-          f"{_fmt((1.0/med)**stats.get('b_median', 1.5))}\\times$ on median. "
+          f"{_fmt((1.0/med)**stats.get('b_regionalized', stats.get('b_median', 1.5)))}\\times$ at the median. "
           "Both DEM-trained anchors stay in the design regime by "
           "construction.")
         A("")
@@ -1025,7 +1047,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "references above which use independently-produced datasets. "
       "Per-recipe accuracy is measured by masking each trusted dam in "
       "turn, retraining the regionalization recipe on the remaining "
-      "trusted dams, predicting the masked dam's $V$ at "
+      "training dams, predicting the masked dam's $V$ at "
       "$A = A_\\mathrm{DEM}$, and comparing against the SRTM-derived "
       "truth. Errors are computed in $\\log_{10}$ ratio space and reported "
       "below in the relative convention (a percentage, or a multiplicative "
@@ -1102,7 +1124,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     # ---- uncertainty propagation ----
     A("## Uncertainty on volume predictions")
     A("")
-    A("The population spread of the exponent $b$ ($b_\\sigma \\approx 0.26$, the "
+    A("The training-set spread of the exponent $b$ ($b_\\sigma \\approx 0.27$, the "
       "dimensionless P16--P84 half-width, identical "
       "for every dam) is the single number that propagates into the V "
       "confidence band. It is released per dam as the `b_sigma` column of "
@@ -1113,8 +1135,8 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "V band widens away from full pool. Because the fill is capped at the "
       "catalog capacity, every curve also carries the area-independent "
       "catalog-capacity term, which floors the SRTM-derived band at about "
-      "+20%/-17% even at the anchor; regionalized curves add the predicted-"
-      "area term and floor at about +79%/-44% (see `validation/v_uncertainty.csv`):")
+      "+39%/-28% even at the anchor; regionalized curves add the predicted-"
+      "area term and floor at about +87%/-47% (see `validation/v_uncertainty.csv`):")
     A("")
     A("$$\\sigma(\\log_{10}V) = b_\\sigma \\cdot |\\log_{10}(A/A_\\mathrm{cap})|.$$")
     A("")
@@ -1148,13 +1170,13 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         "a V uncertainty band. (a) Worked example on the Baish reservoir: "
         "the $\\pm b_\\sigma$ band is forced through the catalogue full-pool "
         "anchor (red star) and fans out at lower water levels; the "
-        "catalog-capacity floor (~+20%/-17%) applies even at the anchor. "
+        "catalog-capacity floor (~+39%/-28%) applies even at the anchor. "
         "(b) The two $\\sigma(\\log_{10}V)$ tiers "
         "versus normalized area: the SRTM-derived tier is floored by the "
         "catalog-capacity term at the anchor and widens with the geometric "
         "$b_\\sigma$ term away from full pool, while the regionalized tier "
         "adds the area-independent "
-        "anchor terms and floors near +79%. The regional typical operational "
+        "anchor terms and floors near +87%. The regional typical operational "
         "fill level is overlaid (vertical dashed line), so the V "
         "uncertainty at the fill level most reservoirs in this region "
         "actually operate at can be read off directly.",
@@ -1222,7 +1244,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("- **Per-dam $b$ uncertainty is population-level, not individual.** "
       "`validation/v_uncertainty.csv` and "
       "`domain_characterization.csv` carry the $1\\sigma$ uncertainty on "
-      "$b$ as a single region-level number ($b_\\sigma \\approx 0.26$, dimensionless), identical for every "
+      "$b$ as a single region-level number ($b_\\sigma \\approx 0.27$, dimensionless, from the training set), identical for every "
       "dam regardless of source. A per-dam narrowing of that interval would "
       "require repeated DEM realizations or an ensemble of independent DEMs, "
       "which is not currently feasible.")

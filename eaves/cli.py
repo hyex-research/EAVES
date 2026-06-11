@@ -444,7 +444,7 @@ def main():
     _FEATURE_KEYS = (
         "capacity_mcm", "dam_height_m", "spillway_height_m", "dam_length_m",
         "valley_width_m", "valley_ratio", "channel_slope",
-        "mean_catchment_slope", "upstream_area_km2",
+        "mean_catchment_slope", "upstream_area_km2", "construction_year",
     )
     for s in summaries:
         if np.isnan(s.get("b", np.nan)) or np.isnan(s.get("c", np.nan)):

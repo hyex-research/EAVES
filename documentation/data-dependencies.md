@@ -1,10 +1,10 @@
 # Data dependencies
 
-EAVES runs standalone — all preprocessing (country clip, segment split, dam snap) happens inside the package. The settings file points to the external rasters and shapefiles. Licensed or bulky data is not redistributed.
+EAVES runs standalone: all preprocessing (country clip, segment split, dam snap) happens inside the package. The settings file points to the external rasters and shapefiles. Licensed or bulky data is not redistributed.
 
 ## Included in this repository
 
-- 15-dam example fixture (`test/fixture/`) — dams CSV subset, water-extent time series, preprocessing cache, and GRDL reference curves
+- 15-dam example fixture (`test/fixture/`): dams CSV subset, water-extent time series, preprocessing cache, and GRDL reference curves
 - GRDL reference EAV curves per region (`region/<country>/input/grdl/`, user-provided)
 
 ## External (referenced by path in the settings file)

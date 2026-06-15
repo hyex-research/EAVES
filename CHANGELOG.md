@@ -4,7 +4,18 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.1] - 2026-06-15
+
+### Changed
+
+- **Dam name corrected**: `id_020023` Qununa -> Qanuna across the catalog,
+  caches, and released CSVs (label only, no recomputation; the Arabic name
+  is unchanged).
+- **README slimmed** to overview, quickstart, and links, with a
+  `documentation/` folder (method, structure, outputs, data dependencies,
+  usage) and direct links to the released curves. Em-dashes and stray
+  semicolons removed across the README, the docs, CHANGELOG, CITATION, the
+  data dictionary, and the generated report.
 
 ### Added
 
@@ -12,7 +23,13 @@ project adheres to [Semantic Versioning](https://semver.org/).
   paper's data-availability promise (coordinates for all 526 cataloged
   dams, including the 22 without a recovered footprint).
 
-## [1.2.0] — 2026-06-11
+### Removed
+
+- Output panel PDFs (`region/<region>/output/2_results_plots/*.pdf`) are no
+  longer tracked; the PNGs remain. PDFs are regenerated locally and shipped
+  with the manuscript.
+
+## [1.2.0] - 2026-06-11
 
 ### Changed
 
@@ -68,7 +85,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - `failed_dams.csv` gains a `construction_year` column so the pre-2000
   status of footprint-less dams is recoverable.
 
-## [1.1.0] — 2026-06-10
+## [1.1.0] - 2026-06-10
 
 ### Fixed
 
@@ -80,9 +97,9 @@ project adheres to [Semantic Versioning](https://semver.org/).
   (`regionalization.py`; `eaves_params.csv` updated for the 39 dams, all
   other rows bit-identical).
 - **Sediment budget no longer double-counts delivery.** The
-  `sed_yield_t_ha_yr` input is *delivered* yield — Dash et al. (2025,
+  `sed_yield_t_ha_yr` input is *delivered* yield: Dash et al. (2025,
   Eqs. 2–4) already multiply RUSLE gross erosion by the Boyce (1974)
-  delivery ratio at the source — so the additional Vanoni (1975) SDR was
+  delivery ratio at the source, so the additional Vanoni (1975) SDR was
   removed from the budget. `predicted_silt_fraction` and `sediment_risk`
   recomputed (median predicted loss 13.7% → 47.5%; fully-silted count
   44 → 149). Verified at Baish (budget now within ~1.6× of the 2025 sonar
@@ -101,7 +118,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
   floored by the catalog-capacity term rather than vanishing at the anchor,
   and the software-versions table was dropped from `report.md`.
 
-## [1.0.1] — 2026-06-01
+## [1.0.1] - 2026-06-01
 
 ### Changed
 
@@ -109,7 +126,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
   no catalogue year now carry `construction_year = <NA>` (nullable `Int32`,
   blank in `eaves_summary.csv`) instead of a sentinel 2001. The flat-water
   detector now runs for unknown-year dams as well as pre-2000 dams, so the
-  SRTM surface itself decides full vs partial — removing the circular
+  SRTM surface itself decides full vs partial, removing the circular
   assumption that an absent year implied a post-2000, bare-valley capture.
 - **Domain characterization keeps unknown-year dams visible.** A
   `n_year_unknown` count and a "Year unknown" row in the era breakdown retain
@@ -126,14 +143,14 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- **`test_curves_helpers.py`** — locks construction-year parsing, including a
+- **`test_curves_helpers.py`**: locks construction-year parsing, including a
   guard that a missing year never returns the old 2001 sentinel.
-- **`test_uncertainty.py`** — unit coverage for the uncertainty module
+- **`test_uncertainty.py`**: unit coverage for the uncertainty module
   (`compute_b_sigma`, anchor back-solve, V-band algebra) backing panel S3.
 - Extracted `curves._parse_construction_year()` as a directly testable helper
   (pipeline output verified unchanged).
 
-## [1.0.0] — 2026-05-18
+## [1.0.0] - 2026-05-18
 
 First tagged release. Production-ready EAV curve assignment for
 SRTM-derived reservoir bathymetry; outputs are now consumed by
@@ -151,12 +168,12 @@ downstream simulation (RUSH).
 - **`eaves.postprocess.uncertainty` module** and CLI. Propagates the
   LOO-derived $b_\sigma$ to a per-dam V band at half / quarter / tenth
   pool; writes `validation/v_uncertainty.csv`.
-- **Supplementary panel S1** — K-means clustering diagnostic on $b$
+- **Supplementary panel S1**: K-means clustering diagnostic on $b$
   (silhouette + LOO $\sigma(\Delta b)$). Backs the report's argument
   for using the global-median $b$.
-- **Supplementary panel S2** — capacity-threshold sweep for the
+- **Supplementary panel S2**: capacity-threshold sweep for the
   reliability cut.
-- **Supplementary panel S3** — V uncertainty propagation: Baish worked
+- **Supplementary panel S3**: V uncertainty propagation: Baish worked
   example with $\pm b_\sigma$ fan band, plus the universal
   $\sigma(\log_{10} V)$ curve.
 - **Software-version block** in `report.md` (numpy, scipy, pandas,
@@ -166,7 +183,7 @@ downstream simulation (RUSH).
   uncertainty → panels → report. Every panel emits both PNG (300 dpi)
   and vector PDF.
 - **Unit tests** for s1/s2 helpers (`_silhouette_curve`,
-  `_loo_cluster_sigma`, `_baseline_sigma`, `_chosen_threshold`) — 19
+  `_loo_cluster_sigma`, `_baseline_sigma`, `_chosen_threshold`), 19
   tests, ~2 s.
 
 ### Changed
@@ -204,6 +221,7 @@ downstream simulation (RUSH).
   sediment-loss budget beyond the first-order estimate currently
   reported.
 
+[1.2.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.2.1
 [1.2.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.2.0
 [1.1.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.1.0
 [1.0.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.0.1

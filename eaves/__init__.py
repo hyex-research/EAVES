@@ -6,4 +6,4 @@ V = c*A^b fit, and regionalized parameters where the DEM fit is not
 trusted.
 """
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"

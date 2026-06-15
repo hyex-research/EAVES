@@ -39,7 +39,7 @@ Every panel is emitted as both a 300-dpi PNG (embedded in `report.md`) and a vec
 | `s4_dem_error.png` | Supplementary: SRTM vertical-error Monte-Carlo volume spread by size class |
 | `s5_sensitivity.png` | Supplementary: placement-constant sensitivity sweep |
 
-Pipeline runs without the panels step produce no files in `2_results_plots/`; only per-dam flood maps under `0_check_dams/` are written by the workers themselves.
+Pipeline runs without the panels step produce no files in `2_results_plots/`. Only the per-dam flood maps under `0_check_dams/` are written, by the workers themselves.
 
 ## Flood QC maps (`output/0_check_dams/`)
 

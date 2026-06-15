@@ -25,7 +25,7 @@
 │       ├── regionalization.py   # Reliability tagging, threshold analysis, parameter assignment
 │       ├── reliability.py       # Trusted/training masks + uncertainty flags (sub-pixel, pre_srtm, ...)
 │       ├── external_data.py     # Merge optional sedimentation / OWE columns into summary
-│       ├── validation.py        # LOO regionalization validation + DEM-vs-sat-area diagnostic; opt-in --sensitivity / --dem-mc steps
+│       ├── validation.py        # LOO validation + DEM-vs-sat-area diagnostic, plus opt-in --sensitivity / --dem-mc
 │       ├── sensitivity.py       # Opt-in: placement/acceptance constant sensitivity sweep
 │       ├── dem_error.py         # Opt-in: SRTM vertical-error Monte-Carlo
 │       ├── uncertainty.py       # Three-term per-dam V uncertainty band (b_sigma, capacity, predicted-area terms)

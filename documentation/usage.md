@@ -51,7 +51,7 @@ The test workflow is pytest-only. The 15-dam fixture and its internal settings f
 
 ```bash
 pytest -m "not slow"    # fast sanity suite (~25 s)
-pytest -m slow          # full 15-dam regression run (~5 min); writes to test/fixture/output/ and compares SHA256s to test/golden_hashes.json
+pytest -m slow          # full 15-dam regression run (~5 min), writes test/fixture/output/ and checks SHA256s
 pytest                  # everything
 ```
 

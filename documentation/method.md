@@ -21,14 +21,14 @@ Once the footprint is established, elevation bins (0.5 m intervals) are used to 
 
 ## Trusted set and training set
 
-Fits passing the reliability gates (quality grades A-B, $R^2 \geq 0.98$, $0.3 \leq V_\mathrm{SRTM}/V_\mathrm{cap} \leq 5.0$, $n_\mathrm{pixels} \geq 50$, $b$ defined) form the **trusted set**. Of these, only dams built in or after 2000 — verifiably postdating the February 2000 SRTM acquisition — form the **training set** that the regionalization, the exponent spread $b_\sigma$, and the leave-one-out validation are computed on. Pre-2000 and unknown-year dams ship their own SRTM curves (flagged `pre_srtm` / `unknown_year`) but do not train the recipe, because their valley floors may already carry sediment. On the Saudi domain: 322 trusted, 200 training.
+Fits passing the reliability gates (quality grades A-B, $R^2 \geq 0.98$, $0.3 \leq V_\mathrm{SRTM}/V_\mathrm{cap} \leq 5.0$, $n_\mathrm{pixels} \geq 50$, $b$ defined) form the **trusted set**. Of these, only dams built in or after 2000 (verifiably postdating the February 2000 SRTM acquisition) form the **training set** that the regionalization, the exponent spread $b_\sigma$, and the leave-one-out validation are computed on. Pre-2000 and unknown-year dams ship their own SRTM curves (flagged `pre_srtm` / `unknown_year`) but do not train the recipe, because their valley floors may already carry sediment. On the Saudi domain: 322 trusted, 200 training.
 
 ## Regionalization
 
 Dams that fail the trusted gates receive parameters from a single closed-form recipe:
 
-- **Exponent $b$** — regional median over the capacity-thresholded training subset (or a multivariate regression on `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `dam_height_m` if its leave-one-out $R^2 \geq 0.25$, which rarely holds for arid catchments).
-- **Coefficient $c$** — back-solved as $c = V_\mathrm{cap}/A_\mathrm{cap}^{b}$ from catalog capacity and a multi-feature linear regression that predicts $\log A_\mathrm{cap}$ from seven log-space features: `capacity_mcm`, `dam_height_m`, `spillway_height_m`, `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `upstream_area_km2`. Any feature missing for a given dam is imputed with the training-set median so the regression always returns a finite value.
+- **Exponent $b$**: regional median over the capacity-thresholded training subset (or a multivariate regression on `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `dam_height_m` if its leave-one-out $R^2 \geq 0.25$, which rarely holds for arid catchments).
+- **Coefficient $c$**: back-solved as $c = V_\mathrm{cap}/A_\mathrm{cap}^{b}$ from catalog capacity and a multi-feature linear regression that predicts $\log A_\mathrm{cap}$ from seven log-space features: `capacity_mcm`, `dam_height_m`, `spillway_height_m`, `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `upstream_area_km2`. Any feature missing for a given dam is imputed with the training-set median so the regression always returns a finite value.
 
 Leave-one-out cross-validation on the training set quantifies the recipe's accuracy. For the Saudi Arabia deployment: 92% of predictions within a factor of 2 and 99% within a factor of 3 of the SRTM-derived reference, median bias +6%, relative RMSE 47%. See `eaves.postprocess.validation` and panel `p5` for the full per-recipe comparison and the rationale for retiring two earlier candidates (a satellite-anchored recipe and a single-feature log-log regression).
 
@@ -38,7 +38,7 @@ Automated quality gates detect displaced flood centroids and negligible fill vol
 
 ## Limitations
 
-EAVES reconstructs reservoir geometry from the SRTM surface — it is not a surveyed bathymetric record. Outputs are a best-effort approximation rather than absolute capacity.
+EAVES reconstructs reservoir geometry from the SRTM surface, not a surveyed bathymetric record. Outputs are a best-effort approximation rather than absolute capacity.
 
 - **Valley-geometry approximation, not bathymetry**: curves follow the SRTM valley surface up to the spillway, not a measured reservoir bottom. They are sensitive to DEM noise (vertical LE90 ~6 m) in the same way the underlying terrain is.
 - **Synthetic dam wall**: the wall orientation and length come from a terrain-alignment search at or near the catalog coordinates. It is the best-fit crest for that SRTM patch, not necessarily the engineered as-built structure, and small placement shifts can meaningfully change the reconstructed footprint.

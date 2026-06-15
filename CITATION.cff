@@ -3,14 +3,14 @@ message: "If you use this software, please cite it as below."
 type: software
 title: "EAVES: elevation-area-volume curves for Saudi Arabian reservoirs reconstructed from pre-impoundment SRTM topography"
 abstract: >
-  EAVES reconstructs reservoir Elevation–Area–Volume (EAV) curves for
+  EAVES reconstructs reservoir Elevation-Area-Volume (EAV) curves for
   ungaged arid-basin dams from pre-impoundment SRTM topography. It
   searches for a terrain-derived dam wall, flood-fills the pre-dam
   valley to the spillway height, integrates area over depth, and fits
   a power-law model. Dams with unreliable SRTM-derived curves are
   handled via regionalization against topographic features.
-version: "1.2.0"
-# TODO: date-released — set on Zenodo deposit
+version: "1.2.1"
+# TODO: date-released, set on Zenodo deposit
 # date-released: YYYY-MM-DD
 license: Apache-2.0
 repository-code: "https://github.com/hyex-research/EAVES"

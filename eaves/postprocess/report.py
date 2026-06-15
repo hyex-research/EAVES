@@ -454,7 +454,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A = L.append
 
     # ---- header ----
-    A(f"# EAVES domain report — {region}")
+    A(f"# EAVES domain report: {region}")
     A("")
     A(f"_Generated: {generated_at}_")
     A("")
@@ -486,7 +486,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "trusted population).")
     A(f"- **Regionalized curves**: {_fmt(n_regi)} dams "
       "have curves assigned via a region-trained empirical recipe because "
-      "the DEM fit failed quality gates — of which "
+      "the DEM fit failed quality gates, of which "
       f"{_fmt(n_failed)} are pipeline failures (placement, fill, or fit) "
       "regionalized with topographic features captured at failure time.")
     if "fill_median" in stats:
@@ -606,7 +606,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "valley-fill end-member) has $\\beta = 1$ and $b = 2$.")
     A("")
     A("Real reservoirs land between these. The bulk of trusted KSA dams "
-      "cluster around $b \\sim 1.5$, which corresponds to $\\beta = 2$ — a "
+      "cluster around $b \\sim 1.5$, which corresponds to $\\beta = 2$, a "
       "three-dimensional converging valley.")
     A("")
     if "b_median" in stats:
@@ -718,7 +718,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "_not_ caused by sedimentation (sediment fills the bottom of "
           "the reservoir without much reducing the spillway-level area) "
           "and _not_ caused by DEM oversizing (at the only available "
-          "bathymetric ground-truth site — Baish — the SRTM footprint "
+          "bathymetric ground-truth site, Baish, the SRTM footprint "
           "matches the design-table spillway area to within ~1%).")
         A("")
         A("This is the central physical fact that motivates the "
@@ -732,7 +732,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "instead keeps both endpoints in the design regime.")
         A("")
     else:
-        A("Satellite water-extent statistics unavailable — run the "
+        A("Satellite water-extent statistics unavailable. Run the "
           "validation module to populate this section.")
         A("")
 
@@ -883,7 +883,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         "p4_comparison.png",
         "Cross-reference comparison against sonar bathymetry and GRDL",
         "Figure 4. Cross-reference comparison against independently-"
-        "produced reservoir datasets — not validation in the strict "
+        "produced reservoir datasets, not validation in the strict "
         "sense: sonar measures the current operational bathymetry "
         "(post-sediment) and GRDL reconstructs bathymetry from "
         "Landsat-observed extents with a deep-learning model, so both "
@@ -940,14 +940,14 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       f"**{_fmt(stats.get('b_cluster_best_sigma'))} at "
       f"$k = {stats.get('b_cluster_best_k', '—')}$**, "
       f"versus **{_fmt(stats.get('b_cluster_baseline_sigma'))}** for "
-      f"the global median — a genuine but modest "
+      f"the global median, a genuine but modest "
       f"**~{gain_str} % tightening** (Fig. S1, panel b). "
       "The supporting silhouette analysis (Fig. S1, panel a) shows mean "
       f"silhouette coefficients in the "
       f"**{_fmt(stats.get('b_cluster_silhouette_min'))}"
       f"–{_fmt(stats.get('b_cluster_silhouette_max'))}** range across "
       "every feature set and every $k$, i.e. below the 0.50 conventional "
-      "threshold for _reasonable_ cluster structure — there is no natural "
+      "threshold for _reasonable_ cluster structure, with no natural "
       "morphological partition to exploit. Two things drive the small "
       "remaining gain: (a) every morphological feature individually has "
       "Spearman $|\\rho| \\le 0.31$ with $b$, so cluster boundaries blur; "
@@ -1273,11 +1273,11 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("| `1_results_csv/validation/dem_vs_sat_area.csv` | $A_\\mathrm{DEM}$ "
       "vs $A_\\mathrm{sat}^{P95}$ paired data. |")
     A("| `1_results_csv/validation/b_clustering_diagnostic.csv` | Silhouette "
-      "and LOO $\\sigma(\\Delta b)$ per (feature-set, $k$) — backs the "
+      "and LOO $\\sigma(\\Delta b)$ per (feature-set, $k$), backs the "
       "supplementary figure S1. |")
     A("| `1_results_csv/validation/v_uncertainty.csv` | Per-dam V "
       "uncertainty propagated from `b_sigma` at half, quarter, and tenth "
-      "pool — backs the supplementary figure S3. |")
+      "pool, backs the supplementary figure S3. |")
     A("| `1_results_csv/validation/goodness_of_fit.csv` | Per-dam "
       "fractional volume residuals of the power-law fit (area-to-volume "
       "direction). |")
@@ -1285,11 +1285,11 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "VIF, condition number, and incremental-LOO diagnostics for the "
       "seven-feature $A_\\mathrm{cap}$ regression. |")
     A("| `1_results_csv/validation/dem_error_montecarlo.csv` | Per-dam "
-      "volume spread under SRTM vertical-error perturbations — backs the "
+      "volume spread under SRTM vertical-error perturbations, backs the "
       "supplementary figure S4. |")
     A("| `1_results_csv/validation/sensitivity_sweep.csv` | Trusted-set "
       "stability under ±20–30% perturbations of the placement constants "
-      "— backs the supplementary figure S5. |")
+      "backs the supplementary figure S5. |")
     A("| `1_results_csv/domain_characterization.csv` | Flat table of every "
       "statistic referenced in this report. |")
     A("| `2_results_plots/p1`–`p5_*.{png,pdf}` | Publication-grade panel "

@@ -1,4 +1,4 @@
-# EAVES KSA release — data dictionary
+# EAVES KSA release: data dictionary
 
 Schema for every CSV under `region/ksa/output/1_results_csv/`. Each dam is
 keyed by `dam_id` (string, e.g. `id_010000`), which is consistent across all
@@ -25,7 +25,7 @@ files.
   anchor). See `source` below.
 - **Error reporting.** Volume errors are multiplicative: computed in base-10
   log-ratio space, stored as `*_log10` columns (and as signed decimal fractions,
-  e.g. `0.29 = +29%`). Prose and tables report them relatively — a percentage
+  e.g. `0.29 = +29%`). Prose and tables report them relatively, a percentage
   below 100%, a multiplicative factor at or above 100% (`% = 10^σ − 1`,
   `factor = 10^σ`). Raw log10 is an internal computation form only.
 
@@ -50,7 +50,7 @@ Note: for Baish (`id_120000`), the one dam with full design documentation, the c
 
 ---
 
-## `eaves_params.csv` — lean per-dam EAV coefficients (526 rows)
+## `eaves_params.csv`: lean per-dam EAV coefficients (526 rows)
 
 | Column | Definition | Unit | dtype | Missing |
 | --- | --- | --- | --- | --- |
@@ -66,7 +66,7 @@ Note: for Baish (`id_120000`), the one dam with full design documentation, the c
 
 ---
 
-## `eaves_summary.csv` — full per-dam diagnostics (504 rows)
+## `eaves_summary.csv`: full per-dam diagnostics (504 rows)
 
 The 504 dams that produced a curve (`526 − 22` regionalized-only without a DEM
 footprint; the 24 pipeline failures live in `failed_dams.csv`, of which 2
@@ -126,19 +126,19 @@ Controlled vocabularies:
   `stage_5_relaxed_alignment`, `stage_6_fallback` (the cascade of dam-wall
   placement strategies, in order of preference).
 - `uncertainty_flags` atomic tokens (combine with `;`):
-  - `sub_pixel` — footprint smaller than 30 active pixels (geometry undersampled).
-  - `narrow_valley` — valley width below 3 pixels (cross-section undersampled).
-  - `height_noise` — spillway height < 5 m, comparable to SRTM vertical noise.
-  - `pre_srtm` — built before the February 2000 SRTM acquisition: the curve describes the as-of-2000 (possibly partially silted) surface rather than original design geometry. These dams do not enter regionalization training.
-  - `unknown_year` — no catalog construction year, so the pre- or post-acquisition status cannot be verified. These dams do not enter regionalization training either.
-  - `flat_terrain`, `tall_narrow` — defined by construction but not triggered on the Saudi domain (so absent from the released tables here).
-  - `-` — no flags active.
+  - `sub_pixel`: footprint smaller than 30 active pixels (geometry undersampled).
+  - `narrow_valley`: valley width below 3 pixels (cross-section undersampled).
+  - `height_noise`: spillway height < 5 m, comparable to SRTM vertical noise.
+  - `pre_srtm`: built before the February 2000 SRTM acquisition: the curve describes the as-of-2000 (possibly partially silted) surface rather than original design geometry. These dams do not enter regionalization training.
+  - `unknown_year`: no catalog construction year, so the pre- or post-acquisition status cannot be verified. These dams do not enter regionalization training either.
+  - `flat_terrain`, `tall_narrow`: defined by construction but not triggered on the Saudi domain (so absent from the released tables here).
+  - `-`: no flags active.
 - `capped`: `True` / `False`.
 - `sediment_risk`: `low`, `moderate`, `high`, `severe`, `fully_silted`, `unknown` (increasing predicted capacity loss; `unknown` = missing catchment-yield inputs). Counts on the Saudi domain: 64 / 89 / 97 / 84 / 149 / 21.
 
 ---
 
-## `eav_tables/<dam_id>_eav.csv` — hypsometry tables (504 files)
+## `eav_tables/<dam_id>_eav.csv`: hypsometry tables (504 files)
 
 One file per dam in `eaves_summary.csv`. Cumulative area and volume as a
 function of elevation, in 0.5 m steps from `z_min` to spillway level.
@@ -153,7 +153,7 @@ Note the units are m^2 / m^3 here, NOT MCM. `volume_m3 = 0` at the bottom row.
 
 ---
 
-## `failed_dams.csv` — dams with no usable SRTM curve (24 rows)
+## `failed_dams.csv`: dams with no usable SRTM curve (24 rows)
 
 | Column | Definition | Unit | dtype | Missing |
 | --- | --- | --- | --- | --- |
@@ -180,7 +180,7 @@ regionalization recipe can still reach them.
 
 ---
 
-## `threshold_analysis.csv` — reliability vs capacity sweep (39 rows)
+## `threshold_analysis.csv`: reliability vs capacity sweep (39 rows)
 
 | Column | Definition | Unit | dtype |
 | --- | --- | --- | --- |
@@ -191,7 +191,7 @@ regionalization recipe can still reach them.
 
 ---
 
-## `domain_characterization.csv` — domain-level summary statistics (long form)
+## `domain_characterization.csv`: domain-level summary statistics (long form)
 
 A two-column `statistic,value` table of population summaries (dam counts by
 source/era, capacity percentiles, the regional `b` distribution, LOO anchor
@@ -225,7 +225,7 @@ K-means clustering diagnostic on `b` (Supp panel S1).
 
 ---
 
-## `validation/dem_vs_sat_area.csv` — DEM footprint vs satellite area
+## `validation/dem_vs_sat_area.csv`: DEM footprint vs satellite area
 
 | Column | Definition | Unit | dtype | Missing |
 | --- | --- | --- | --- | --- |
@@ -247,7 +247,7 @@ other 6 have no usable record (blank columns).
 
 ---
 
-## `validation/regionalization_loo.csv` — leave-one-out reconstruction skill
+## `validation/regionalization_loo.csv`: leave-one-out reconstruction skill
 
 Per-dam leave-one-out comparison of three anchors (current satellite-P95,
 log–log primary, multi-feature LR) against the SRTM-derived reference, at
@@ -272,7 +272,7 @@ current_sat_fallback (23)}` (over the 200 training-dam rows); `alt_source = alt_
 
 ---
 
-## `validation/v_uncertainty.csv` — per-dam volume uncertainty band
+## `validation/v_uncertainty.csv`: per-dam volume uncertainty band
 
 Propagated `b_sigma` band at half / quarter / tenth pool (Supp panel S3).
 
@@ -296,7 +296,7 @@ Propagated `b_sigma` band at half / quarter / tenth pool (Supp panel S3).
 
 ---
 
-## `validation/goodness_of_fit.csv` — non-mechanical fit quality (504 rows)
+## `validation/goodness_of_fit.csv`: non-mechanical fit quality (504 rows)
 
 Fractional volume residual of the power-law fit in the deployed area-to-volume direction, reported alongside `r_squared` (which is partly mechanical because `V` is the integral of `A`).
 
@@ -314,7 +314,7 @@ Fractional volume residual of the power-law fit in the deployed area-to-volume d
 
 ---
 
-## `validation/acap_regression_diagnostics.csv` — A_cap regression collinearity and skill
+## `validation/acap_regression_diagnostics.csv`: A_cap regression collinearity and skill
 
 Variance-inflation factors and incremental leave-one-out skill for the seven-feature `log A_cap` anchor regression.
 
@@ -329,9 +329,9 @@ Variance-inflation factors and incremental leave-one-out skill for the seven-fea
 
 ---
 
-## `validation/dem_error_montecarlo.csv` — SRTM vertical-error propagation (sampled dams)
+## `validation/dem_error_montecarlo.csv`: SRTM vertical-error propagation (sampled dams)
 
-Per-dam Monte-Carlo of how SRTM vertical noise (LE90 ≈ 6 m, σ ≈ 3.6 m, correlated over ~2 pixels) propagates into recovered volume. One row per sampled dam; written by the opt-in `--dem-mc` validation step. Released `c`/`b` are unchanged — this characterizes uncertainty only.
+Per-dam Monte-Carlo of how SRTM vertical noise (LE90 ≈ 6 m, σ ≈ 3.6 m, correlated over ~2 pixels) propagates into recovered volume. One row per sampled dam; written by the opt-in `--dem-mc` validation step. Released `c`/`b` are unchanged, so this characterizes uncertainty only.
 
 | Column | Definition | Unit | dtype | Missing |
 | --- | --- | --- | --- | --- |
@@ -349,7 +349,7 @@ Per-dam Monte-Carlo of how SRTM vertical noise (LE90 ≈ 6 m, σ ≈ 3.6 m, corr
 
 ---
 
-## `validation/sensitivity_sweep.csv` — placement/acceptance constant sensitivity
+## `validation/sensitivity_sweep.csv`: placement/acceptance constant sensitivity
 
 One row per (constant, perturbation) cell: effect of perturbing each tuned constant by ±20–30% on the trusted set and median exponent. Written by the opt-in `--sensitivity` validation step.
 
@@ -365,7 +365,7 @@ One row per (constant, perturbation) cell: effect of perturbing each tuned const
 
 ---
 
-## `input/ksa_dams/baish_bathymetry/baysh_area_elev_vol.csv` — Baish design and sonar bathymetry (cross-reference input)
+## `input/ksa_dams/baish_bathymetry/baysh_area_elev_vol.csv`: Baish design and sonar bathymetry (cross-reference input)
 
 Elevation-area-volume table for Baish (`id_120000`), shipped in the repository as the bathymetry cross-reference. The `*_design` columns are the original design curve (floor 270 m a.s.l.). The `*_integrated_dem` columns are the present-day curve from the February 2025 sonar survey, with a sediment-raised floor near 282 m a.s.l. (about 12 m above the design floor). `capacity_loss_%` is the resulting loss at each level.
 

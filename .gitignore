@@ -7,7 +7,6 @@ __pycache__/
 
 # Exclude graphify from the root
 graphify-out/
-eaves_dataset_*.zip
 
 # Exclude PDF files
 *.pdf

@@ -42,7 +42,7 @@ The Saudi Arabia EAV curves are ready to use directly, no run required:
 - **[`eaves_summary.csv`](region/ksa/output/1_results_csv/eaves_summary.csv)** - full per-dam table: quality grade, uncertainty flags, fitted statistics, and topographic features.
 - **[`DATA_DICTIONARY.md`](region/ksa/output/1_results_csv/DATA_DICTIONARY.md)** - every column defined, with units.
 
-Convert a satellite-observed water area $A$ to storage with the dam's own coefficients: $V = c \cdot A^{b}$. The full release (per-dam hypsometries and the validation suite) is archived on Zenodo (https://doi.org/10.5281/zenodo.20728129).
+Convert a satellite-observed water area $A$ to storage with the dam's own coefficients: $V = c \cdot A^{b}$. The full release (per-dam hypsometries and the validation suite) is archived on Zenodo (<https://doi.org/10.5281/zenodo.20728129>).
 
 ## 🚀 Quickstart
 

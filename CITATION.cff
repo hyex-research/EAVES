@@ -42,12 +42,13 @@ authors:
     affiliation: "King Abdullah University of Science and Technology (KAUST)"
     orcid: "https://orcid.org/0000-0003-2553-9566"
 keywords:
-  - hydrology
   - reservoir bathymetry
-  - elevation-area-volume
+  - elevation-area-volume curves
   - SRTM
-  - arid basins
-  - remote sensing
+  - ungaged basins
+  - arid hydrology
+  - regionalization
+  - reservoir storage
   - Saudi Arabia
 
 # When the EAVES methods paper is published, add a `preferred-citation:` block here so that citation exports (BibTeX, APA) point at the paper by default.

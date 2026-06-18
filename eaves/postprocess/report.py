@@ -741,7 +741,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("")
     if "sediment_loss_median" in stats:
         if stats.get("sediment_sdr_model") == "none_yield_is_delivered":
-            sdr_eq = ("The yield input is *delivered* sediment yield at the "
+            sdr_eq = ("The yield input is _delivered_ sediment yield at the "
                       "reservoir inlet -- Dash et al. (2025) compute it as "
                       "RUSLE gross erosion times the Boyce (1974) "
                       "area-dependent delivery ratio (their Eqs. 2-4) -- so "
@@ -901,8 +901,8 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("")
     A("Dams whose DEM fit fails the trusted-set filter are assigned $(c, b)$ "
       "by a region-trained empirical recipe rather than per-dam DEM fitting. "
-      "The recipe has two pieces. Both pieces are *trained on the region's "
-      "own training dams (trusted fits built after the SRTM acquisition)*, "
+      "The recipe has two pieces. Both pieces are _trained on the region's "
+      "own training dams (trusted fits built after the SRTM acquisition)_, "
       "so the method itself is portable but its "
       "coefficients are region-specific.")
     A("")

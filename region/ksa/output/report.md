@@ -87,7 +87,7 @@ This is the central physical fact that motivates the regionalization recipe in t
 
 ### Sediment budget
 
-A first-order sediment budget is computed from catchment-specific delivered-yield estimates (`sed_yield_t_ha_yr`) and upstream catchment areas, propagated to the reference year (2026) with deposited bulk density $\rho_\mathrm{sed} = 1.30\,\mathrm{t\,m^{-3}}$. The yield input is *delivered* sediment yield at the reservoir inlet -- Dash et al. (2025) compute it as RUSLE gross erosion times the Boyce (1974) area-dependent delivery ratio (their Eqs. 2-4) -- so no additional delivery ratio is applied here (a second SDR would double-discount delivery). The accumulated trap volume is $V_\mathrm{sed} = Y \cdot A_\mathrm{cat} \cdot (t - t_\mathrm{built}) / \rho_\mathrm{sed}$, and the predicted fractional capacity loss is capped at $100\%$ by trap saturation (a reservoir cannot lose more storage than it holds).
+A first-order sediment budget is computed from catchment-specific delivered-yield estimates (`sed_yield_t_ha_yr`) and upstream catchment areas, propagated to the reference year (2026) with deposited bulk density $\rho_\mathrm{sed} = 1.30\,\mathrm{t\,m^{-3}}$. The yield input is _delivered_ sediment yield at the reservoir inlet -- Dash et al. (2025) compute it as RUSLE gross erosion times the Boyce (1974) area-dependent delivery ratio (their Eqs. 2-4) -- so no additional delivery ratio is applied here (a second SDR would double-discount delivery). The accumulated trap volume is $V_\mathrm{sed} = Y \cdot A_\mathrm{cat} \cdot (t - t_\mathrm{built}) / \rho_\mathrm{sed}$, and the predicted fractional capacity loss is capped at $100\%$ by trap saturation (a reservoir cannot lose more storage than it holds).
 
 Across $n = 483$ dams with all required inputs, the predicted median capacity loss is **47.5%** of design capacity, with P16–P84 = [12.2%, 100.0%]. 233 reservoirs are predicted to have lost $\ge 50\%$ of their capacity, and 149 reach full siltation ($\ge 100\%$ of design before capping, i.e. the integrated sediment trap volume meets or exceeds the original storage, typically very small headwater impoundments). The per-dam capped fraction and a categorical risk band are released as `predicted_silt_fraction` and `sediment_risk` in `eaves_summary.csv`.
 
@@ -121,7 +121,7 @@ _Figure 4. Cross-reference comparison against independently-produced reservoir d
 
 ## Regionalization
 
-Dams whose DEM fit fails the trusted-set filter are assigned $(c, b)$ by a region-trained empirical recipe rather than per-dam DEM fitting. The recipe has two pieces. Both pieces are *trained on the region's own training dams (trusted fits built after the SRTM acquisition)*, so the method itself is portable but its coefficients are region-specific.
+Dams whose DEM fit fails the trusted-set filter are assigned $(c, b)$ by a region-trained empirical recipe rather than per-dam DEM fitting. The recipe has two pieces. Both pieces are _trained on the region's own training dams (trusted fits built after the SRTM acquisition)_, so the method itself is portable but its coefficients are region-specific.
 
 _Choice of $b$._ The shipped recipe assigns every regionalized dam the regional median **$b = 1.50$**. This is the principled choice given a strong empirical result: $b$ is **not predictable from morphometric features alone** with the data we have. We tested three increasingly flexible alternatives before settling on the median, and each one fell short.
 

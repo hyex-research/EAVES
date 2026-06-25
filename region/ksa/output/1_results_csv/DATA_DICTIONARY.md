@@ -42,7 +42,7 @@ full statement.
 | `lat`, `lon` | `eaves_summary.csv` | Catalog value passed through verbatim (decimal degrees, WGS84). Most rows carry 6 decimal places (~0.1 m); a minority carry 2–8. No fixed rounding is applied. |
 | `capacity_mcm` | `eaves_params.csv`, `eaves_summary.csv`, `failed_dams.csv`, `validation/*` | Design capacity, MCM, full catalog precision (up to 6 decimals). |
 
-Note: for Baish (`id_120000`), the one dam with full design documentation, the capacity is sourced directly from the design table: 198.072 MCM at the maximum water level (`baish_bathymetry/baysh_area_elev_vol.csv`). See the paper's Input data section.
+Note: for Baish (`id_120000`), the one dam with full design documentation, the capacity is sourced directly from the design table: 198.072 MCM at the maximum water level (`baish_bathymetry/baish_area_elev_vol.csv`). See the paper's Input data section.
 | `dam_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 2 decimals). |
 | `spillway_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 3 decimals). |
 | `dam_length_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 2 decimals). |
@@ -365,7 +365,7 @@ One row per (constant, perturbation) cell: effect of perturbing each tuned const
 
 ---
 
-## `input/ksa_dams/baish_bathymetry/baysh_area_elev_vol.csv`: Baish design and sonar bathymetry (cross-reference input)
+## `baish_bathymetry/baish_area_elev_vol.csv`: Baish design and sonar bathymetry (cross-reference input)
 
 Elevation-area-volume table for Baish (`id_120000`), shipped in the repository as the bathymetry cross-reference. The `*_design` columns are the original design curve (floor 270 m a.s.l.). The `*_integrated_dem` columns are the present-day curve from the February 2025 sonar survey, with a sediment-raised floor near 282 m a.s.l. (about 12 m above the design floor). `capacity_loss_%` is the resulting loss at each level.
 

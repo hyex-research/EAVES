@@ -3,7 +3,7 @@
 Two-panel illustration of how the population-level 1$\\sigma$ uncertainty
 on $b$ propagates to a volume confidence band:
 
-Panel a -- Baysh reservoir: SRTM-derived $V(A)$ curve with the $\\pm b_\\sigma$
+Panel a -- Baish reservoir: SRTM-derived $V(A)$ curve with the $\\pm b_\\sigma$
 fan band, all curves pinned through the catalogue full-pool anchor
 $(A_\\mathrm{cap}, V_\\mathrm{cap})$. Band and curve span the full SRTM
 data range so the fan is visible end-to-end.
@@ -43,20 +43,20 @@ from ._shared import (
 )
 
 
-_BAYSH_ID = "id_120000"
+_BAISH_ID = "id_120000"
 _CURVE_COLOR  = "#1F77B4"   # blue (central curve)
 _BAND_COLOR   = "#9ECAE1"   # light blue (uncertainty band)
 _ANCHOR_COLOR = "#D62728"   # red (full-pool anchor marker)
 
 
-def _load_baysh() -> tuple[dict, pd.DataFrame]:
+def _load_baish() -> tuple[dict, pd.DataFrame]:
     from eaves.postprocess.uncertainty import compute_b_sigma
     params = pd.read_csv(os.path.join(_cfg.CSV_DIR, "eaves_params.csv"))
     summary = pd.read_csv(os.path.join(_cfg.CSV_DIR, "eaves_summary.csv"))
-    p = params[params["dam_id"] == _BAYSH_ID]
-    s = summary[summary["dam_id"] == _BAYSH_ID]
+    p = params[params["dam_id"] == _BAISH_ID]
+    s = summary[summary["dam_id"] == _BAISH_ID]
     if p.empty or s.empty:
-        raise RuntimeError(f"Baysh ({_BAYSH_ID}) absent from params/summary CSVs.")
+        raise RuntimeError(f"Baish ({_BAISH_ID}) absent from params/summary CSVs.")
     c = float(p.iloc[0]["c"])
     b = float(p.iloc[0]["b"])
     V_cap_m3 = float(s.iloc[0]["capacity_mcm"]) * 1e6
@@ -69,7 +69,7 @@ def _load_baysh() -> tuple[dict, pd.DataFrame]:
         "A_cap_m2":  A_cap_m2,
         "dam_name":  str(s.iloc[0].get("dam_name", "Baish")).strip(),
     }
-    eav_path = Path(_cfg.CSV_DIR) / "eav_tables" / f"{_BAYSH_ID}_eav.csv"
+    eav_path = Path(_cfg.CSV_DIR) / "eav_tables" / f"{_BAISH_ID}_eav.csv"
     eav = pd.read_csv(eav_path) if eav_path.exists() else pd.DataFrame()
     return info, eav
 
@@ -108,7 +108,7 @@ def _regi_constants() -> dict:
 def make_s3_uncertainty(out_dir: Path) -> Path:
     apply_style()
 
-    info, eav = _load_baysh()
+    info, eav = _load_baish()
     typical_fill = _typical_fill_level()
     regi = _regi_constants()
 
@@ -135,7 +135,7 @@ def make_s3_uncertainty(out_dir: Path) -> Path:
     c, b, b_sigma = info["c"], info["b"], info["b_sigma"]
     A_cap, V_cap  = info["A_cap_m2"], info["V_cap_m3"]
 
-    # ---- panel a: Baysh V(A) with +/- b_sigma band ----
+    # ---- panel a: Baish V(A) with +/- b_sigma band ----
     if not eav.empty:
         m = (eav["area_m2"] > 0) & (eav["volume_m3"] > 0)
         A_data = eav.loc[m, "area_m2"].values

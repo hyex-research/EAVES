@@ -30,10 +30,6 @@ The headline product, `eaves_params.csv`, provides the area-volume relationship 
 
 > **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia** (526 dams: 322 SRTM-derived, 204 regionalized). The codebase is portable and can be applied to any region for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalog) are available.
 
-<p align="center">
-  <img src="documentation/img/eaves_stages.png" alt="The EAVES process: SRTM scan of the pre-dam valley, wall placement, stepped flood fill, the fitted area-volume curve, and the Saudi Arabian dam domain" width="100%">
-</p>
-
 ## 📂 The data
 
 The Saudi Arabia EAV curves are ready to use directly, no run required:

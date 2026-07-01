@@ -11,7 +11,7 @@
 ---
 
 <p align="center">
-  <img src="documentation/img/eaves_logo_light.png" alt="EAVES logo" width="100%">
+  <img src="documentation/img/eaves_logo.png" alt="EAVES logo" width="100%">
 </p>
 
 ## 🗺️ Overview

@@ -1,6 +1,6 @@
 # EAVES domain report: Saudi Arabia
 
-_Generated: 2026-06-15 12:09 UTC_
+_Generated: 2026-07-02 08:57 UTC_
 
 _Source code: `eaves/` package; this report: `eaves.postprocess.report`._
 
@@ -54,7 +54,7 @@ The coefficient $c$ sets the absolute scale of the curve. Once $b$ is fixed, anc
 
 ### Catalogue demographics
 
-The placement pipeline produces a fit summary for $n = 504$ dams. Together with 24 additional records that fail pipeline gating but carry enough catalogue metadata to be regionalized, **526 dams** in total receive an EAV curve assignment (322 SRTM-derived, 204 regionalized). Aggregate design storage is **2,442 MCM**. The capacity distribution is strongly right-skewed: median 0.45 MCM, P05–P95 = [0.07, 10.0] MCM, maximum 325.0 MCM. By size class:
+The placement pipeline produces a fit summary for $n = 504$ dams. Together with 24 additional records that fail pipeline gating but carry enough catalogue metadata to be regionalized, **526 dams** in total receive an EAV curve assignment (322 SRTM-derived, 204 regionalized). Aggregate design storage is **2,437 MCM**. The capacity distribution is strongly right-skewed: median 0.45 MCM, P05–P95 = [0.07, 10.0] MCM, maximum 325.0 MCM. By size class:
 
 | Class | Count |
 | --- | --- |
@@ -91,7 +91,7 @@ A first-order sediment budget is computed from catchment-specific delivered-yiel
 
 Across $n = 483$ dams with all required inputs, the predicted median capacity loss is **47.5%** of design capacity, with P16–P84 = [12.2%, 100.0%]. 233 reservoirs are predicted to have lost $\ge 50\%$ of their capacity, and 149 reach full siltation ($\ge 100\%$ of design before capping, i.e. the integrated sediment trap volume meets or exceeds the original storage, typically very small headwater impoundments). The per-dam capped fraction and a categorical risk band are released as `predicted_silt_fraction` and `sediment_risk` in `eaves_summary.csv`.
 
-The single bathymetric ground-truth comparison available (Baish, id_120000) shows this first-order budget under-predicts the observed loss by a factor of ~1.6 at that site (predicted ~23% versus ~36% from the 2025 sonar over the same window), consistent with site-specific sediment yield somewhat above the regional first-order input. The national capacity loss implied by the budget matches the ~32% reported by Dash et al. (2025) from the same yield estimates. The per-dam numbers should nevertheless be read as first-order screening indicators, not site predictions. A region-specific calibration would benefit from comparative bathymetry on a small panel of reservoirs spanning the size range.
+The single bathymetric ground-truth comparison available (Baish, id_120000) shows this first-order budget under-predicts the observed loss by a factor of ~1.5 at that site (predicted ~24% versus ~36% from the 2025 sonar over the same window), consistent with site-specific sediment yield somewhat above the regional first-order input. The national capacity loss implied by the budget matches the ~32% reported by Dash et al. (2025) from the same yield estimates. The per-dam numbers should nevertheless be read as first-order screening indicators, not site predictions. A region-specific calibration would benefit from comparative bathymetry on a small panel of reservoirs spanning the size range.
 
 Crucially, sediment fills the bottom of the reservoir but does not change the spillway-level area, so the EAV curves shipped in this report are _design_ curves rather than current operational curves. A sediment-corrected operational curve set can be produced by subtracting $V_\mathrm{sed}$ from the design $V$ axis (with the curve truncated below the predicted sediment floor) but is not the canonical product.
 

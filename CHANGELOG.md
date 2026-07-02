@@ -29,6 +29,21 @@ project adheres to [Semantic Versioning](https://semver.org/).
   longer tracked; the PNGs remain. PDFs are regenerated locally and shipped
   with the manuscript.
 
+### Fixed
+
+- **Baish capacity reverted to the spillway-crest value (193.644 MCM).**
+  The 1.2.0 change to 198.072 MCM misread the design table, whose header
+  states a design storage capacity of 193,644,000 m3 with the spillage top
+  level at 327 m a.s.l., and whose 198.072 MCM row is annotated
+  "Spillway + 0.50" (327.5 m a.s.l.), a half-meter surcharge above the
+  crest rather than storage capacity. The catalog, the snapped-dams cache,
+  and the Baish comparison table (327.5 m row removed) are corrected, and
+  the fill cap returns to the spillway level (recovered maximum 197.2 MCM,
+  a one-bin +1.8% overshoot; refit c = 0.0077, b = 1.506; total catalog
+  storage 2,442 -> 2,437 MCM). The released CSVs, validation, uncertainty
+  band, panels, and report were regenerated, and the stale
+  `ksa_dams_transliterated.csv.bak` snapshot was removed.
+
 ## [1.2.0] - 2026-06-11
 
 ### Changed

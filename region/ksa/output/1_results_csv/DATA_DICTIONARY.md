@@ -42,7 +42,7 @@ full statement.
 | `lat`, `lon` | `eaves_summary.csv` | Catalog value passed through verbatim (decimal degrees, WGS84). Most rows carry 6 decimal places (~0.1 m); a minority carry 2–8. No fixed rounding is applied. |
 | `capacity_mcm` | `eaves_params.csv`, `eaves_summary.csv`, `failed_dams.csv`, `validation/*` | Design capacity, MCM, full catalog precision (up to 6 decimals). |
 
-Note: for Baish (`id_120000`), the one dam with full design documentation, the capacity is sourced directly from the design table: 198.072 MCM at the maximum water level (`baish_bathymetry/baish_area_elev_vol.csv`). See the paper's Input data section.
+Note: for Baish (`id_120000`), the one dam with full design documentation, the capacity is sourced directly from the design table: 193.644 MCM at the spillway crest, 327.0 m a.s.l. (`baish_bathymetry/baish_area_elev_vol.csv`). See the paper's Input data section.
 | `dam_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 2 decimals). |
 | `spillway_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 3 decimals). |
 | `dam_length_m` | `eaves_summary.csv`, `failed_dams.csv` | Metres, full catalog precision (up to 2 decimals). |

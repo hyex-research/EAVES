@@ -81,7 +81,7 @@ def _q(s: pd.Series, q: float) -> float:
 
 
 # sed_yield_t_ha_yr is delivered yield (Dash et al. 2025: RUSLE x Boyce SDR applied at source).
-# No further delivery ratio is applied here; a second SDR double-discounts (Baish miss ~10x -> ~1.6x).
+# No further delivery ratio is applied here; a second SDR double-discounts (Baish miss ~10x -> ~1.5x).
 # sediment_sdr stays available as a constant factor for gross-erosion inputs.
 
 
@@ -783,8 +783,8 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         A("")
         A("The single bathymetric ground-truth comparison available (Baish, "
           "id_120000) shows this first-order budget under-predicts the "
-          "observed loss by a factor of ~1.6 at that site "
-          "(predicted ~23% versus ~36% from the 2025 sonar over the same "
+          "observed loss by a factor of ~1.5 at that site "
+          "(predicted ~24% versus ~36% from the 2025 sonar over the same "
           "window), consistent with site-specific sediment yield somewhat "
           "above the regional first-order input. The national capacity "
           "loss implied by the budget matches the ~32% reported by Dash "

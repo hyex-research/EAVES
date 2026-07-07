@@ -68,7 +68,7 @@ This repository accompanies the manuscript:
 
 > **"Elevation-area-volume curves for 526 Saudi Arabian reservoirs from SRTM topography and regionalization"**
 >
-> Ivanović, N., Dash, S.S., Hunt, J.D., Alharbi, R., & Beck, H.E.
+> Ivanović, N., et al.
 
 If you use this repository in academic work, please cite the manuscript and this software. Citation metadata, including DOIs, is in [`CITATION.cff`](CITATION.cff).
 

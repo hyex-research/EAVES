@@ -491,7 +491,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "regionalized with topographic features captured at failure time.")
     if "fill_median" in stats:
         A(f"- **Operational fill behavior**: the median ratio "
-          f"A_sat^P95 / A_DEM is "
+          f"A_sat<sup>P95</sup> / A_DEM is "
           f"**{_fmt(stats['fill_median'])}**, meaning a typical reservoir's "
           "observed maximum extent reaches only "
           f"~{_fmt(stats['fill_median']*100)}% of its DEM-derived design "
@@ -557,7 +557,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "checks.")
     A("4. **Power-law fit** (`eaves.pipeline.curves`): the resulting "
       "(A, V) pairs over the elevation range [z_min, "
-      "z_spillway] are fit to V = c A^b by nonlinear least "
+      "z_spillway] are fit to V = c A<sup>b</sup> by nonlinear least "
       "squares, returning (c, b, r²).")
     A("5. **Quality grading and reliability tagging** "
       "(`eaves.postprocess.regionalization`): each fit gets a grade A–F. The "
@@ -587,16 +587,16 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("## Physics of the area–volume relation")
     A("")
     A("Reservoir storage is integrated from a hypsometric area–elevation "
-      "function: V(z) = ∫_z_min^z A(ζ) "
+      "function: V(z) = ∫<sub>z_min</sub><sup>z</sup> A(ζ) "
       "dζ. For a valley filled by a transverse dam, the "
       "wetted area at elevation z is set by where the water surface "
       "intersects the surrounding terrain, which is well approximated by a "
-      "power-law in depth: A(z) ∝ (z - z_min)^β "
+      "power-law in depth: A(z) ∝ (z - z_min)<sup>β</sup> "
       "with β > 0. Integrating that area against depth and "
       "expressing the result against area rather than depth yields the "
       "compact form")
     A("")
-    A("V = c A^b, b = (β + 1)/β.")
+    A("V = c A<sup>b</sup>, b = (β + 1)/β.")
     A("")
     A("Two geometric extremes bracket the exponent:")
     A("")
@@ -620,10 +620,10 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         A("")
     A("The coefficient c sets the absolute scale of the curve. Once "
       "b is fixed, anchoring at a known point (A_cap, "
-      "V_cap) pins c = V_cap / A_cap^b. "
+      "V_cap) pins c = V_cap / A_cap<sup>b</sup>. "
       "This back-solve is exact at the anchor, so any uncertainty in b "
       "shows up as V_pred / V_true = "
-      "(A/A_cap)^(Δb) at other water levels. A "
+      "(A/A_cap)<sup>Δb</sup> at other water levels. A "
       "1σ mismatch in b therefore produces ~20% volume error at "
       "0.5 A_cap and ~84% at 0.1 A_cap. Users who "
       "need accuracy at very low water levels should treat the curve as a "
@@ -697,7 +697,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "water-extent time series, the 95th-percentile observed water area "
           "is compared against the DEM-derived spillway-level footprint. "
           "The ratio "
-          "A_sat^P95 / A_DEM characterizes how "
+          "A_sat<sup>P95</sup> / A_DEM characterizes how "
           "fully a reservoir is operated relative to its design.")
         A("")
         A(f"In this region, the median ratio is **{_fmt(med)}**, meaning a "
@@ -725,8 +725,8 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "regionalization recipe in this report: an anchor based on the "
           "satellite-observed maximum extent does not match the design "
           "footprint the catalogue capacity refers to, so anchoring "
-          "V_cap against A_sat^P95 inflates "
-          "c by (A_DEM/A_sat)^b, of order "
+          "V_cap against A_sat<sup>P95</sup> inflates "
+          "c by (A_DEM/A_sat)<sup>b</sup>, of order "
           f"~{_fmt((1.0/med)**stats.get('b_regionalized', stats.get('b_median', 1.5)))}× "
           "in this region. Anchoring against a DEM-derived A_cap "
           "instead keeps both endpoints in the design regime.")
@@ -838,7 +838,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "A(z) is computed by counting pixels below z in the footprint, "
       "the corresponding volume V(z) = ∫ A dz is obtained "
       "by trapezoidal integration, and the resulting (A, V) pairs are fit "
-      "to V = c A^b. The procedure is purely geometric: it uses no "
+      "to V = c A<sup>b</sup>. The procedure is purely geometric: it uses no "
       "satellite or in-situ data. Curves that pass the trusted-set filter "
       f"({_TRUSTED_FILTER_DOC}) are the reference against which all other "
       "claims in this report are calibrated.")
@@ -1005,7 +1005,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("")
     A("_Choice of c._ The shipped recipe anchors each regionalized "
       "dam at the predicted full-pool area A_cap and back-"
-      "solves c = V_cap / A_cap^b. The prediction "
+      "solves c = V_cap / A_cap<sup>b</sup>. The prediction "
       "is a closed-form linear regression of log A_cap on "
       "seven log-space features trained on the trusted DEM footprints:")
     A("")
@@ -1033,7 +1033,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "captures an _operational_ area rather than the design area that "
           "the catalogue V_cap refers to. Mixing a design "
           "volume with an operational area inflates c by "
-          f"~ (1/{_fmt(med)})^b ≈ "
+          f"~ (1/{_fmt(med)})<sup>b</sup> ≈ "
           f"{_fmt((1.0/med)**stats.get('b_regionalized', stats.get('b_median', 1.5)))}× at the median. "
           "Both DEM-trained anchors stay in the design regime by "
           "construction.")
@@ -1142,9 +1142,9 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("")
     A("A user wanting a confidence band on V at any area A should use:")
     A("")
-    A("- A_cap = (V_cap/c)^(1/b)  (implicit anchor)")
-    A("- V_lo = V_cap (A/A_cap)^(b+b_σ)  (steeper bound)")
-    A("- V_hi = V_cap (A/A_cap)^(b-b_σ)  (shallower bound)")
+    A("- A_cap = (V_cap/c)<sup>1/b</sup>  (implicit anchor)")
+    A("- V_lo = V_cap (A/A_cap)<sup>b+b_σ</sup>  (steeper bound)")
+    A("- V_hi = V_cap (A/A_cap)<sup>b-b_σ</sup>  (shallower bound)")
     A("")
     A("The full per-dam table at three reference fill levels is written by "
       "`eaves.postprocess.uncertainty` to "
@@ -1271,7 +1271,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("| `1_results_csv/validation/regionalization_loo.csv` | Per-recipe "
       "LOO residuals, every trusted dam. |")
     A("| `1_results_csv/validation/dem_vs_sat_area.csv` | A_DEM "
-      "vs A_sat^P95 paired data. |")
+      "vs A_sat<sup>P95</sup> paired data. |")
     A("| `1_results_csv/validation/b_clustering_diagnostic.csv` | Silhouette "
       "and LOO σ(Δb) per (feature-set, k), backs the "
       "supplementary figure S1. |")

@@ -178,7 +178,7 @@ downstream simulation (RUSH).
   `valley_ratio`, `channel_slope`, `mean_catchment_slope`,
   `upstream_area_km2`). Trained on the regional trusted set, applied to
   every regionalized dam via closed-form back-solve
-  c = V_cap / A_cap^b. LOO accuracy on trusted
+  c = V_cap / A_cap<sup>b</sup>. LOO accuracy on trusted
   dams: 89% within 2×, median absolute error 28%, median bias +7%.
 - **`eaves.postprocess.uncertainty` module** and CLI. Propagates the
   LOO-derived b_σ to a per-dam V band at half / quarter / tenth

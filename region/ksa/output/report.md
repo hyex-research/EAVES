@@ -1,6 +1,6 @@
 # EAVES domain report: Saudi Arabia
 
-_Generated: 2026-07-07 13:08 UTC_
+_Generated: 2026-07-07 13:22 UTC_
 
 _Source code: `eaves/` package; this report: `eaves.postprocess.report`._
 
@@ -11,7 +11,7 @@ This document characterizes the reservoir population in the configured region an
 - **Catalogue**: 526 dams with assigned EAV parameters.
 - **DEM-derived curves**: 322 dams have curves fit directly from SRTM-clipped flood-fills (these are the trusted population).
 - **Regionalized curves**: 204 dams have curves assigned via a region-trained empirical recipe because the DEM fit failed quality gates, of which 24 are pipeline failures (placement, fill, or fit) regionalized with topographic features captured at failure time.
-- **Operational fill behavior**: the median ratio A_sat^P95 / A_DEM is **0.18**, meaning a typical reservoir's observed maximum extent reaches only ~17.9% of its DEM-derived design footprint. This is the central physical fact behind the regionalization method choice below.
+- **Operational fill behavior**: the median ratio A_sat<sup>P95</sup> / A_DEM is **0.18**, meaning a typical reservoir's observed maximum extent reaches only ~17.9% of its DEM-derived design footprint. This is the central physical fact behind the regionalization method choice below.
 - **Sediment budget**: assuming delivered sediment yields (the RUSLE-by-SDR product of Dash et al. 2025, so no additional delivery ratio is applied) and a deposited bulk density of 1.30 t m⁻³, the median predicted capacity loss by 2026 is **47.5%** of the catalogue value (loss capped at 100% by trap saturation; 149 reservoirs reach full siltation).
 - **Regionalization accuracy (LOO on the training dams, multi-feature LR anchor)**: 92% of predictions within a factor of 2 of the SRTM-derived truth, median bias +6%.
 
@@ -22,7 +22,7 @@ EAVES consumes a national reservoir catalogue (latitude, longitude, dam height, 
 1. **Preprocessing** (`eaves.preprocess`): MERIT-Hydro segments are clipped to a per-dam bounding box, segments longer than 2 km are split, and each dam is snapped to the nearest river segment within 1 km.
 2. **DEM clip and reprojection** (`eaves.pipeline.terrain`): the SRTM tile mosaic is clipped to a per-dam radius and reprojected to the appropriate UTM zone.
 3. **Dam wall placement and flood-fill** (`eaves.pipeline.placement`, `eaves.pipeline.curves`): a six-stage cascade tries an aligned crest at the catalogue location (Stage 1), walks upstream along the valley axis (Stage 2), recovers from poor geometry or under-volume fills (Stage 3), retries upstream along the river vector (Stage 4), relaxes the flow-alignment filter (Stage 5), and finally falls back to a multi-direction fill (Stage 6). Acceptance gates reject fills that leak downstream, are centroid-displaced, or fail volume sanity checks.
-4. **Power-law fit** (`eaves.pipeline.curves`): the resulting (A, V) pairs over the elevation range [z_min, z_spillway] are fit to V = c A^b by nonlinear least squares, returning (c, b, r²).
+4. **Power-law fit** (`eaves.pipeline.curves`): the resulting (A, V) pairs over the elevation range [z_min, z_spillway] are fit to V = c A<sup>b</sup> by nonlinear least squares, returning (c, b, r²).
 5. **Quality grading and reliability tagging** (`eaves.postprocess.regionalization`): each fit gets a grade A–F. The trusted subset is the union of A and B grades that also satisfy quality ∈ {A, B}, r² ≥ 0.98, 0.3 ≤ V_SRTM/V_cap ≤ 5.0, n_pixels ≥ 50, b defined. The capacity floor used to define the training set is chosen by a sweep of `frac_reliable` against candidate cutoffs (see Fig. S2).
 6. **Regionalization** (`eaves.postprocess.regionalization`): dams outside the trusted subset receive (c, b) from a region-trained empirical recipe described below.
 7. **Validation** (`eaves.postprocess.validation`): leave-one-out on the training dams (trusted and post-2000) gives per-recipe accuracy distributions.
@@ -35,9 +35,9 @@ _Figure 1. (a) Spatial distribution of catalogued dams within the target country
 
 ## Physics of the area–volume relation
 
-Reservoir storage is integrated from a hypsometric area–elevation function: V(z) = ∫_z_min^z A(ζ) dζ. For a valley filled by a transverse dam, the wetted area at elevation z is set by where the water surface intersects the surrounding terrain, which is well approximated by a power-law in depth: A(z) ∝ (z - z_min)^β with β > 0. Integrating that area against depth and expressing the result against area rather than depth yields the compact form
+Reservoir storage is integrated from a hypsometric area–elevation function: V(z) = ∫<sub>z_min</sub><sup>z</sup> A(ζ) dζ. For a valley filled by a transverse dam, the wetted area at elevation z is set by where the water surface intersects the surrounding terrain, which is well approximated by a power-law in depth: A(z) ∝ (z - z_min)<sup>β</sup> with β > 0. Integrating that area against depth and expressing the result against area rather than depth yields the compact form
 
-V = c A^b, b = (β + 1)/β.
+V = c A<sup>b</sup>, b = (β + 1)/β.
 
 Two geometric extremes bracket the exponent:
 
@@ -48,7 +48,7 @@ Real reservoirs land between these. The bulk of trusted KSA dams cluster around 
 
 In this region's trusted set (n = 322), b has median **1.50** with 1σ = 0.26, P05–P95 range [1.11, 2.10], and absolute range [0.88, 2.50]. The width of that distribution is the dominant geometric uncertainty in regionalized curves.
 
-The coefficient c sets the absolute scale of the curve. Once b is fixed, anchoring at a known point (A_cap, V_cap) pins c = V_cap / A_cap^b. This back-solve is exact at the anchor, so any uncertainty in b shows up as V_pred / V_true = (A/A_cap)^(Δb) at other water levels. A 1σ mismatch in b therefore produces ~20% volume error at 0.5 A_cap and ~84% at 0.1 A_cap. Users who need accuracy at very low water levels should treat the curve as a structural estimate, not a precise prediction.
+The coefficient c sets the absolute scale of the curve. Once b is fixed, anchoring at a known point (A_cap, V_cap) pins c = V_cap / A_cap<sup>b</sup>. This back-solve is exact at the anchor, so any uncertainty in b shows up as V_pred / V_true = (A/A_cap)<sup>Δb</sup> at other water levels. A 1σ mismatch in b therefore produces ~20% volume error at 0.5 A_cap and ~84% at 0.1 A_cap. Users who need accuracy at very low water levels should treat the curve as a structural estimate, not a precise prediction.
 
 ## Domain characterization
 
@@ -77,13 +77,13 @@ The 21 year-unknown dams carry no catalogue construction date. They are retained
 
 ### Operational fill behavior
 
-For the 282 trusted dams with a satellite water-extent time series, the 95th-percentile observed water area is compared against the DEM-derived spillway-level footprint. The ratio A_sat^P95 / A_DEM characterizes how fully a reservoir is operated relative to its design.
+For the 282 trusted dams with a satellite water-extent time series, the 95th-percentile observed water area is compared against the DEM-derived spillway-level footprint. The ratio A_sat<sup>P95</sup> / A_DEM characterizes how fully a reservoir is operated relative to its design.
 
 In this region, the median ratio is **0.18**, meaning a typical reservoir's largest observed extent reaches only ~17.9% of its design footprint. The P16–P84 band is [0.03, 0.48]. Only 45 out of 282 reservoirs (16.0%) ever reach ≥ 0.5 A_DEM in the observation window.
 
 Physically this signal reflects a combination of (a) arid-zone hydrology with sparse, episodic inflows that rarely accumulate to design pool, (b) operational drawdown for irrigation and domestic supply, (c) seepage and evaporation losses, and (d) the design margin built into nominal capacities. The signal is _not_ caused by sedimentation (sediment fills the bottom of the reservoir without much reducing the spillway-level area) and _not_ caused by DEM oversizing (at the only available bathymetric ground-truth site, Baish, the SRTM footprint matches the design-table spillway area to within ~1%).
 
-This is the central physical fact that motivates the regionalization recipe in this report: an anchor based on the satellite-observed maximum extent does not match the design footprint the catalogue capacity refers to, so anchoring V_cap against A_sat^P95 inflates c by (A_DEM/A_sat)^b, of order ~14.5× in this region. Anchoring against a DEM-derived A_cap instead keeps both endpoints in the design regime.
+This is the central physical fact that motivates the regionalization recipe in this report: an anchor based on the satellite-observed maximum extent does not match the design footprint the catalogue capacity refers to, so anchoring V_cap against A_sat<sup>P95</sup> inflates c by (A_DEM/A_sat)<sup>b</sup>, of order ~14.5× in this region. Anchoring against a DEM-derived A_cap instead keeps both endpoints in the design regime.
 
 ### Sediment budget
 
@@ -103,7 +103,7 @@ The empirical area–capacity relation, fit on the training dams as log A_cap [k
 
 ## SRTM-derived curves
 
-For each dam that survives placement and quality gating, the curve is fit directly from the SRTM-clipped flood-fill: at each elevation bin in [z_min, z_spillway] the wetted area A(z) is computed by counting pixels below z in the footprint, the corresponding volume V(z) = ∫ A dz is obtained by trapezoidal integration, and the resulting (A, V) pairs are fit to V = c A^b. The procedure is purely geometric: it uses no satellite or in-situ data. Curves that pass the trusted-set filter (quality ∈ {A, B}, r² ≥ 0.98, 0.3 ≤ V_SRTM/V_cap ≤ 5.0, n_pixels ≥ 50, b defined.) are the reference against which all other claims in this report are calibrated.
+For each dam that survives placement and quality gating, the curve is fit directly from the SRTM-clipped flood-fill: at each elevation bin in [z_min, z_spillway] the wetted area A(z) is computed by counting pixels below z in the footprint, the corresponding volume V(z) = ∫ A dz is obtained by trapezoidal integration, and the resulting (A, V) pairs are fit to V = c A<sup>b</sup>. The procedure is purely geometric: it uses no satellite or in-situ data. Curves that pass the trusted-set filter (quality ∈ {A, B}, r² ≥ 0.98, 0.3 ≤ V_SRTM/V_cap ≤ 5.0, n_pixels ≥ 50, b defined.) are the reference against which all other claims in this report are calibrated.
 
 Two cross-references against independently-produced datasets provide circumstantial consistency checks (not validation in the strict sense, because both anchors use methodologies distinct from EAVES): (i) the Baish bathymetric sonar survey -- which measures the _current operational_ reservoir floor rather than the pre-impoundment valley EAVES integrates -- lies well below the SRTM curve at intermediate water levels (sonar volume ~30-65% under SRTM, the expected signature of ~16 yr of accumulated sediment), while the design table agrees with SRTM within ~2% in both volume and area at the spillway level; (ii) three GRDL Landsat-derived A--z curves -- reconstructed from Landsat-observed extents with a deep-learning bathymetry model rather than from SRTM topography directly -- agree visually with the SRTM curves over the observed depth range. These anchor the EAVES output in the neighborhood of independently-measured datasets but do not constitute volumetric validation.
 
@@ -139,7 +139,7 @@ _Practical implication._ Adopting cluster-medians instead of the global median w
 
 _Regression branch retained as a region-portable fallback._ If a future region's catchment-feature distribution produces R²_LOO ≥ 0.25, the regression auto-activates ([`regionalization.py:259-298`]) and predicted b values are written under the `regr_derived` source label (reserved for that branch; absent from the released KSA files). This has never fired on the KSA catalogue.
 
-_Choice of c._ The shipped recipe anchors each regionalized dam at the predicted full-pool area A_cap and back-solves c = V_cap / A_cap^b. The prediction is a closed-form linear regression of log A_cap on seven log-space features trained on the trusted DEM footprints:
+_Choice of c._ The shipped recipe anchors each regionalized dam at the predicted full-pool area A_cap and back-solves c = V_cap / A_cap<sup>b</sup>. The prediction is a closed-form linear regression of log A_cap on seven log-space features trained on the trusted DEM footprints:
 
 log A_cap = α_0 + Σ_(i=1…7) α_i log X_i
 
@@ -147,7 +147,7 @@ with X_i ∈ { `capacity_mcm`, `dam_height_m`, `spillway_height_m`, `valley_rati
 
 Two earlier drafts of the pipeline are still evaluated by the validation module for the comparison below: (i) anchoring at the satellite 95th-percentile water area, and (ii) a single-feature log A_cap = α + β log V_cap regression. Both were retired in favor of the multi-feature anchor.
 
-Because reservoirs in this region operate at only ~17.9% of design footprint, the satellite anchor captures an _operational_ area rather than the design area that the catalogue V_cap refers to. Mixing a design volume with an operational area inflates c by ~ (1/0.18)^b ≈ 14.5× at the median. Both DEM-trained anchors stay in the design regime by construction.
+Because reservoirs in this region operate at only ~17.9% of design footprint, the satellite anchor captures an _operational_ area rather than the design area that the catalogue V_cap refers to. Mixing a design volume with an operational area inflates c by ~ (1/0.18)<sup>b</sup> ≈ 14.5× at the median. Both DEM-trained anchors stay in the design regime by construction.
 
 ## Validation
 
@@ -181,9 +181,9 @@ The training-set spread of the exponent b (b_σ ≈ 0.27, the dimensionless P16-
 
 A user wanting a confidence band on V at any area A should use:
 
-- A_cap = (V_cap/c)^(1/b)  (implicit anchor)
-- V_lo = V_cap (A/A_cap)^(b+b_σ)  (steeper bound)
-- V_hi = V_cap (A/A_cap)^(b-b_σ)  (shallower bound)
+- A_cap = (V_cap/c)<sup>1/b</sup>  (implicit anchor)
+- V_lo = V_cap (A/A_cap)<sup>b+b_σ</sup>  (steeper bound)
+- V_hi = V_cap (A/A_cap)<sup>b-b_σ</sup>  (shallower bound)
 
 The full per-dam table at three reference fill levels is written by `eaves.postprocess.uncertainty` to `<CSV_DIR>/validation/v_uncertainty.csv`. Population-median band widths for this region:
 
@@ -231,7 +231,7 @@ To deploy EAVES on a new region: configure a settings JSON pointing to the local
 | `1_results_csv/threshold_analysis.csv` | Reliability threshold sweep used to set the trusted-set cut. |
 | `1_results_csv/eav_tables/<dam_id>_eav.csv` | Tabulated (z, A, V) per dam. |
 | `1_results_csv/validation/regionalization_loo.csv` | Per-recipe LOO residuals, every trusted dam. |
-| `1_results_csv/validation/dem_vs_sat_area.csv` | A_DEM vs A_sat^P95 paired data. |
+| `1_results_csv/validation/dem_vs_sat_area.csv` | A_DEM vs A_sat<sup>P95</sup> paired data. |
 | `1_results_csv/validation/b_clustering_diagnostic.csv` | Silhouette and LOO σ(Δb) per (feature-set, k), backs the supplementary figure S1. |
 | `1_results_csv/validation/v_uncertainty.csv` | Per-dam V uncertainty propagated from `b_sigma` at half, quarter, and tenth pool, backs the supplementary figure S3. |
 | `1_results_csv/validation/goodness_of_fit.csv` | Per-dam fractional volume residuals of the power-law fit (area-to-volume direction). |

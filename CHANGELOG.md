@@ -52,15 +52,15 @@ project adheres to [Semantic Versioning](https://semver.org/).
   the trusted fits whose construction year is 2000 or later (200 of 322):
   pre-2000 and unknown-year dams may sit on an already partially silted
   valley floor, so they ship their own SRTM curves but no longer train the
-  recipe, the exponent spread $b_\sigma$, the clustering diagnostic, the
-  $A_\mathrm{cap}$ regression, or the leave-one-out validation. Small
+  recipe, the exponent spread b_σ, the clustering diagnostic, the
+  A_cap regression, or the leave-one-out validation. Small
   populations (CI fixtures, data-poor regions) fall back to the full trusted
   set below 15 training dams. Deployed regionalized exponent moves
   1.50 -> 1.56 (median over the capacity-thresholded training subset); LOO
   headline improves to 92%/99% within factor 2/3 (median bias +6%,
   MedAPE 29%, relRMSE 47%); band terms re-estimated
-  ($b_\sigma$ 0.2657, $\sigma_{\log A_\mathrm{cap}}$ 0.149,
-  $\sigma_{\log V_\mathrm{cap}}$ 0.142).
+  (b_σ 0.2657, σ(log A_cap) 0.149,
+  σ(log V_cap) 0.142).
 - **Catalog-capacity uncertainty term re-estimated without cap censoring.**
   Capped fills pin the SRTM-to-catalog volume ratio near unity, so the term
   is now the spread over the uncapped training fills only
@@ -104,11 +104,11 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- **Clamped exponents now re-solve $c$ through the SRTM full-pool anchor.**
-  The released $b$ is clamped to $[1.1, 2.0]$; previously the raw $c$ was
+- **Clamped exponents now re-solve c through the SRTM full-pool anchor.**
+  The released b is clamped to [1.1, 2.0]; previously the raw c was
   kept, so the 39 clamped SRTM-derived curves missed their own full-pool
-  volume by factors of 0.004–11. $c$ is now re-solved so that
-  $V(A_\mathrm{DEM}) = V_\mathrm{SRTM}$ exactly for every clamped dam
+  volume by factors of 0.004–11. c is now re-solved so that
+  V(A_DEM) = V_SRTM exactly for every clamped dam
   (`regionalization.py`; `eaves_params.csv` updated for the 39 dams, all
   other rows bit-identical).
 - **Sediment budget no longer double-counts delivery.** The
@@ -122,9 +122,9 @@ project adheres to [Semantic Versioning](https://semver.org/).
   matches the figure published with the same yields). `--sediment-sdr`
   remains available as a constant factor for gross-erosion inputs.
 - **Panel S3 SRTM band formula.** The SRTM-derived uncertainty tier now
-  includes the catalog-capacity term ($\sigma_{\log V_\mathrm{cap}}$),
+  includes the catalog-capacity term (σ(log V_cap)),
   matching `validation/v_uncertainty.csv`; it was previously drawn from
-  $b_\sigma$ alone and appeared to vanish at the anchor.
+  b_σ alone and appeared to vanish at the anchor.
 
 ### Changed
 
@@ -151,7 +151,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Notes
 
-- EAV parameters $(c, b)$ are unchanged by this edit (verified bit-identical
+- EAV parameters (c, b) are unchanged by this edit (verified bit-identical
   across all 526 KSA dams): the flat-water check returned "bare valley" for
   every missing-year SRTM dam, so each kept `curve_type = full` and the same
   fit path.
@@ -173,24 +173,24 @@ downstream simulation (RUSH).
 
 ### Added
 
-- **Multi-feature LR anchor** for $A_\mathrm{cap}$ on log-space
+- **Multi-feature LR anchor** for A_cap on log-space
   morphometry (`capacity_mcm`, `dam_height_m`, `spillway_height_m`,
   `valley_ratio`, `channel_slope`, `mean_catchment_slope`,
   `upstream_area_km2`). Trained on the regional trusted set, applied to
   every regionalized dam via closed-form back-solve
-  $c = V_\mathrm{cap} / A_\mathrm{cap}^b$. LOO accuracy on trusted
-  dams: 89% within $2\times$, median absolute error 28%, median bias +7%.
+  c = V_cap / A_cap^b. LOO accuracy on trusted
+  dams: 89% within 2×, median absolute error 28%, median bias +7%.
 - **`eaves.postprocess.uncertainty` module** and CLI. Propagates the
-  LOO-derived $b_\sigma$ to a per-dam V band at half / quarter / tenth
+  LOO-derived b_σ to a per-dam V band at half / quarter / tenth
   pool; writes `validation/v_uncertainty.csv`.
-- **Supplementary panel S1**: K-means clustering diagnostic on $b$
-  (silhouette + LOO $\sigma(\Delta b)$). Backs the report's argument
-  for using the global-median $b$.
+- **Supplementary panel S1**: K-means clustering diagnostic on b
+  (silhouette + LOO σ(Δb)). Backs the report's argument
+  for using the global-median b.
 - **Supplementary panel S2**: capacity-threshold sweep for the
   reliability cut.
 - **Supplementary panel S3**: V uncertainty propagation: Baish worked
-  example with $\pm b_\sigma$ fan band, plus the universal
-  $\sigma(\log_{10} V)$ curve.
+  example with ±b_σ fan band, plus the universal
+  σ(log₁₀ V) curve.
 - **Software-version block** in `report.md` (numpy, scipy, pandas,
   sklearn, rasterio, geopandas, matplotlib, pyproj, shapely, Python)
   for reproducibility.
@@ -222,7 +222,7 @@ downstream simulation (RUSH).
   `upstream_area_km2` from the catalogue and sedimentation yield CSV,
   so the regionalization recipe can reach them. This pulled 20 of 21
   dams out of the log–log fallback into the multi-feature LR branch.
-- **Saturated SRTM fits** ($b$ pinned at the 1.10 / 2.00 clip
+- **Saturated SRTM fits** (b pinned at the 1.10 / 2.00 clip
   boundaries) now correctly demoted to the regional median by the
   tightened quality gates.
 

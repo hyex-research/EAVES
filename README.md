@@ -23,7 +23,7 @@ For each dam the pipeline:
 1. **Locates** the dam site on the SRTM DEM and searches for an optimal wall placement across the valley
 2. **Flood-fills** the valley up to the spillway height to reconstruct the reservoir footprint
 3. **Integrates** the depth-area relationship into a continuous EAV curve
-4. **Fits** a power-law model $V = c \cdot A^b$ to parameterize the area-volume relationship
+4. **Fits** a power-law model V = c · A^b to parameterize the area-volume relationship
 5. **Regionalizes** the fitted parameters so that dams with unreliable SRTM fills still receive physically plausible curves
 
 The headline product, `eaves_params.csv`, provides the area-volume relationship for every dam in the study domain, enabling satellite-observed water extent to be converted into storage estimates for downstream hydrological modeling.
@@ -34,11 +34,11 @@ The headline product, `eaves_params.csv`, provides the area-volume relationship 
 
 The Saudi Arabia EAV curves are ready to use directly, no run required:
 
-- **[`eaves_params.csv`](region/ksa/output/1_results_csv/eaves_params.csv)** - power-law coefficients ($c$, $b$) for all 526 dams. The one file most users need.
+- **[`eaves_params.csv`](region/ksa/output/1_results_csv/eaves_params.csv)** - power-law coefficients (c, b) for all 526 dams. The one file most users need.
 - **[`eaves_summary.csv`](region/ksa/output/1_results_csv/eaves_summary.csv)** - full per-dam table: quality grade, uncertainty flags, fitted statistics, and topographic features.
 - **[`DATA_DICTIONARY.md`](region/ksa/output/1_results_csv/DATA_DICTIONARY.md)** - every column defined, with units.
 
-Convert a satellite-observed water area $A$ to storage with the dam's own coefficients: $V = c \cdot A^{b}$. The full release (per-dam hypsometries and the validation suite) is archived on Zenodo (<https://doi.org/10.5281/zenodo.20728129>).
+Convert a satellite-observed water area A to storage with the dam's own coefficients: V = c · A^b. The full release (per-dam hypsometries and the validation suite) is archived on Zenodo (<https://doi.org/10.5281/zenodo.20728129>).
 
 ## 🚀 Quickstart
 

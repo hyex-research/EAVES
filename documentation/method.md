@@ -2,6 +2,8 @@
 
 How EAVES reconstructs elevation-area-volume (EAV) curves from SRTM topography. The full scientific treatment, including validation and uncertainty, is in the accompanying Scientific Data manuscript.
 
+![EAVES pipeline flowchart](img/flowchart/EAVES_flowchart.png)
+
 ## Dam wall placement
 
 The algorithm searches for a terrain-derived dam wall across the valley at or near the cataloged dam coordinates. Six placement stages are attempted in sequence, from fastest to most exhaustive:

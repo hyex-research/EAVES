@@ -1,0 +1,3 @@
+# Vector and print masters are kept out of the repo to limit clone size.
+*.svg
+*.pdf

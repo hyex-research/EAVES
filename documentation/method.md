@@ -13,17 +13,19 @@ The algorithm searches for a terrain-derived dam wall across the valley at or ne
 | 1 | **Fast path** | Try terrain-derived wall angles at the nominal location |
 | 2 | **Upstream walk** | Walk upstream along the valley thalweg and retry at each position |
 | 3 | **Quality recovery** | Re-search if the initial fill is geometrically suspect (downstream-skewed or too small) |
-| 4 | **River-direction retry** | Shift anchor along the river-network flow vector |
+| 4 | **River-direction retry** | Move the wall along the snapped river, upstream and downstream, and keep a candidate only when its volume lies closer to the catalog capacity than the fill it replaces |
 | 5 | **Relaxed alignment** | Allow wall orientations that would normally be rejected by the flow-alignment filter |
-| 6 | **Fallback** | Multi-direction flood fill without an explicit wall |
+| 6 | **Fallback** | Multi-direction flood fill without a terrain-derived wall |
+
+Every stage accepts a fill only when it drains out through the wall. The DEM window is flooded from its edge inward in order of elevation, which gives each cell the cell it drains to, and at least half of the pool held at catalog capacity must leave that pool within the half wall plus 1 km. The outlets must also lie in the dam-side 65% of the pool's own length, which judges a pool shorter than that distance. A fill on the downstream side of the wall drains out at its far end and is rejected, whichever way the local slope at the dam points.
 
 ## EAV curve construction
 
-Once the footprint is established, elevation bins (0.5 m intervals) are used to compute area at each level, and cumulative trapezoidal integration yields volume. The fill is capped at the catalog capacity, acting at bin resolution: the curve is truncated at the first bin whose cumulative volume reaches the capacity, so capped fills can overshoot by up to one bin. A two-parameter power law (V = c · A<sup>b</sup>) is fitted via non-linear least squares, and the released exponent is clamped to [1.1, 2.0] with c re-solved through the recovered full-pool anchor.
+Once the footprint is established, elevation bins (0.5 m intervals) are used to compute area at each level, and cumulative trapezoidal integration yields volume. The fill is capped at the catalog capacity, acting at bin resolution. The curve is truncated at the first bin whose cumulative volume reaches the capacity, so capped fills can overshoot by up to one bin. A two-parameter power law (V = c · A<sup>b</sup>) is fitted via non-linear least squares, and the released exponent is clamped to [1.1, 2.0] with c re-solved through the recovered full-pool anchor.
 
 ## Trusted set and training set
 
-Fits passing the reliability gates (quality grades A-B, R² ≥ 0.98, 0.3 ≤ V_SRTM/V_cap ≤ 5.0, n_pixels ≥ 50, b defined) form the **trusted set**. Of these, only dams built in or after 2000 (verifiably postdating the February 2000 SRTM acquisition) form the **training set** that the regionalization, the exponent spread b_σ, and the leave-one-out validation are computed on. Pre-2000 and unknown-year dams ship their own SRTM curves (flagged `pre_srtm` / `unknown_year`) but do not train the recipe, because their valley floors may already carry sediment. On the Saudi domain: 322 trusted, 200 training.
+Fits passing the reliability gates (quality grades A-B, R² ≥ 0.98, 0.3 ≤ V_SRTM/V_cap ≤ 5.0, n_pixels ≥ 50, b defined) form the **trusted set**. Of these, only dams built in or after 2000 (verifiably postdating the February 2000 SRTM acquisition) form the **training set** that the regionalization, the exponent spread b_σ, and the leave-one-out validation are computed on. Pre-2000 and unknown-year dams ship their own SRTM curves (flagged `pre_srtm` / `unknown_year`) but do not train the recipe, because their valley floors may already carry sediment. On the Saudi domain: 320 trusted, 199 training.
 
 ## Regionalization
 
@@ -32,7 +34,7 @@ Dams that fail the trusted gates receive parameters from a single closed-form re
 - **Exponent b**: regional median over the capacity-thresholded training subset (or a multivariate regression on `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `dam_height_m` if its leave-one-out R² ≥ 0.25, which rarely holds for arid catchments).
 - **Coefficient c**: back-solved as c = V_cap/A_cap<sup>b</sup> from catalog capacity and a multi-feature linear regression that predicts log A_cap from seven log-space features: `capacity_mcm`, `dam_height_m`, `spillway_height_m`, `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `upstream_area_km2`. Any feature missing for a given dam is imputed with the training-set median so the regression always returns a finite value.
 
-Leave-one-out cross-validation on the training set quantifies the recipe's accuracy. For the Saudi Arabia deployment: 92% of predictions within a factor of 2 and 99% within a factor of 3 of the SRTM-derived reference, median bias +6%, relative RMSE 47%. See `eaves.postprocess.validation` and panel `p5` for the full per-recipe comparison and the rationale for retiring two earlier candidates (a satellite-anchored recipe and a single-feature log-log regression).
+Leave-one-out cross-validation on the training set quantifies the recipe's accuracy. For the Saudi Arabia deployment: 93% of full-pool predictions within a factor of 2 and 100% within a factor of 3 of the SRTM-derived reference, median bias +6%, relative RMSE 45%. `eaves.postprocess.validation` evaluates the recipe against two alternative anchors (a satellite-anchored recipe and a single-feature log-log regression) in `validation/regionalization_loo.csv`, and panel `p5` shows the leave-one-out accuracy of the shipped recipe.
 
 ## Post-placement QC
 
@@ -45,6 +47,6 @@ EAVES reconstructs reservoir geometry from the SRTM surface, not a surveyed bath
 - **Valley-geometry approximation, not bathymetry**: curves follow the SRTM valley surface up to the spillway, not a measured reservoir bottom. They are sensitive to DEM noise (vertical LE90 ~6 m) in the same way the underlying terrain is.
 - **Synthetic dam wall**: the wall orientation and length come from a terrain-alignment search at or near the catalog coordinates. It is the best-fit crest for that SRTM patch, not necessarily the engineered as-built structure, and small placement shifts can meaningfully change the reconstructed footprint.
 - **SRTM snapshot (February 2000)**: dams built after 2000 get a clean pre-impoundment valley. Dams built earlier carry whatever sediment had accumulated by the acquisition date, so their curves describe the as-of-2000 surface. These dams are flagged (`pre_srtm`, or `unknown_year` when the build year is missing) and excluded from regionalization training.
-- **Resolution-limited regimes**: sub-pixel reservoirs (`n_pixels < 30`), narrow valleys (`valley_width_m < 3 x pixel_size`), and shallow depressions (`spillway_height_m < 5 m`) produce curves with elevated uncertainty. See the `uncertainty_flags` column in `eaves_summary.csv` for per-dam tagging.
+- **Resolution-limited regimes**: sub-pixel reservoirs (`n_pixels < 30`), narrow valleys (`valley_width_m < 3 × pixel_size`), and shallow depressions (`spillway_height_m < 5 m`) produce curves with elevated uncertainty. See the `uncertainty_flags` column in `eaves_summary.csv` for per-dam tagging.
 
 The full quantitative treatment of these limitations is in the accompanying publication.

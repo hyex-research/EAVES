@@ -1,8 +1,8 @@
 """Unit tests for the multi-feature LR regionalization recipe.
 
 Covers feature-vector construction, model fitting, prediction, and the
-single-recipe back-solve. All checks run on small synthetic data without
-touching disk, so the module runs in well under a second.
+single-recipe back-solve. All checks run on small synthetic data. The
+module takes under 1 s on a 112-core workstation.
 """
 
 from __future__ import annotations
@@ -20,16 +20,14 @@ from eaves.postprocess.regionalization import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Synthetic data generator
-# ---------------------------------------------------------------------------
+# ---- Synthetic data generator ----
 
 def _synthetic_trusted(n: int = 50, seed: int = 42) -> pd.DataFrame:
     """Build a synthetic trusted-set dataframe with a known A_cap relation.
 
     Truth: ``log A_cap = -2 + 0.5 log V_cap + 0.3 log valley_ratio + N(0, 0.1)``.
     Other features are correlated with each other only via being log-normal
-    draws -- they carry no signal toward the target. A well-behaved
+    draws, and they carry no signal toward the target. A well-behaved
     regression should put coefficients ~0.5 on capacity and ~0.3 on
     valley_ratio.
     """
@@ -59,9 +57,7 @@ def _synthetic_trusted(n: int = 50, seed: int = 42) -> pd.DataFrame:
     })
 
 
-# ---------------------------------------------------------------------------
-# _log_feature_vector
-# ---------------------------------------------------------------------------
+# ---- _log_feature_vector ----
 
 class TestFeatureVector:
 
@@ -95,9 +91,7 @@ class TestFeatureVector:
         assert v is not None and v.shape == (len(_REGIONAL_FEATURES),)
 
 
-# ---------------------------------------------------------------------------
-# _fit_multi_anchor_lr
-# ---------------------------------------------------------------------------
+# ---- _fit_multi_anchor_lr ----
 
 class TestMultiAnchorFit:
 
@@ -131,9 +125,7 @@ class TestMultiAnchorFit:
         assert _fit_multi_anchor_lr(df) is None
 
 
-# ---------------------------------------------------------------------------
-# _predict_multi_anchor_lr
-# ---------------------------------------------------------------------------
+# ---- _predict_multi_anchor_lr ----
 
 class TestMultiAnchorPredict:
 
@@ -169,9 +161,7 @@ class TestMultiAnchorPredict:
         assert sigma < 0.2
 
 
-# ---------------------------------------------------------------------------
-# Back-solve c = V_cap / A_cap^b is exact at the anchor
-# ---------------------------------------------------------------------------
+# ---- Back-solve c = V_cap / A_cap^b is exact at the anchor ----
 
 class TestBackSolveAtAnchor:
 
@@ -186,24 +176,23 @@ class TestBackSolveAtAnchor:
             a_m2 = a_km2 * 1e6
             v_cap_m3 = row["capacity_mcm"] * 1e6
             c = v_cap_m3 / (a_m2 ** b)
-            # Reconstruct V at the anchor -- by construction = V_cap
+            # Reconstructs V at the anchor, which equals V_cap by construction
             v_check = c * (a_m2 ** b)
             assert v_check == pytest.approx(v_cap_m3, rel=1e-9)
 
 
-# ---------------------------------------------------------------------------
-# Example regionalized dams: train on a synthetic trusted set, then
-# regionalize a small handful of representative ungaged dams end-to-end.
-# Useful as a worked example -- the test prints nothing but the assertions
-# document the expected shape of the output for two named cases.
-# ---------------------------------------------------------------------------
+# ---- Example regionalized dams ----
 
 class TestExampleRegionalizedDams:
-    """Two named example dams that exercise the multi-LR + back-solve path."""
+    """Two named example dams that exercise the multi-LR + back-solve path.
 
-    # A small wadi reservoir (mountainous catchment, narrow valley) and a
-    # large plains reservoir (wide valley, gentle slopes). Together they
-    # bracket the catalogue's typical regionalization workload.
+    Trains on a synthetic trusted set, then regionalizes a small handful of
+    representative ungaged dams end-to-end. Useful as a worked example. The
+    test prints nothing, and the assertions document the expected shape of the
+    output for the two named cases.
+    """
+
+    # A small wadi reservoir (mountainous catchment, narrow valley) and a large plains reservoir (wide valley, gentle slopes). Together they bracket the typical regionalization workload of the catalogue
     EXAMPLE_DAMS = [
         {
             "dam_id": "example_small_wadi",
@@ -243,7 +232,7 @@ class TestExampleRegionalizedDams:
             c = v_cap_m3 / (a_m2 ** b)
             assert c > 0 and np.isfinite(c), \
                 f"{dam['dam_id']}: invalid c = {c}"
-            # At the predicted anchor, the back-solved curve must reproduce V_cap.
+            # At the predicted anchor, the back-solved curve reproduces V_cap
             v_at_anchor = c * (a_m2 ** b)
             assert v_at_anchor == pytest.approx(v_cap_m3, rel=1e-9), \
                 f"{dam['dam_id']}: back-solve mismatch"
@@ -260,7 +249,7 @@ class TestExampleRegionalizedDams:
         )
 
     def test_missing_feature_returns_none_predict(self):
-        """The example small-wadi dam with valley_ratio dropped: predict must
+        """With valley_ratio dropped from the example small-wadi dam, predict must
         return None rather than silently fabricate a value. The production
         pipeline catches this case and median-imputes the missing feature
         before predicting (see ``run_regionalization``)."""
@@ -271,9 +260,7 @@ class TestExampleRegionalizedDams:
         assert _predict_multi_anchor_lr(dam, coefs) is None
 
 
-# ---------------------------------------------------------------------------
-# acap_regression_diagnostics (collinearity + incremental skill)
-# ---------------------------------------------------------------------------
+# ---- acap_regression_diagnostics (collinearity + incremental skill) ----
 
 class TestAcapRegressionDiagnostics:
 

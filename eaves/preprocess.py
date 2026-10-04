@@ -3,10 +3,11 @@
 Produces the two geojsons the main EAVES loop consumes from
 :mod:`eaves.config.DOMAIN_DIR`:
 
-* ``rivers_split.geojson``  -- country-clipped MERIT rivers with long segments
-  split to ``MAX_SEG_LEN_M`` and ``up1..up4`` adjacency preserved.
-* ``dams_snapped.geojson``  -- dam catalogue snapped to the nearest river node
-  within ``MAX_SNAP_DISTANCE_M``; the ``snapped_segment_id`` column is
+* ``rivers_split.geojson``: MERIT rivers of the country and of every reach
+  that drains into it, with long segments split along the channel to
+  ``MAX_SEG_LEN_M`` and ``up1..up4`` adjacency preserved.
+* ``dams_snapped.geojson``: dam catalogue snapped to the nearest river node
+  within ``MAX_SNAP_DISTANCE_M``. The ``snapped_segment_id`` column is
   attached (this is the only river-network feature the EAV pipeline reads
   back). The catalogue is assumed to already be cleaned upstream
   (region-specific curation is left to the caller; see
@@ -23,8 +24,8 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Point, LineString, box as shapely_box
-from shapely.ops import unary_union
+from shapely.geometry import Point, box as shapely_box
+from shapely.ops import substring, unary_union
 
 import eaves.config as _cfg
 
@@ -33,7 +34,45 @@ RIVERS_SPLIT_GEOJSON = "rivers_split.geojson"
 DAMS_SNAPPED_GEOJSON = "dams_snapped.geojson"
 
 
-# --- Segment splitting ---
+# ---- Upstream closure ----
+def _upstream_closure(comids, gdf_rivers: gpd.GeoDataFrame) -> set[str]:
+    """Return ``comids`` together with every reach of ``gdf_rivers`` that drains into them.
+
+    The closure is walked level by level over the up1..up4 columns, so it stays
+    fast on a full MERIT table. A link to a reach absent from the table stops
+    the walk, since the table would then cut a catchment.
+    """
+    index = gdf_rivers.index.astype(str)
+    position = pd.Series(np.arange(len(index)), index=index)
+    known = set(index)
+    ups = gdf_rivers[["up1", "up2", "up3", "up4"]].astype(str).to_numpy()
+    keep = {str(c) for c in comids}
+    frontier = keep
+    while frontier:
+        missing = frontier - known
+        if missing:
+            raise ValueError(
+                f"{len(missing)} reaches are linked but absent from the river table: "
+                f"{sorted(missing)[:10]}"
+            )
+        linked = set(ups[position.loc[list(frontier)].to_numpy()].ravel()) - {"0"}
+        frontier = linked - keep
+        keep |= frontier
+    return keep
+
+
+# ---- Zero-length reaches ----
+def _drop_zero_length_reaches(gdf_rivers: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Return ``gdf_rivers`` without its reaches of zero length.
+
+    The hydrography stores a closed depression whose catchment just reaches the
+    channel threshold as a reach of zero length that links to itself. Such a
+    reach is a single cell and not a channel, and nothing drains into it.
+    """
+    return gdf_rivers[gdf_rivers["lengthkm"] > 0].copy()
+
+
+# ---- Segment splitting ----
 def _split_long_segments(gdf_rivers: gpd.GeoDataFrame, max_seg_len_m: float) -> gpd.GeoDataFrame:
     """Split segments longer than ``max_seg_len_m`` and rewire up1..up4."""
     gdf_proj = gdf_rivers.to_crs(epsg=3857).copy()
@@ -48,20 +87,18 @@ def _split_long_segments(gdf_rivers: gpd.GeoDataFrame, max_seg_len_m: float) -> 
             continue
         num_parts = int(np.ceil(length / max_seg_len_m))
         split_distances = np.linspace(0, 1, num_parts + 1)
+        # Each part is the piece of the channel between two cut points and carries an equal share of the reach length and area, so the parts of a reach sum to the reach
         split_lines = [
-            LineString([
-                geom.interpolate(split_distances[i], normalized=True),
-                geom.interpolate(split_distances[i + 1], normalized=True),
-            ])
+            substring(geom, split_distances[i], split_distances[i + 1], normalized=True)
             for i in range(num_parts)
         ]
         for i, part_geom in enumerate(split_lines):
             part = row.copy()
             part.geometry = part_geom
             part.name = f"{idx}_part{i+1}"
-            part["lengthm"] = part_geom.length
-            part["lengthkm"] = part_geom.length / 1000.0
-            part["unitarea"] = row["unitarea"] * (part["lengthm"] / length)
+            part["lengthm"] = length / num_parts
+            part["lengthkm"] = part["lengthm"] / 1000.0
+            part["unitarea"] = row["unitarea"] / num_parts
             if i < len(split_lines) - 1:
                 part["up1"] = f"{idx}_part{i+2}"
                 part["up2"] = "0"
@@ -76,7 +113,7 @@ def _split_long_segments(gdf_rivers: gpd.GeoDataFrame, max_seg_len_m: float) -> 
 
     gdf_new = gpd.GeoDataFrame(new_segments, crs=gdf_proj.crs).to_crs(gdf_rivers.crs)
 
-    # Rewire cross-segment references to the first part of each split segment.
+    # Rewires cross-segment references to the first part of each split segment
     split_map: dict[str, list[str]] = {}
     for idx in gdf_new.index:
         if "_part" in str(idx):
@@ -95,7 +132,7 @@ def _split_long_segments(gdf_rivers: gpd.GeoDataFrame, max_seg_len_m: float) -> 
     return gdf_new
 
 
-# --- Dam snapping ---
+# ---- Dam snapping ----
 def _snap_search_bounds_wgs84(point: Point, max_snap_distance_m: float):
     """Metric-padded bounding box around a WGS84 point for spatial-index prefilter."""
     lat = float(point.y)
@@ -117,7 +154,7 @@ def _snap_dams_to_nearest_segment(
     moved to the closest segment endpoint and ``snapped_segment_id`` set to
     the downstream segment ID (largest ``uparea`` at that node).
     Dams outside snap distance keep their catalogue geometry and receive
-    ``snapped_segment_id=None`` -- EAVES workers fall back to catalogue
+    ``snapped_segment_id=None``. EAVES workers fall back to catalogue
     coordinates and skip the stage-4 river retry for these.
 
     Returns (dams_gdf, n_unsnapped).
@@ -169,7 +206,7 @@ def _snap_dams_to_nearest_segment(
 
     out = gdf_dams.copy()
     out["snapped_segment_id"] = snapped_ids
-    # Use the snapped node where available, otherwise keep the original point.
+    # Uses the snapped node where available and keeps the original point otherwise
     out["geometry"] = [
         sp if sp is not None else g
         for sp, g in zip(snapped_pts, out.geometry)
@@ -179,7 +216,7 @@ def _snap_dams_to_nearest_segment(
     return out.reset_index(drop=True), n_unsnapped
 
 
-# --- Orchestrator ---
+# ---- Orchestrator ----
 def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
     """Build (or load from cache) the preprocessed rivers + snapped dams.
 
@@ -196,7 +233,7 @@ def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
 
     print("[preprocess] Building domain inputs...")
 
-    # --- Country mask ---
+    # ---- Country mask ----
     print(f"  Loading country shapefile -> filtering to {_cfg.TARGET_COUNTRY}...")
     gdf_country = gpd.read_file(_cfg.COUNTRY_SHP)
     gdf_country = gdf_country[gdf_country[_cfg.COUNTRY_NAME_COL] == _cfg.TARGET_COUNTRY]
@@ -208,7 +245,7 @@ def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
     gdf_country = gdf_country.to_crs(epsg=4326)
     country_geom = gdf_country.geometry.union_all()
 
-    # --- MERIT rivers clip ---
+    # ---- MERIT rivers clip ----
     print("  Loading MERIT rivers (this can take a minute)...")
     gdf_rivers = gpd.read_file(_cfg.MERIT_RIVERS_SHP).set_crs(epsg=4326)
     gdf_rivers["COMID"] = gdf_rivers["COMID"].astype(str)
@@ -217,6 +254,9 @@ def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
         gdf_rivers[["up1", "up2", "up3", "up4"]].fillna(0).astype(int).astype(str)
     )
     gdf_rivers = gdf_rivers.drop(columns=["NextDownID"], errors="ignore")
+    n_reaches = len(gdf_rivers)
+    gdf_rivers = _drop_zero_length_reaches(gdf_rivers)
+    print(f"    Dropped {n_reaches - len(gdf_rivers)} zero-length reaches.")
 
     print("  Loading MERIT basins...")
     gdf_basins = gpd.read_file(_cfg.MERIT_BASINS_SHP).set_crs(epsg=4326)
@@ -225,10 +265,14 @@ def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
     gdf_rivers["unitarea"] = gdf_basins["unitarea"].reindex(gdf_rivers.index)
 
     print("  Clipping rivers to country...")
-    gdf_rivers_sub = gdf_rivers[gdf_rivers.geometry.intersects(country_geom)].copy()
+    inside = gdf_rivers.index[gdf_rivers.geometry.intersects(country_geom)]
+    # A reach that touches the country keeps every reach that drains into it, so a dam next to the border keeps its channel
+    keep = _upstream_closure(inside, gdf_rivers)
+    print(f"    {len(inside)} reaches touch the country, {len(keep) - len(inside)} more drain into them from outside.")
+    gdf_rivers_sub = gdf_rivers[gdf_rivers.index.isin(keep)].copy()
     gdf_rivers_sub["lengthm"] = gdf_rivers_sub["lengthkm"] * 1000.0
 
-    # --- Dam catalogue ---
+    # ---- Dam catalogue ----
     print(f"  Loading dam catalogue from {_cfg.DAMS_CSV}...")
     df_dams = pd.read_csv(_cfg.DAMS_CSV)
     print(f"    {len(df_dams)} dams (catalogue assumed pre-cleaned).")
@@ -247,7 +291,7 @@ def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
     gdf_split = _split_long_segments(gdf_rivers_sub, max_seg_len_m=_cfg.MAX_SEG_LEN_M)
     print(f"    {len(gdf_rivers_sub)} -> {len(gdf_split)} segments after split.")
 
-    # --- Snap ---
+    # ---- Snap ----
     gdf_dams = gpd.GeoDataFrame(
         df_dams,
         geometry=gpd.points_from_xy(df_dams["longitude"], df_dams["latitude"]),
@@ -259,10 +303,10 @@ def ensure_inputs(rebuild: bool = False) -> tuple[str, str]:
         gdf_dams, gdf_split, max_snap_distance_m=_cfg.MAX_SNAP_DISTANCE_M,
     )
     n_snapped = len(gdf_snapped) - n_unsnapped
-    print(f"    {n_snapped} snapped; {n_unsnapped} kept on catalogue coords "
-          f"(further than {_cfg.MAX_SNAP_DISTANCE_M:.0f} m from MERIT — stage-4 retry skipped).")
+    print(f"    {n_snapped} snapped, {n_unsnapped} kept on catalogue coords "
+          f"(further than {_cfg.MAX_SNAP_DISTANCE_M:.0f} m from MERIT, stage-4 retry skipped).")
 
-    # GeoJSON drops custom indices; keep the segment ID in the "index" column read downstream.
+    # GeoJSON drops custom indices. The reset keeps the segment ID in the "index" column read downstream
     gdf_split_out = gdf_split.reset_index()
     gdf_split_out.to_file(rivers_path, driver="GeoJSON")
     gdf_snapped.to_file(dams_path, driver="GeoJSON")

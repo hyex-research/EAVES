@@ -1,8 +1,8 @@
-"""Panel set p3 — worked example for the bathymetry-validated reservoir (Baish).
+"""Panel set p3: worked example for the bathymetry-validated reservoir (Baish).
 
-Panel a — SRTM DEM with inundated footprint.
-Panel b — Area–volume curve on log-log axes with the fitted power law.
-Panel c — Histogram of the power-law exponent ``b`` across the trusted set.
+Panel a: SRTM DEM with inundated footprint.
+Panel b: Area–volume curve on log-log axes with the fitted power law.
+Panel c: Histogram of the power-law exponent ``b`` across the trusted set.
 """
 
 from __future__ import annotations
@@ -129,7 +129,7 @@ def _draw_panel_a(ax) -> "matplotlib.axes.Axes":
     cap_tag = " [capped]" if capped else ""
     name = result.get("dam_name_latin") or example_dam_id()
     year = result.get("construction_year")
-    year_str = f"{int(year)}" if year is not None and np.isfinite(year) else "—"
+    year_str = f"{int(year)}" if year is not None and np.isfinite(year) else "n/a"
     area_km2 = float(result["footprint_area_km2"])
     vol_mcm = float(result["vol_m3"][-1]) / 1e6
     cap_mcm = float(result["capacity_mcm"])
@@ -216,7 +216,7 @@ def _draw_panel_c(ax) -> None:
         or example_dam_id()
     )
 
-    # Canonical trusted-set gates, so n and median b match domain_characterization.csv.
+    # Applies the canonical trusted-set gates, so n and median b match domain_characterization.csv
     trusted = summary[
         summary["quality"].isin(["A", "B"])
         & (summary["r_squared"] >= 0.98)
@@ -296,7 +296,7 @@ def make_p3_baish(output_dir: str | os.PathLike) -> Path:
         ax_c = fig.add_subplot(gs[1, :])
         _draw_panel_c(ax_c)
 
-        # Re-anchor ax_a and its colorbar flush with ax_c's left edge (colorbar steals width).
+        # Re-anchors ax_a and its colorbar flush with the left edge of ax_c, since the colorbar steals width
         fig.canvas.draw()
         pos_a = ax_a.get_position()
         pos_c = ax_c.get_position()
@@ -307,7 +307,7 @@ def make_p3_baish(output_dir: str | os.PathLike) -> Path:
                 if sib is ax_a:
                     continue
                 sp = sib.get_position()
-                # Colorbar lives just right of panel a (same row, narrow width).
+                # The colorbar sits just right of panel a (same row, narrow width)
                 if sp.y0 > 0.45 and sp.x0 < 0.5 and sp.width < 0.06:
                     sib.set_position([sp.x0 + dx, sp.y0, sp.width, sp.height])
 

@@ -1,25 +1,25 @@
-"""Panel set p5 -- regionalization accuracy.
+"""Panel set p5: regionalization accuracy.
 
 Single-method validation panel for the regionalization recipe shipped in
 ``regionalization.py``. The recipe anchors each non-trusted dam at the
-full-pool area predicted by the multi-feature linear regression (seven
-log-space catalog/topographic features, trained on the trusted SRTM-derived
+full-pool area predicted by the multi-feature linear regression
+(log-space catalog/topographic features, trained on the trusted SRTM-derived
 dams) and back-solves the coefficient ``c = V_cap / A_cap^b``. Accuracy is
-measured by leave-one-out cross-validation on the trusted dams: each in turn
+measured by leave-one-out cross-validation on the trusted dams. Each in turn
 is masked, the regression is re-trained on the remaining trusted dams and
 re-predicted, and the resulting curve is compared against the SRTM
 "truth".
 
-Panel a -- Predicted vs SRTM-truth volume at the dam's DEM full-pool area
-           on log axes, with the 1:1 identity and shaded ±factor-2 and
-           dashed ±factor-3 bands. Boxed stats give the headline accuracy
-           numbers.
-Panel b -- Signed prediction error distribution (log10 V_pred / V_SRTM),
-           with the zero line, the median, and the ±1-sigma band
-           marked.
-Panel c -- Error stability across the catalogue: signed error vs catalogue
-           capacity, scatter plus a robust binned median line, on the same
-           y axis as panel b so spreads are directly comparable.
+Panel a: Predicted vs SRTM-truth volume at the dam's DEM full-pool area
+         on log axes, with the 1:1 identity and shaded ±factor-2 and
+         dashed ±factor-3 bands. Boxed stats give the headline accuracy
+         numbers.
+Panel b: Signed prediction error distribution (log10 V_pred / V_SRTM),
+         with the zero line, the median, and the ±1-sigma band
+         marked.
+Panel c: Error stability across the catalogue, as signed error vs catalogue
+         capacity, scatter plus a robust binned median line, on the same
+         y axis as panel b so spreads are directly comparable.
 
 Source: ``<CSV_DIR>/validation/regionalization_loo.csv`` written by
 ``python -m eaves.postprocess.validation --settings <region>.json``.
@@ -44,10 +44,10 @@ from ._shared import (
 )
 
 
-# Recipe prefix treated as final; tracks what regionalization.py ships.
+# Sets the recipe prefix treated as final, which tracks what regionalization.py ships
 _METHOD_PREFIX = "multi"
 
-_FRAC = 100      # evaluate at DEM full pool
+_FRAC = 100      # Evaluates at DEM full pool
 _VCOL = f"{_METHOD_PREFIX}_V_at_{_FRAC:03d}pct_m3"
 _RATIOCOL = f"{_METHOD_PREFIX}_log10_V_ratio_at_{_FRAC:03d}pct"
 
@@ -113,7 +113,7 @@ def _draw_panel_a(ax, stats: dict) -> None:
     ax.set_xlim(lo, hi)
     ax.set_ylim(lo, hi)
     ax.set_xlabel(r"SRTM truth volume at $A_\mathrm{DEM}$  (MCM)", fontsize=10)
-    ax.set_ylabel(r"Regionalised volume at $A_\mathrm{DEM}$  (MCM)", fontsize=10)
+    ax.set_ylabel(r"Regionalized volume at $A_\mathrm{DEM}$  (MCM)", fontsize=10)
     ax.tick_params(labelsize=10, length=2.5)
     ax.grid(True, which="both", ls=":", lw=0.4, alpha=0.5)
 
@@ -272,7 +272,7 @@ def make_p5_validation(output_dir: str | os.PathLike) -> Path:
         _draw_panel_b(fig.add_subplot(gs[0, 1]), stats)
         _draw_panel_c(fig.add_subplot(gs[0, 2]), df, stats)
 
-        # Open axes: no top/right spines.
+        # Opens the axes by hiding the top and right spines
         for _ax in fig.axes:
             _ax.spines["top"].set_visible(False)
             _ax.spines["right"].set_visible(False)

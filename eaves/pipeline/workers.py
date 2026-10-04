@@ -23,6 +23,7 @@ from ..utils import (
     utm_epsg_from_lon,
     buffer_deg_for_dam,
     _classify_failure,
+    round_released_columns,
 )
 from .terrain import (
     load_srtm_tiles,
@@ -32,6 +33,16 @@ from .terrain import (
 from .placement import _snap_dam_elev
 from .curves import process_dam
 from ..postprocess.plots import save_flood_map
+
+# River table of this worker, built once when the worker starts
+_worker_rivers = {"gdf": None}
+
+
+def _init_worker(gdf_rivers_data):
+    """Build the river table once per worker, so it does not travel with every dam."""
+    _worker_rivers["gdf"] = (
+        None if gdf_rivers_data is None else gpd.GeoDataFrame.from_features(gdf_rivers_data)
+    )
 
 
 class DamRow:
@@ -77,7 +88,7 @@ def _catalogue_features(dam_data):
     }
 
 
-def _process_dam_worker(dam_data, gdf_rivers_data):
+def _process_dam_worker(dam_data, gdf_rivers):
     _cfg._srtm_cache = {}
 
     dam_id = dam_data.get("dam_id", "")
@@ -99,10 +110,6 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
     from pyproj import Transformer
     dam_geom = Point(dam_data["_lon"], dam_data["_lat"])
     dam_row = DamRow(dam_data, dam_geom)
-
-    gdf_rivers = None
-    if gdf_rivers_data is not None:
-        gdf_rivers = gpd.GeoDataFrame.from_features(gdf_rivers_data)
 
     kml_lat = dam_data["_lat"]
     kml_lon = dam_data["_lon"]
@@ -126,7 +133,7 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
 
     buf_deg = buffer_deg_for_dam(capacity_m3)
 
-    # --- Extract topo features ---
+    # ---- Extract topo features ----
     topo_features = {
         "valley_width_m": np.nan, "valley_ratio": np.nan,
         "channel_slope": np.nan, "mean_catchment_slope": np.nan,
@@ -154,7 +161,7 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
     except Exception:
         pass
 
-    # --- Flood fill with coordinate fallbacks ---
+    # ---- Flood fill with coordinate fallbacks ----
     coords_to_try = [(kml_lat, kml_lon, "kml")]
     if abs(snapped_lat - kml_lat) > 0.001 or abs(snapped_lon - kml_lon) > 0.001:
         coords_to_try.append((snapped_lat, snapped_lon, "snapped"))
@@ -176,7 +183,7 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
                 "area_m2": result["area_m2"],
                 "volume_m3": result["vol_m3"],
             })
-            eav_df.to_csv(os.path.join(_cfg.EAV_DIR, f"{dam_id}_eav.csv"), index=False)
+            round_released_columns(eav_df).to_csv(os.path.join(_cfg.EAV_DIR, f"{dam_id}_eav.csv"), index=False)
 
             try:
                 save_flood_map(result, _cfg.FLOOD_DIR,
@@ -213,8 +220,8 @@ def _process_dam_worker(dam_data, gdf_rivers_data):
     return None, failure
 
 
-def _worker_indexed(args, gdf_rivers_data):
+def _worker_indexed(args):
     """Return (list_index, result, failure) so parent can reorder results."""
     idx, dam_data = args
-    result, failure = _process_dam_worker(dam_data, gdf_rivers_data)
+    result, failure = _process_dam_worker(dam_data, _worker_rivers["gdf"])
     return idx, result, failure

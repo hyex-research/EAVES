@@ -1,7 +1,8 @@
-"""End-to-end regression check: run the 15-dam fixture and compare every
+"""End-to-end regression check that runs the 15-dam fixture and compares every
 emitted CSV against the committed SHA256 golden hashes.
 
-Marked ``slow`` because it invokes the full pipeline (~5 min on a workstation).
+Marked ``slow`` because it invokes the full pipeline (about 80 s on a 112-core
+workstation).
 Run with:
     pytest -m slow
     pytest -m "not slow"     # skip this test (default for fast pushes)

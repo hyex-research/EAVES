@@ -12,7 +12,6 @@ import argparse
 import os
 import time
 import multiprocessing as mp
-from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -23,7 +22,8 @@ import eaves.config as _cfg
 from .config import configure
 from .preprocess import ensure_inputs
 from .settings import load_settings
-from .pipeline.workers import _worker_indexed
+from .utils import round_released_columns
+from .pipeline.workers import _init_worker, _worker_indexed
 from .postprocess.regionalization import assign_quality, run_regionalization
 from .postprocess.reliability import add_uncertainty_flags, print_flag_tally
 from .postprocess.external_data import add_sedimentation_columns
@@ -63,7 +63,7 @@ def _load_upstream_area_lookup() -> dict:
 
 
 def _build_dam_data_list(gdf_dams, translit_map):
-    """Convert GeoDataFrame rows into serialisable dicts for workers."""
+    """Convert GeoDataFrame rows into serializable dicts for workers."""
     upstream_lookup = _load_upstream_area_lookup()
     dam_data_list = []
     for idx in range(len(gdf_dams)):
@@ -143,7 +143,7 @@ def main():
     parser.add_argument(
         "--plot-only",
         action="store_true",
-        help="Skip EAV curve calculation; load existing results from CSV and "
+        help="Skip EAV curve calculation, load existing results from CSV and "
         "regenerate all analysis plots and regionalization only.",
     )
     parser.add_argument(
@@ -182,7 +182,7 @@ def main():
     parser.add_argument(
         "--panels-only",
         action="store_true",
-        help="Skip the EAV pipeline entirely; just regenerate the panel "
+        help="Skip the EAV pipeline entirely and regenerate the panel "
         "figures from the existing EAVES outputs. Implies a settings file "
         "(or prior --output-dir) so the CSV paths are known.",
     )
@@ -217,9 +217,9 @@ def main():
     os.makedirs(_cfg.EAV_DIR, exist_ok=True)
     os.makedirs(_cfg.CSV_DIR, exist_ok=True)
     os.makedirs(_cfg.FLOOD_DIR, exist_ok=True)
-    # PLOT_DIR is created lazily by the panels step, absent without --panels.
+    # PLOT_DIR is created lazily by the panels step and is absent without --panels
 
-    # --- --panels-only: render panels from existing outputs and exit ---
+    # ---- --panels-only: renders panels from existing outputs and exits ----
     if args.panels_only:
         print("--panels-only: rendering panel figures from existing outputs.")
         make_panels()
@@ -234,7 +234,7 @@ def main():
     rivers_path, dams_path = ensure_inputs(rebuild=args.rebuild_domain)
     gdf_dams = gpd.read_file(dams_path)
 
-    # --- --plot-only: reload existing CSVs, skip to plots/regionalization ---
+    # ---- --plot-only: reloads existing CSVs, skips to plots/regionalization ----
     summary_path = os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")
     fail_path = os.path.join(_cfg.CSV_DIR, "failed_dams.csv")
 
@@ -274,6 +274,7 @@ def main():
             add_uncertainty_flags(summary_df)
             summary_df = add_sedimentation_columns(summary_df, getattr(_cfg, "SEDIMENTATION_DIR", None))
             summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
+            summary_df = round_released_columns(summary_df)
             summary_df.to_csv(summary_path, index=False)
 
         failures = []
@@ -295,7 +296,7 @@ def main():
         print("--------------------------------")
         return
 
-    # --- normal run: compute EAV curves ---
+    # ---- Normal run: computes EAV curves ----
     if only_ids is not None:
         id_col = "dam_id" if "dam_id" in gdf_dams.columns else "id"
         id_series = gdf_dams[id_col].astype(str).str.strip().str.lower()
@@ -306,7 +307,7 @@ def main():
         if missing:
             print(f"[WARN] dam_id not found in geojson (skipped): {missing}")
         if len(gdf_dams) == 0:
-            print("No dams to process after --only filter; exiting.")
+            print("No dams to process after --only filter, exiting.")
             return
 
     if os.path.isfile(rivers_path):
@@ -330,16 +331,20 @@ def main():
     n_workers = max(1, mp.cpu_count())
     print(f"Processing {n_dams} dams using {n_workers} workers...")
 
-    indexed_worker = partial(_worker_indexed, gdf_rivers_data=gdf_rivers_data)
-    indexed_tasks = list(enumerate(dam_data_list))
+    # The largest reservoirs take the longest, so they start first and the pool does not wait on them at the end
+    indexed_tasks = sorted(
+        enumerate(dam_data_list),
+        key=lambda task: np.nan_to_num(pd.to_numeric(task[1].get("storage_capacity_m3"), errors="coerce")),
+        reverse=True,
+    )
 
     summaries = []
     failures = []
     results = [None] * n_dams
 
-    with mp.Pool(n_workers) as pool:
+    with mp.Pool(n_workers, initializer=_init_worker, initargs=(gdf_rivers_data,)) as pool:
         for idx, result, failure in tqdm(
-            pool.imap_unordered(indexed_worker, indexed_tasks),
+            pool.imap_unordered(_worker_indexed, indexed_tasks),
             total=n_dams,
             desc=f"Dams ({n_workers} workers)",
             unit="dam",
@@ -424,11 +429,12 @@ def main():
             summary_df = old_sum
 
     summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
-    # Nullable Int32: known years stay integral, unknown stay blank (int32 cannot hold NA).
+    # Casts the year to nullable Int32. Known years stay integral and unknown years stay blank (int32 cannot hold NA)
     if "construction_year" in summary_df.columns:
         summary_df["construction_year"] = (
             summary_df["construction_year"].round().astype("Int32")
         )
+    summary_df = round_released_columns(summary_df)
     summary_df.to_csv(summary_path, index=False)
     print(f"\nSummary saved: {len(summaries)} dams succeeded.")
     if len(summary_df) > 0:
@@ -440,7 +446,7 @@ def main():
             print(f"  Capacity-capped: {n_capped} dams")
         print_flag_tally(summary_df)
 
-    # fit_failed: fit returned NaN; attach the summary features so the row is self-contained.
+    # Records a fit_failed row for every NaN fit and attaches the summary features, which keeps the row self-contained
     _FEATURE_KEYS = (
         "capacity_mcm", "dam_height_m", "spillway_height_m", "dam_length_m",
         "valley_width_m", "valley_ratio", "channel_slope",
@@ -480,6 +486,9 @@ def main():
 
     if len(fail_df) > 0:
         fail_df = fail_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
+    if "construction_year" in fail_df.columns:
+        fail_df["construction_year"] = pd.to_numeric(fail_df["construction_year"], errors="coerce").round().astype("Int32")
+    fail_df = round_released_columns(fail_df)
     fail_df.to_csv(fail_path, index=False)
     print(f"Failed/flagged dams: {len(failures)}")
 

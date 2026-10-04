@@ -3,36 +3,41 @@
 Default diagnostics (cheap, run unless skipped), all mirroring the logic in
 :mod:`regionalization`:
 
-* :func:`loo_regionalization_eval` -- leave-one-out evaluation of the
+* :func:`loo_regionalization_eval`: leave-one-out evaluation of the
   regionalization recipe on the training dams (trusted SRTM fits built
   after the SRTM acquisition). For each training dam, hide its SRTM
   curve, re-run the regionalization step
   (regional-median ``b``; the shipped multi-feature LR anchor for
-  ``A_cap``, plus the retired satellite and log-log anchors for
+  ``A_cap``, plus the satellite and log-log anchors for
   comparison, to back-solve ``c``) using the other training dams as
   training data, then
   compare the regionalized curve against the SRTM "truth".
 
-* :func:`dem_vs_sat_area_check` -- per-dam comparison of the DEM-derived
+* :func:`dem_vs_sat_area_check`: per-dam comparison of the DEM-derived
   full-pool area ``footprint_area_km2`` against the satellite 95th
   percentile ``water_area_km2``. Flags placement / satellite disagreement.
 
-* :func:`goodness_of_fit_check` -- deployed-direction fractional volume
+* :func:`goodness_of_fit_check`: deployed-direction fractional volume
   residual of every fitted curve, reported alongside ``r_squared``.
+
+* :func:`eaves.postprocess.regionalization.acap_regression_diagnostics`:
+  collinearity and incremental leave-one-out skill of the ``A_cap`` regression
+  features.
 
 Opt-in diagnostics (expensive, OFF by default; each re-runs the real
 flood-fill many times and is enabled by its own flag):
 
-* ``--sensitivity`` -- :mod:`eaves.postprocess.sensitivity`. Perturbs the three
-  hand-tuned placement/acceptance constants and reports how the trusted-set
-  size, grade distribution and median ``b`` move (theme T6).
+* ``--sensitivity``: :mod:`eaves.postprocess.sensitivity`. Perturbs five
+  placement/acceptance constants, the three hand-tuned ones and the two
+  calibrated constants of the drainage rule, and reports how the trusted-set
+  size, grade distribution and median ``b`` move.
 
-* ``--dem-mc`` -- :mod:`eaves.postprocess.dem_error`. SRTM vertical-error
-  Monte-Carlo: propagates DEM noise into recovered volumes and ``b`` over a
-  trusted-dam sample (DEM reviewer #1).
+* ``--dem-mc``: :mod:`eaves.postprocess.dem_error`. SRTM vertical-error
+  Monte-Carlo that propagates DEM noise into recovered volumes and ``b`` over a
+  trusted-dam sample.
 
 All write CSVs into ``OUTPUT_DIR/1_results_csv/validation/`` and print a
-summary. None modifies ``eaves_params.csv`` or any existing released artefact.
+summary. None modifies ``eaves_params.csv`` or any existing released artifact.
 
 Run with (cheap defaults only)::
 
@@ -55,8 +60,10 @@ import pandas as pd
 
 import eaves.config as _cfg
 from .reliability import training_mask
+from ..utils import round_released_columns
 from .regionalization import (
     _REGIONAL_FEATURES,
+    acap_regression_diagnostics,
     _fit_multi_anchor_lr,
     _predict_multi_anchor_lr,
 )
@@ -122,12 +129,11 @@ def loo_regionalization_eval(
     """
     df = pd.read_csv(summary_csv)
     df["reliable"] = _reliable_mask(df)
-    # The LOO runs on the training population (trusted AND post-2000, with
-    # the small-population fallback), the dams the recipe is trained on.
+    # The LOO runs on the training population (trusted and post-2000, with the small-population fallback), the dams the recipe is trained on
     df["training"] = training_mask(df)
     trusted = df[df["training"]].copy().reset_index(drop=True)
     if len(trusted) == 0:
-        raise RuntimeError("No training dams in summary -- nothing to validate.")
+        raise RuntimeError("No training dams in summary, nothing to validate.")
 
     rows = []
     for i, row in trusted.iterrows():
@@ -149,7 +155,7 @@ def loo_regionalization_eval(
 
         a_sat_p95, n_obs = _read_sat_p95(water_extent_dir, dam_id)
 
-        # Recipes: current_sat (P95 anchor), alt_loglog (single-feature), multi_lr (shipped).
+        # Builds the anchor of each recipe: current_sat (P95 anchor), alt_loglog (single-feature), multi_lr (shipped)
         anchors: dict[str, tuple[float, str]] = {}
 
         a_curr = np.nan
@@ -222,7 +228,7 @@ def loo_regionalization_eval(
     out = pd.DataFrame(rows)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "regionalization_loo.csv")
-    out.to_csv(out_path, index=False)
+    round_released_columns(out).to_csv(out_path, index=False)
 
     _print_loo_summary(out, test_area_fractions, out_path)
     return out
@@ -310,7 +316,7 @@ def dem_vs_sat_area_check(
     out = pd.DataFrame(rows)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "dem_vs_sat_area.csv")
-    out.to_csv(out_path, index=False)
+    round_released_columns(out).to_csv(out_path, index=False)
 
     print("\n" + "=" * 70)
     print("  DEM vs SATELLITE FULL-POOL AREA CHECK (trusted dams)")
@@ -341,21 +347,21 @@ def goodness_of_fit_check(
 
     The reported ``r_squared`` is a least-squares fit on the cumulative
     volume integral, so it is close to unity by construction (an
-    integral-vs-integrand artefact) and tells us little about how faithfully
+    integral-vs-integrand artifact) and says little about how faithfully
     the deployed curve $V = c\\,A^{b}$ reproduces the hypsometry. This routine
     re-reads each per-dam EAV table and reports two fit-direction metrics
     *alongside* (not replacing) ``r_squared``:
 
-    * ``max_frac_resid`` -- the maximum absolute fractional volume residual
+    * ``max_frac_resid``: the maximum absolute fractional volume residual
       $\\max_i |c A_i^b - V_i| / V_i$ over the fitted elevation bins.
-    * ``rms_frac_resid`` -- the root-mean-square of the same per-bin
+    * ``rms_frac_resid``: the root-mean-square of the same per-bin
       fractional residual.
 
     Both are evaluated in the **deployed** A$\\to$V direction over exactly the
     bins the power law was fit on: bins above ``srtm_water_level_m`` for the
     ``partial`` curves, all positive-area/positive-volume bins otherwise
-    (mirroring :func:`eaves.pipeline.curves` ). This is a diagnostic CSV only;
-    it neither alters the grade gates nor the trusted-set filter, and writes
+    (mirroring :func:`eaves.pipeline.curves` ). This is a diagnostic CSV only.
+    It neither alters the grade gates nor the trusted-set filter, and writes
     nothing back into ``eaves_summary.csv``.
 
     Writes ``goodness_of_fit.csv`` and prints a distribution summary over the
@@ -409,7 +415,7 @@ def goodness_of_fit_check(
     out = pd.DataFrame(rows)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "goodness_of_fit.csv")
-    out.to_csv(out_path, index=False)
+    round_released_columns(out).to_csv(out_path, index=False)
 
     print("\n" + "=" * 70)
     print("  GOODNESS-OF-FIT (deployed A->V fractional volume residual)")
@@ -477,11 +483,16 @@ def main(argv=None) -> None:
         "--skip-gof", action="store_true",
         help="Skip the deployed-direction goodness-of-fit check.",
     )
-    # --- Opt-in expensive steps (OFF by default; each re-runs the flood-fill) ---
+    p.add_argument(
+        "--skip-acap", action="store_true",
+        help="Skip the A_cap regression diagnostics.",
+    )
+    # ---- Opt-in expensive steps (OFF by default; each re-runs the flood-fill) ----
     p.add_argument(
         "--sensitivity", action="store_true",
-        help="OPT-IN: run the placement/acceptance constant sensitivity sweep "
-        "(eaves.postprocess.sensitivity). Expensive -- off by default.",
+        help="OPT-IN: run the sensitivity sweep of the five placement/acceptance "
+        "constants, drainage rule included (eaves.postprocess.sensitivity). "
+        "Expensive, off by default.",
     )
     p.add_argument(
         "--sensitivity-n-dams", type=int, default=60,
@@ -494,7 +505,7 @@ def main(argv=None) -> None:
     p.add_argument(
         "--dem-mc", action="store_true",
         help="OPT-IN: run the SRTM vertical-error Monte-Carlo "
-        "(eaves.postprocess.dem_error). Expensive -- off by default.",
+        "(eaves.postprocess.dem_error). Expensive, off by default.",
     )
     p.add_argument(
         "--dem-mc-n-dams", type=int, default=36,
@@ -541,6 +552,8 @@ def main(argv=None) -> None:
         params_csv = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
         eav_tables_dir = os.path.join(_cfg.CSV_DIR, "eav_tables")
         goodness_of_fit_check(summary_csv, params_csv, eav_tables_dir, out_dir)
+    if not args.skip_acap:
+        acap_regression_diagnostics(pd.read_csv(summary_csv), out_dir)
 
     if args.sensitivity:
         from .sensitivity import sensitivity_sweep

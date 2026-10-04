@@ -2,24 +2,32 @@
 
 KSA-specific data preparation. Lives alongside the KSA input bundle so that
 region-specific curation stays out of the generic EAVES package. Run this
-whenever the source catalogue is updated; the pipeline then reads the
+whenever the source catalogue is updated. The pipeline then reads the
 cleaned CSV directly.
 
-Removes four categories:
-  - ``zero_capacity``: ``storage_capacity_m3`` missing or ≤ 0.
-  - ``zero_dam_length``: ``dam_length_m`` missing or ≤ 0 — no crest to
+Removes the following categories:
+  - ``no_capacity``: ``storage_capacity_m3`` missing or ≤ 0.
+  - ``no_dam_length``: ``dam_length_m`` missing or ≤ 0, which leaves no crest to
     anchor the reservoir footprint.
-  - ``groundwater_dam`` / ``non_existing``: groundwater-recharge dams
-    (intentional infiltration structures, no surface reservoir) and
-    catalogue non-sites.
-  - ``no_water_extent``: dam has no ``{dam_id}_ts_filtered.csv`` in the
-    ``water_extent_ts/`` sibling directory — regionalization cannot anchor
+  - ``subsurface``: dams typed ``subsurface`` in the catalogue, infiltration
+    structures with no surface reservoir, and entries with no wall at the
+    coordinate on satellite imagery, which the catalogue types the same way.
+  - ``no_satellite_records``: dam has no ``{dam_id}_ts_filtered.csv`` in the
+    ``water_extent_ts/`` sibling directory. Regionalization cannot anchor
     A_cap without a satellite time series.
 
-Dams with missing ``construction_year`` are KEPT — in the KSA catalogue they
+Dams with missing ``construction_year`` are KEPT. In the KSA catalogue they
 represent post-2000 incomplete records, not invalid entries.
 
-Reproducible: re-running on an already-cleaned CSV is a no-op (produces an
+Restates ``dam_height_m`` above the riverbed where the catalogue measures it
+from another datum (``_HEIGHT_ABOVE_RIVERBED_M``). The riverbed is the datum
+of ``spillway_height_m`` and of the EAVES wall, which stands on the SRTM
+valley floor at the dam. Hali (``id_020019``) is catalogued at 87 m with a
+47 m spillway, a 40 m freeboard. Its published height is 57 m above the
+thalweg (Saudipedia, "Wadi Hali Dam") and 95 m above the foundation
+(Wikipedia, "Hali Dam"), so the catalogue's 87 m is not a riverbed height.
+
+Reproducible. Re-running on an already-cleaned CSV is a no-op (produces an
 empty audit).
 
 Usage:
@@ -40,16 +48,7 @@ import os
 import pandas as pd
 
 
-_RECHARGE_DAM_IDS = [
-    "id_020016", "id_020022", "id_070011", "id_070015", "id_080000",
-    "id_080004", "id_080006", "id_080008", "id_080011", "id_080013",
-    "id_080014", "id_120001", "id_120004", "id_130001",
-]
-_NONSITE_DAM_IDS = [
-    "id_030013", "id_040011", "id_060010", "id_070071", "id_070115",
-    "id_080001", "id_110001", "id_110003",
-]
-EXCLUDED = set(_RECHARGE_DAM_IDS + _NONSITE_DAM_IDS)
+_HEIGHT_ABOVE_RIVERBED_M = {"id_020019": 57.0}
 
 
 def _dams_with_water_extent(ts_dir: str) -> set[str]:
@@ -63,9 +62,12 @@ def _dams_with_water_extent(ts_dir: str) -> set[str]:
 
 
 def clean_catalogue(csv_path: str, audit_path: str, ts_dir: str) -> None:
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path, dtype=str)
     n_before = len(df)
     have_ts = _dams_with_water_extent(ts_dir)
+
+    restated = df["dam_id"].isin(_HEIGHT_ABOVE_RIVERBED_M.keys())
+    df.loc[restated, "dam_height_m"] = df.loc[restated, "dam_id"].map(lambda d: f"{_HEIGHT_ABOVE_RIVERBED_M[d]:.1f}")
 
     reasons_per_dam: dict[str, list[str]] = {}
 
@@ -73,15 +75,14 @@ def clean_catalogue(csv_path: str, audit_path: str, ts_dir: str) -> None:
         dam_id = row["dam_id"]
         cap = row.get("storage_capacity_m3")
         if pd.isna(cap) or float(cap) <= 0:
-            reasons_per_dam.setdefault(dam_id, []).append("zero_capacity")
+            reasons_per_dam.setdefault(dam_id, []).append("no_capacity")
         length = row.get("dam_length_m")
         if pd.isna(length) or float(length) <= 0:
-            reasons_per_dam.setdefault(dam_id, []).append("zero_dam_length")
-        if dam_id in EXCLUDED:
-            kind = "groundwater_dam" if dam_id in _RECHARGE_DAM_IDS else "non_existing"
-            reasons_per_dam.setdefault(dam_id, []).append(kind)
+            reasons_per_dam.setdefault(dam_id, []).append("no_dam_length")
+        if row.get("dam_type") == "subsurface":
+            reasons_per_dam.setdefault(dam_id, []).append("subsurface")
         if dam_id not in have_ts:
-            reasons_per_dam.setdefault(dam_id, []).append("no_water_extent")
+            reasons_per_dam.setdefault(dam_id, []).append("no_satellite_records")
 
     excluded_rows = []
     for dam_id, reasons in reasons_per_dam.items():
@@ -100,6 +101,7 @@ def clean_catalogue(csv_path: str, audit_path: str, ts_dir: str) -> None:
     cleaned.to_csv(csv_path, index=False)
 
     print(f"Input catalogue:  {n_before} dams")
+    print(f"Height restated:  {int(restated.sum())} dams")
     print(f"Removed:          {len(audit_df)} dams")
     for reason, count in audit_df["reason"].value_counts().items():
         print(f"  {reason}: {count}")

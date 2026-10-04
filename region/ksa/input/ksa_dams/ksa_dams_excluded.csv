@@ -1,49 +1,49 @@
 dam_id,dam_name,reason
-id_010009,Abu Rukhab,no_water_extent
-id_010013,Al-Khur'iyah,no_water_extent
-id_010032,Anan,no_water_extent
-id_010047,Al-Manhanah,no_water_extent
-id_010048,Al-Sha'arah,no_water_extent
-id_010089,Al-Thumaylah,no_water_extent
-id_010101,Raghbah,no_water_extent
-id_010109,Al-Shu'bah,no_water_extent
-id_010111,Al-Nabah,no_water_extent
-id_020006,Mathawab 1,zero_capacity
-id_020007,Mathawab 2,zero_capacity
-id_020008,Qawas 1,zero_capacity
-id_020009,Qawas 2,zero_capacity
-id_020010,Qawas 3,zero_capacity
-id_020011,Ghalil Al-Janubi,zero_capacity
-id_020012,Am Al-Khir,zero_capacity
-id_020013,Al-Samir,zero_capacity
-id_020014,Al-Ahtirazi,zero_capacity
-id_020016,Turabah Al-Joufi,groundwater_dam
-id_020022,Al-Lith Al-Joufi,groundwater_dam
-id_030013,Al-Is,non_existing
-id_040007,Al-Madhnib,no_water_extent
-id_040011,Nasifat Aban Al-Ahmar,non_existing
-id_060010,Fihan,non_existing
-id_060011,Mahitah,no_water_extent
-id_070011,Marbah Al-Joufi,groundwater_dam
-id_070015,King Fahad Al-Joufi,groundwater_dam
-id_070032,Jash (Al-Riyadh),no_water_extent
-id_070062,Jawf Al-Ma'mar,no_water_extent
-id_070071,Sharaqib,non_existing
-id_070073,Hajla,no_water_extent
-id_070115,Tahallul,non_existing
-id_080000,Mamana Al-Joufi,groundwater_dam
-id_080001,Dawaqat Al-Abd Al-Hamid,non_existing
-id_080004,Alib Al-Joufi,groundwater_dam
-id_080006,Al-Ahsabah Al-Joufi,groundwater_dam
-id_080008,Thurad Al-Joufi,groundwater_dam
-id_080011,Ardah Al-Joufi,groundwater_dam
-id_080013,Batat Al-Joufi,groundwater_dam
-id_080014,Daqah Al-Joufi,groundwater_dam
-id_090014,Al-Azim,no_water_extent
-id_090030,Al-Mustajidah,no_water_extent
-id_100023,Tarim,zero_dam_length
-id_110001,Zalawam,non_existing
-id_110003,Al-Ma'arik,non_existing
-id_120001,Baish Al-Joufi,groundwater_dam
-id_120004,Damad Al-Joufi,groundwater_dam
-id_130001,Najran Al-Joufi,groundwater_dam
+id_010009,Abu Rukhab,no_satellite_records
+id_010013,Al-Khur'iyah,no_satellite_records
+id_010016,Mazwiyah,subsurface
+id_010032,Anan,no_satellite_records
+id_010047,Al-Manhanah,no_satellite_records
+id_010048,Al-Sha'arah,no_satellite_records
+id_010089,Al-Thumaylah,no_satellite_records
+id_010099,Jawi,subsurface
+id_010100,Al-Ananiyah,subsurface
+id_010101,Raghbah,no_satellite_records
+id_010109,Al-Shu'bah,no_satellite_records
+id_010111,Al-Nabah,no_satellite_records
+id_020006,Mathawab 1,no_capacity
+id_020007,Mathawab 2,no_capacity
+id_020008,Qawas 1,no_capacity
+id_020009,Qawas 2,no_capacity
+id_020010,Qawas 3,no_capacity
+id_020011,Ghalil Al-Janubi,no_capacity
+id_020012,Am Al-Khir,no_capacity
+id_020013,Al-Samir,no_capacity
+id_020014,Al-Ahtirazi,no_capacity
+id_020016,Turabah Al-Joufi,subsurface
+id_020022,Al-Lith Al-Joufi,subsurface
+id_020039,Qurad,subsurface
+id_040007,Al-Madhnib,no_satellite_records
+id_060011,Mahitah,no_satellite_records
+id_070011,Marbah Al-Joufi,subsurface
+id_070015,King Fahad Al-Joufi,subsurface
+id_070032,Jash (Al-Riyadh),no_satellite_records
+id_070062,Jawf Al-Ma'mar,no_satellite_records
+id_070073,Hajla,no_satellite_records
+id_070121,Wasat Marama,subsurface
+id_080000,Mamana Al-Joufi,subsurface
+id_080001,Dawaqat Al-Abd Al-Hamid,subsurface
+id_080004,Alib Al-Joufi,subsurface
+id_080006,Al-Ahsabah Al-Joufi,subsurface
+id_080008,Thurad Al-Joufi,subsurface
+id_080011,Ardah Al-Joufi,subsurface
+id_080013,Batat Al-Joufi,subsurface
+id_080014,Daqah Al-Joufi,subsurface
+id_090014,Al-Azim,no_satellite_records
+id_090030,Al-Mustajidah,no_satellite_records
+id_100007,Sharamah,subsurface
+id_100023,Tarim,no_dam_length
+id_110003,Al-Ma'arik,subsurface
+id_120001,Baish Al-Joufi,subsurface
+id_120004,Damad Al-Joufi,subsurface
+id_130001,Najran Al-Joufi,subsurface

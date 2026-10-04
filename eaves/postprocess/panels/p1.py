@@ -1,7 +1,7 @@
-"""Panel set p1 — domain map (a) + EAVES pipeline flowchart (b).
+"""Panel set p1: domain map (a) + EAVES pipeline flowchart (b).
 
 The map reads ``eaves_summary.csv``, ``eaves_params.csv``, and
-``failed_dams.csv``; the flowchart is drawn from static stage
+``failed_dams.csv``. The flowchart is drawn from static stage
 definitions.
 """
 
@@ -272,7 +272,7 @@ def _arrow(ax, x1, y1, x2, y2, *,
 
 def _draw_panel_b(ax) -> None:
     """Pipeline flowchart on a 0-100 canvas. Box widths match their text
-    (no fixed-width forcing) so nothing overflows; Yes/No labels sit beside
+    (no fixed-width forcing) so nothing overflows. Yes/No labels sit beside
     or above their arrows, never on the line."""
     ax.set_xlim(0, 100)
     ax.set_ylim(-5, 100)
@@ -286,7 +286,7 @@ def _draw_panel_b(ax) -> None:
     h_std = 5.0        # uniform sequential-box height
     arrow = 4.0        # uniform arrow length (center-to-center minus halves)
 
-    # ---- Inputs (ellipses) ------------------------------------------------
+    # ---- Inputs (ellipses) ----
     in_y = 95.0
     in_w = 30.0
     in_h = 9.0
@@ -307,14 +307,14 @@ def _draw_panel_b(ax) -> None:
             color="0.35", linewidth=0.7, zorder=1,
         )
 
-    # ---- Snap step --------------------------------------------------------
+    # ---- Snap step ----
     snap_y = 81.0
     _box(ax, cx, snap_y, w_proc, h_std,
          "Snap dam to nearest MERIT segment",
          facecolor=COL_BOX_PROC, edgecolor=COL_BOX_PROC_EDGE,
          fontsize=10)
 
-    # ---- 6-stage list: row_step gives ~1 mm row clearance (1 axis unit ~ 1.035 mm) ----
+    # ---- 6-stage list, where row_step gives ~1 mm row clearance (1 axis unit ~ 1.035 mm) ----
     six_y = 66.0
     six_h = 17.0
     ax.add_patch(FancyBboxPatch(
@@ -342,7 +342,7 @@ def _draw_panel_b(ax) -> None:
                 fontsize=10, color="0.10", zorder=3,
             )
 
-    # ---- Sequential processing steps -------------------------------------
+    # ---- Sequential processing steps ----
     proc = [
         ("Flood fill to spillway height",                  51.0),
         ("EAV curve: 0.5 m bins",                          42.0),
@@ -356,7 +356,7 @@ def _draw_panel_b(ax) -> None:
              fontsize=10)
         proc_ys.append(y)
 
-    # ---- Equal-length arrows along the main spine -----------------------
+    # ---- Equal-length arrows along the main spine ----
     _arrow(ax, cx, conv_y, cx, snap_y + h_std / 2.0)
     _arrow(ax, cx, snap_y - h_std / 2.0, cx, six_y + six_h / 2.0)
     _arrow(ax, cx, six_y - six_h / 2.0, cx, proc_ys[0] + h_std / 2.0)
@@ -364,7 +364,7 @@ def _draw_panel_b(ax) -> None:
         _arrow(ax, cx, proc_ys[i] - h_std / 2.0,
                cx, proc_ys[i + 1] + h_std / 2.0)
 
-    # ---- Decision (rhombus / diamond) -----------------------------------
+    # ---- Decision (rhombus / diamond) ----
     dec_y = 13.5
     dec_w = 30.0
     dec_h = 8.0
@@ -372,7 +372,7 @@ def _draw_panel_b(ax) -> None:
     _arrow(ax, cx, proc_ys[-1] - h_std / 2.0,
            cx, dec_y + dec_h / 2.0)
 
-    # ---- Yes branch (right): arrow matches spine length, yes_w snug around "SRTM" ----
+    # ---- Yes branch (right), where the arrow matches the spine length and yes_w sits snug around "SRTM" ----
     yes_w = 15.0
     yes_h = 9.0
     yes_x = cx + dec_w / 2.0 + arrow + yes_w / 2.0
@@ -385,7 +385,7 @@ def _draw_panel_b(ax) -> None:
         label="Yes", label_dx=-1.5, label_dy=1.8,
     )
 
-    # ---- No branch (down) — Regionalization box: title + recipe ---------
+    # ---- No branch (down), regionalization box with title and recipe ----
     regi_y = 1.0
     regi_h = 9.0
     _box(ax, cx, regi_y, w_out, regi_h, "",
@@ -417,7 +417,7 @@ def make_p1_domain(output_dir: str | os.PathLike) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "p1_domain_flowchart.png"
 
-    # Uniform 10 pt base; the panel label is 12 pt, overridden at the call site.
+    # Sets a uniform 10 pt base. The panel label is 12 pt, overridden at the call site
     with plt.rc_context({
         "font.size":       10,
         "axes.labelsize":  10,

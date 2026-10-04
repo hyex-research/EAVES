@@ -48,7 +48,7 @@ class TestComputeBSigma:
         bad = df.copy()
         bad["r_squared"] = 0.5          # all fail the r^2 gate
         combined = pd.concat([df, bad], ignore_index=True)
-        # Only the 40 good rows should drive the estimate.
+        # Only the trusted rows drive the estimate
         assert compute_b_sigma(combined) == pytest.approx(compute_b_sigma(df))
 
     def test_returns_positive_finite(self):
@@ -61,7 +61,7 @@ class TestAnchorBackSolve:
     def test_a_cap_inverts_power_law(self):
         c, b, cap_mcm = 0.01, 1.5, 10.0
         a_cap = _a_cap_m2(c, b, cap_mcm)
-        # By construction V_cap = c * A_cap^b must reproduce the capacity.
+        # By construction V_cap = c * A_cap^b reproduces the capacity
         assert c * a_cap**b == pytest.approx(cap_mcm * 1e6, rel=1e-9)
 
     def test_a_cap_positive(self):
@@ -74,7 +74,7 @@ class TestVSigmaLog10:
         assert _v_sigma_log10(0.26, 1.0) == pytest.approx(0.0)
 
     def test_equals_b_sigma_at_tenth_pool(self):
-        # |log10(0.1)| = 1, so sigma == b_sigma at a tenth of full-pool area.
+        # |log10(0.1)| = 1, so sigma == b_sigma at a tenth of full-pool area
         assert _v_sigma_log10(0.26, 0.10) == pytest.approx(0.26)
 
     def test_widens_as_area_drops(self):

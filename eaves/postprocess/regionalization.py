@@ -17,7 +17,8 @@ import pandas as pd
 
 import eaves.config as _cfg
 from .reliability import training_mask
-# Diagnostic plots are rendered by the panels step; this module emits CSVs only.
+from ..utils import round_released_columns
+# The panels step renders the diagnostic plots and this module writes CSVs only
 
 try:
     from sklearn.linear_model import LinearRegression
@@ -29,7 +30,7 @@ except ImportError:
     HAS_SKLEARN = False
 
 
-# Log-space features for the multi-LR A_cap anchor; missing values median-imputed at predict time.
+# Lists the log-space features of the multi-LR A_cap anchor. Missing values are median-imputed at predict time
 _REGIONAL_FEATURES = (
     "capacity_mcm",
     "dam_height_m",
@@ -39,7 +40,7 @@ _REGIONAL_FEATURES = (
     "mean_catchment_slope",
     "upstream_area_km2",
 )
-_REGIONAL_FEATURE_FLOOR = 1e-5    # log-space floor for slopes etc.
+_REGIONAL_FEATURE_FLOOR = 1e-5    # Log-space floor for slopes and the other small-valued features
 
 
 def _log_feature_vector(row, features=_REGIONAL_FEATURES):
@@ -102,7 +103,7 @@ def _fit_multi_anchor_lr_full(train_df, features=_REGIONAL_FEATURES, min_n=8):
 
 
 def _fit_multi_anchor_lr(train_df, features=_REGIONAL_FEATURES, min_n=8):
-    """Back-compat wrapper: returns just the coefficient array."""
+    """Wrapper around :func:`_fit_multi_anchor_lr_full` that returns just the coefficient array."""
     fit = _fit_multi_anchor_lr_full(train_df, features, min_n)
     return fit["coefs"] if fit is not None else None
 
@@ -141,20 +142,19 @@ def acap_regression_diagnostics(summary_df, out_dir):
     """Collinearity + incremental-skill diagnostics for the A_cap regression.
 
     Pure diagnostic. Reports, for the multi-feature $\\log A_\\mathrm{cap}$
-    anchor used in deployment (see :data:`_REGIONAL_FEATURES`), three things
-    the statistician asked for, **without dropping any feature** from the
-    deployed recipe:
+    anchor used in deployment (see :data:`_REGIONAL_FEATURES`), three
+    diagnostics, **without dropping any feature** from the deployed recipe:
 
     1. **Variance-inflation factors (VIF) and the condition number** of the
-       7 standardized log-features on the training set. A VIF above
-       ~5--10, or a condition number above ~30, signals collinearity.
+       standardized log-features on the training set. A VIF above
+       ~5 to 10, or a condition number above ~30, signals collinearity.
     2. **Incremental leave-one-out skill** as features are added one at a time
-       in the deployed order (1 -> 7). Skill is the LOO root-mean-square
-       residual of $\\log_{10} A_\\mathrm{cap}$ (log10 units), so smaller is better;
-       the marginal value of each extra feature is ``delta_loo_rms``.
+       in the deployed order (first to last). Skill is the LOO root-mean-square
+       residual of $\\log_{10} A_\\mathrm{cap}$ (log10 units), so smaller is better.
+       The marginal value of each extra feature is ``delta_loo_rms``.
     3. The same incremental sweep **with catalogue capacity** ($V_\\mathrm{cap}$,
        the ``capacity_mcm`` feature) **excluded**, to show how much skill the
-       six purely-geometric features retain once the anchor target's own
+       purely-geometric features retain once the anchor target's own
        capacity is removed from the inputs.
 
     Writes ``acap_regression_diagnostics.csv`` (one row per diagnostic) and
@@ -186,13 +186,13 @@ def acap_regression_diagnostics(summary_df, out_dir):
 
     records = []
 
-    # --- (1) VIF and condition number on standardized log-features ---
+    # ---- (1) VIF and condition number on standardized log-features ----
     if n > len(feats) + 1:
         Xc = X - X.mean(axis=0)
         sd = Xc.std(axis=0, ddof=1)
         sd[sd == 0] = 1.0
         Xs = Xc / sd
-        # condition number of the standardized design (no intercept):
+        # Computes the condition number of the standardized design, without intercept
         sv = np.linalg.svd(Xs, compute_uv=False)
         cond_number = float(sv.max() / sv.min()) if sv.min() > 0 else np.inf
         corr = np.corrcoef(Xs, rowvar=False)
@@ -211,7 +211,7 @@ def acap_regression_diagnostics(summary_df, out_dir):
             "metric": "condition_number_standardized_design",
         })
 
-    # --- (2) + (3) incremental leave-one-out skill ---
+    # ---- (2) + (3) incremental leave-one-out skill ----
     def _loo_rms_log10(Xsub):
         """LOO RMS residual of log10 A_cap (log10 units) for an OLS with intercept."""
         if Xsub.shape[1] == 0:
@@ -226,7 +226,7 @@ def acap_regression_diagnostics(summary_df, out_dir):
             tr = idx != i
             coef, *_ = np.linalg.lstsq(Xi[tr], y[tr], rcond=None)
             resid[i] = y[i] - Xi[i] @ coef
-        # natural-log residual -> log10 units
+        # Converts the natural-log residual to log10 units
         return float(np.sqrt(np.mean(resid ** 2)) / np.log(10.0))
 
     def _incremental(order_idx, tag):
@@ -246,9 +246,9 @@ def acap_regression_diagnostics(summary_df, out_dir):
             })
             prev = rms
 
-    # full deployed order, 1->7
+    # Sweeps the full deployed feature order
     _incremental(list(range(len(feats))), "incremental_loo")
-    # capacity (V_cap) excluded: keep the other six in deployed order
+    # Sweeps the deployed order with capacity (V_cap) excluded
     cap_i = feats.index("capacity_mcm")
     no_cap_order = [i for i in range(len(feats)) if i != cap_i]
     _incremental(no_cap_order, "incremental_loo_no_capacity")
@@ -256,7 +256,7 @@ def acap_regression_diagnostics(summary_df, out_dir):
     out = pd.DataFrame(records)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "acap_regression_diagnostics.csv")
-    out.to_csv(out_path, index=False)
+    round_released_columns(out).to_csv(out_path, index=False)
 
     print("\n" + "=" * 70)
     print("  A_cap REGRESSION DIAGNOSTICS (collinearity + incremental skill)")
@@ -304,7 +304,7 @@ def assign_quality(row):
 def run_regionalization(summary_df, failures, dam_data_list):
     """Assign EAV parameters to every dam.
 
-    Returns a ``pd.DataFrame`` with columns ``dam_id, dam_name, c, b, source, capacity_mcm, r_squared``.
+    Returns a ``pd.DataFrame`` with columns ``dam_id, dam_name, capacity_mcm, c, b, source``.
     Saves ``eaves_params.csv`` and ``threshold_analysis.csv``.
     """
     print("\n" + "=" * 70)
@@ -312,11 +312,11 @@ def run_regionalization(summary_df, failures, dam_data_list):
     print("=" * 70)
 
     if len(summary_df) == 0 or "b" not in summary_df.columns:
-        print("  [WARN] No successful dams \u2014 skipping regionalization.")
+        print("  [WARN] No successful dams, skipping regionalization.")
         print("=" * 70)
         return pd.DataFrame()
 
-    # --- Step A: Tag reliable dams ---
+    # ---- Step A: tag reliable dams ----
     summary_df["reliable"] = (
         summary_df["quality"].isin(["A", "B"])
         & (summary_df["r_squared"] >= 0.98)
@@ -324,12 +324,10 @@ def run_regionalization(summary_df, failures, dam_data_list):
         & (summary_df["n_pixels"] >= 50)
         & summary_df["b"].notna()
     )
-    # Training keeps only trusted dams built after the SRTM acquisition
-    # (pre-2000 and unknown-year dams may sit on already-silted topography),
-    # falling back to the full trusted set for very small populations.
+    # Training keeps only trusted dams built after the SRTM acquisition (pre-2000 and unknown-year dams may sit on already-silted topography) and falls back to the full trusted set for very small populations
     summary_df["training"] = training_mask(summary_df)
 
-    # --- Step B: Determine reliability threshold ---
+    # ---- Step B: determine reliability threshold ----
     thresholds = np.arange(1.0, 20.5, 0.5)
     threshold_results = []
     for T in thresholds:
@@ -359,9 +357,9 @@ def run_regionalization(summary_df, failures, dam_data_list):
             print("  [WARN] Could not determine optimal threshold, using 5 MCM default.")
 
     print(f"\n  Chosen reliability threshold: {chosen_threshold:.1f} MCM")
-    threshold_df.to_csv(os.path.join(_cfg.CSV_DIR, "threshold_analysis.csv"), index=False)
+    round_released_columns(threshold_df).to_csv(os.path.join(_cfg.CSV_DIR, "threshold_analysis.csv"), index=False)
 
-    # --- Step C: Fit regression for b ---
+    # ---- Step C: fit regression for b ----
     features = ["valley_ratio", "channel_slope", "mean_catchment_slope", "dam_height_m"]
     train = summary_df[
         (summary_df["capacity_mcm"] >= chosen_threshold) & (summary_df["training"])
@@ -422,7 +420,6 @@ def run_regionalization(summary_df, failures, dam_data_list):
                 if imp_sum > 0:
                     importances = importances / imp_sum
 
-            # The regression diagnostic plot is rendered by the panels step, not here.
         else:
             print("  Both models below R\u00b2=0.25, falling back to regional median b.")
     elif not HAS_SKLEARN:
@@ -434,9 +431,8 @@ def run_regionalization(summary_df, failures, dam_data_list):
     regional_median_c = float(train_clean["c"].median()) if len(train_clean) > 0 else 0.06
     print(f"  Regional median b = {regional_median_b:.4f}")
 
-    # --- Step D: multi-feature LR anchor for A_cap ---
-    # Trained on the full training set (trusted AND post-2000): the
-    # capacity-thresholded subset starves small regions below min_n.
+    # ---- Step D: multi-feature LR anchor for A_cap ----
+    # Trains on the full training set (trusted and post-2000). The capacity-thresholded subset starves small regions below min_n
     trusted_full = summary_df[summary_df["training"]].copy()
     multi_fit = _fit_multi_anchor_lr_full(trusted_full)
     a_cap_multi_coef = multi_fit["coefs"] if multi_fit is not None else None
@@ -447,9 +443,9 @@ def run_regionalization(summary_df, failures, dam_data_list):
     else:
         print("  [WARN] Multi-LR A_cap fit could not be trained (fewer than "
               "8 trusted dams with all features). Regionalization will fail "
-              "loudly only if a dam actually needs regionalising.")
+              "loudly only if a dam actually needs regionalizing.")
 
-    # 1-sigma b spread from the trusted set, used to inflate the c uncertainty in quadrature.
+    # Computes the 1-sigma b spread of the trusted set, used to inflate the c uncertainty in quadrature
     b_sigma = (float((trusted_full["b"].quantile(0.84)
                        - trusted_full["b"].quantile(0.16)) / 2.0)
                if len(trusted_full) else 0.25)
@@ -459,10 +455,10 @@ def run_regionalization(summary_df, failures, dam_data_list):
         for f in _REGIONAL_FEATURES if f in trusted_full.columns
     }
 
-    # --- Step E: Assign parameters to every dam ---
+    # ---- Step E: assign parameters to every dam ----
     param_rows = []
 
-    # (a) Reliable dams: SRTM-derived
+    # (a) Reliable dams keep their SRTM-derived parameters
     for _, row in summary_df[summary_df["reliable"]].iterrows():
         param_rows.append({
             "dam_id": row["dam_id"],
@@ -473,10 +469,10 @@ def run_regionalization(summary_df, failures, dam_data_list):
             "source": "srtm_derived",
         })
 
-    # (b) Unreliable SRTM dams
+    # (b) Unreliable SRTM dams go to regionalization
     need_region = summary_df[~summary_df["reliable"]].copy()
 
-    # (c) Failed dams with features; skip those already in summary_df to avoid duplicate rows.
+    # (c) Failed dams with features join the regionalization set, except those already in summary_df
     summary_ids = set(summary_df["dam_id"])
     fail_feature_rows = []
     for f in failures:
@@ -534,14 +530,14 @@ def run_regionalization(summary_df, failures, dam_data_list):
             region_df["b"] = regional_median_b
             region_df["source"] = "regi_multi"
 
-        # Median-impute missing features so the multi-LR never short-circuits at predict time.
+        # Median-imputes missing features, which keeps the multi-LR from short-circuiting at predict time
         for feat, med in feature_medians.items():
             if feat in region_df.columns:
                 region_df[feat] = region_df[feat].where(
                     region_df[feat].notna() & (region_df[feat] > 0), med,
                 )
 
-        # Back-solve c = V_cap / A_cap^b through the predicted anchor.
+        # Back-solves c = V_cap / A_cap^b through the predicted anchor
         for idx_r, row_r in region_df.iterrows():
             capacity_m3_r = row_r["capacity_mcm"] * 1e6
             b_val = row_r["b"]
@@ -550,8 +546,8 @@ def run_regionalization(summary_df, failures, dam_data_list):
                     or not np.isfinite(b_val)):
                 raise RuntimeError(
                     f"Multi-LR anchor failed for dam {row_r['dam_id']!r} "
-                    "after median imputation -- this should not happen and "
-                    "indicates a bug or fully-degenerate inputs."
+                    "after median imputation. This indicates a bug or "
+                    "fully-degenerate inputs."
                 )
             A_cap_m2 = float(np.exp(log_a_ln)) * 1e6
             region_df.at[idx_r, "c"] = capacity_m3_r / (A_cap_m2 ** b_val)
@@ -568,7 +564,7 @@ def run_regionalization(summary_df, failures, dam_data_list):
             })
 
     params_df = pd.DataFrame(param_rows)
-    # Clamp b to [1.1, 2.0]; for moved SRTM curves re-solve c through the full-pool anchor.
+    # Clamps b to [1.1, 2.0]. For SRTM curves whose b the clamp changes, re-solves c through the full-pool anchor
     _b_raw = params_df["b"].copy()
     params_df["b"] = params_df["b"].clip(1.1, 2.0)
     _anchor = summary_df.set_index("dam_id")
@@ -590,9 +586,10 @@ def run_regionalization(summary_df, failures, dam_data_list):
               f"{dup_ids[:5]}{'...' if len(dup_ids) > 5 else ''}")
         params_df = params_df.drop_duplicates(subset="dam_id", keep="first").reset_index(drop=True)
 
-    # --- Save (sorted by dam_id for deterministic, human-readable output) ---
+    # ---- Save (sorted by dam_id for deterministic, human-readable output) ----
     params_df = params_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
     params_path = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
+    params_df = round_released_columns(params_df)
     params_df.to_csv(params_path, index=False)
 
     print(f"\n  Parameter assignment complete:")

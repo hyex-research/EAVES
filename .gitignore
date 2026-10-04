@@ -10,3 +10,6 @@ graphify-out/
 
 # Exclude PDF files
 *.pdf
+
+# Exclude local settings that hold machine paths
+*_local.json

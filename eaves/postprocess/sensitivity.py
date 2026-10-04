@@ -1,29 +1,35 @@
 """Placement/acceptance constant sensitivity sweep (an *opt-in* validation step).
 
 This module quantifies how robust the released EAVES parameters are to the
-exact values of the three most influential hand-tuned placement/acceptance
-constants. Each constant is perturbed one at a time by a small set of
-fractional offsets (``+/-20%`` and ``+/-30%`` by default), the *real* EAVES
-flood-fill is re-run over a trusted-dam sample at each setting, and the routine
-reports how the trusted-set size, the A-F grade distribution and the median
-trusted-set power-law exponent ``b`` move. The goal is to demonstrate that the
-released catalogue is insensitive to the precise value of these constants.
+exact values of five placement/acceptance constants, the three most influential
+hand-tuned ones and the two calibrated constants of the drainage rule. Each
+constant is perturbed one at a time by a small set of fractional offsets
+(``+/-20%`` and ``+/-30%`` by default), the *real* EAVES flood-fill is re-run
+over a trusted-dam sample at each setting, and the routine reports how the
+trusted-set size, the A-F grade distribution and the median trusted-set
+power-law exponent ``b`` move. The goal is to demonstrate that the released
+catalogue is insensitive to the precise value of these constants.
 
 Constants swept (``eaves.config`` provenance)
 ---------------------------------------------
-* ``ALIGN_WEIGHT``       (= 2.35) wall-to-crest alignment weight; ``placement``.
-* ``MAX_CREST_FLOW_DOT`` (= 0.74) max ``|dot(wall, flow)|`` to accept a crest.
-* ``VOID_THRESHOLD``     (= 0.05) max NaN-void fraction accepted in a fill; ``curves``.
+* ``ALIGN_WEIGHT``              (= 2.35) wall-to-crest alignment weight (``placement``).
+* ``MAX_CREST_FLOW_DOT``        (= 0.74) max ``|dot(wall, flow)|`` to accept a crest.
+* ``VOID_THRESHOLD``            (= 0.05) max NaN-void fraction accepted in a fill (``curves``).
+* ``DRAIN_WALL_TOLERANCE_M``    (= 1000) distance past the half wall (m) within
+  which a pool outlet counts as next to the wall (``drainage``).
+* ``DRAIN_MAX_OUTLET_POSITION`` (= 0.65) largest outlet position along the
+  capacity-level pool accepted in a fill (``drainage``).
 
-The constants are bound by name into ``eaves.pipeline.placement`` and
-``eaves.pipeline.curves`` at import time (``from ..config import ...``), so the
-sweep overrides them in those module namespaces (not just in ``eaves.config``)
-for the duration of each cell and restores them afterwards.
+The constants are bound by name into ``eaves.pipeline.placement``,
+``eaves.pipeline.curves`` and ``eaves.pipeline.drainage`` at import time
+(``from ..config import ...``), so the sweep overrides them in those module
+namespaces (not just in ``eaves.config``) for the duration of each cell and
+restores them afterwards.
 
 Param-safe
 ----------
 This step never calls ``run_regionalization``, never writes any released
-artefact, and never touches ``eaves_params.csv``. It reads ``eaves_summary.csv``
+artifact, and never touches ``eaves_params.csv``. It reads ``eaves_summary.csv``
 only to pick the sample, recomputes each dam's grade / trusted membership with
 the *production* :func:`assign_quality` and the production trusted mask, and
 writes a single new file: ``validation/sensitivity_sweep.csv``.
@@ -31,6 +37,7 @@ writes a single new file: ``validation/sensitivity_sweep.csv``.
 
 from __future__ import annotations
 
+import multiprocessing as mp
 import os
 import time
 
@@ -43,18 +50,21 @@ import eaves.config as _cfg
 from ..pipeline import terrain as _terrain
 from ..pipeline import placement as _placement
 from ..pipeline import curves as _curves
+from ..pipeline import drainage as _drainage
 from ..pipeline.curves import process_dam
 from ..pipeline.workers import DamRow
-from ..utils import buffer_deg_for_dam
+from ..utils import buffer_deg_for_dam, round_released_columns
 from .regionalization import assign_quality
 
 
-# Constant -> (module, attribute, baseline); read live from eaves.config to avoid drift.
+# Maps each swept constant to (module, attribute, baseline), read live from eaves.config
 def _constants() -> dict:
     return {
-        "ALIGN_WEIGHT":       (_placement, "ALIGN_WEIGHT",       float(_cfg.ALIGN_WEIGHT)),
-        "MAX_CREST_FLOW_DOT": (_placement, "MAX_CREST_FLOW_DOT", float(_cfg.MAX_CREST_FLOW_DOT)),
-        "VOID_THRESHOLD":     (_curves,    "VOID_THRESHOLD",     float(_cfg.VOID_THRESHOLD)),
+        "ALIGN_WEIGHT":              (_placement, "ALIGN_WEIGHT",              float(_cfg.ALIGN_WEIGHT)),
+        "MAX_CREST_FLOW_DOT":        (_placement, "MAX_CREST_FLOW_DOT",        float(_cfg.MAX_CREST_FLOW_DOT)),
+        "VOID_THRESHOLD":            (_curves,    "VOID_THRESHOLD",            float(_cfg.VOID_THRESHOLD)),
+        "DRAIN_WALL_TOLERANCE_M":    (_drainage,  "DRAIN_WALL_TOLERANCE_M",    float(_cfg.DRAIN_WALL_TOLERANCE_M)),
+        "DRAIN_MAX_OUTLET_POSITION": (_drainage,  "DRAIN_MAX_OUTLET_POSITION", float(_cfg.DRAIN_MAX_OUTLET_POSITION)),
     }
 
 
@@ -70,7 +80,7 @@ def _trusted_mask(df: pd.DataFrame) -> pd.Series:
 
 
 def _run_one(dam_dict, gdf_rivers):
-    """Run the real ``process_dam`` once; return the summary fields needed to
+    """Run the real ``process_dam`` once and return the summary fields needed to
     grade and trust-tag the dam, or ``None`` on failure. Writes nothing.
 
     Mirrors the coordinate/buffer setup of the production worker exactly.
@@ -121,6 +131,16 @@ def _run_one(dam_dict, gdf_rivers):
     return None
 
 
+# Dam dicts and river table of the running sweep, read by the workers forked for each cell
+_sweep = {"by_id": {}, "gdf_rivers": None}
+
+
+def _run_sample_dam(dam_id):
+    """Run one sample dam at the constants the forked worker inherited."""
+    dd = _sweep["by_id"].get(dam_id)
+    return _run_one(dd, _sweep["gdf_rivers"]) if dd is not None else None
+
+
 def _grade_and_tag(rows):
     """Apply :func:`assign_quality` + the trusted mask to a list of result dicts.
 
@@ -139,7 +159,7 @@ def _grade_and_tag(rows):
 def _set_const(name, value, consts):
     mod, attr, _ = consts[name]
     setattr(mod, attr, value)
-    setattr(_cfg, attr, value)  # keep eaves.config in sync (defensive)
+    setattr(_cfg, attr, value)  # Keeps eaves.config in sync
 
 
 def _select_sample(summary_csv: str, n_dams: int, seed: int):
@@ -147,7 +167,7 @@ def _select_sample(summary_csv: str, n_dams: int, seed: int):
 
     Log-capacity quantile bins span the small -> large reservoir range rather
     than clustering at the dense small end. Reproduces the production trusted
-    gate exactly; computes no parameter.
+    gate exactly and computes no parameter.
     """
     s = pd.read_csv(summary_csv)
     trusted = s[_trusted_mask(s)].copy()
@@ -183,13 +203,13 @@ def sensitivity_sweep(
     Parameters
     ----------
     summary_csv : path to ``eaves_summary.csv`` (sample selection + baselines).
-    domain_dir : unused directly here; accepted for a uniform validation API.
+    domain_dir : unused directly here, accepted for a uniform validation API.
     out_dir : directory to write ``sensitivity_sweep.csv`` into.
     dam_data_list : worker dam dicts (from ``cli._build_dam_data_list``).
     gdf_rivers : split river network GeoDataFrame (or ``None``).
     n_dams : trusted-dam sample size (log-capacity-stratified).
     seed : RNG seed for the sample draw.
-    perturbations : fractional offsets applied to each constant in turn; the
+    perturbations : fractional offsets applied to each constant in turn. The
         ``0.0`` entry is the shared baseline cell.
 
     Returns the per-cell result DataFrame (also written to disk).
@@ -205,12 +225,18 @@ def sensitivity_sweep(
 
     records = []
     t0 = time.time()
+    _sweep["by_id"] = by_id
+    _sweep["gdf_rivers"] = gdf_rivers
+    n_workers = min(len(sample_ids), os.cpu_count() or 1)
+    can_fork = "fork" in mp.get_all_start_methods()
 
     def run_cell(label, const_name, frac, value):
-        rows = []
-        for did in sample_ids:
-            dd = by_id.get(did)
-            rows.append(_run_one(dd, gdf_rivers) if dd is not None else None)
+        if can_fork and n_workers > 1:
+            # Workers forked for the cell inherit the constants set for it, and the rows keep the sample order
+            with mp.get_context("fork").Pool(n_workers) as pool:
+                rows = pool.map(_run_sample_dam, sample_ids)
+        else:
+            rows = [_run_sample_dam(did) for did in sample_ids]
         n_trust, med_b, grades, n_succ = _grade_and_tag(rows)
         rec = {
             "constant": const_name,
@@ -232,13 +258,13 @@ def sensitivity_sweep(
               f"{rec['grade_D']}/{rec['grade_F']}  ({time.time()-t0:.0f}s)", flush=True)
         return rec
 
-    # Baseline (all constants at released values), computed once.
+    # Computes the baseline once, with every constant at its released value
     base = run_cell("baseline", "baseline", 0.0, np.nan)
 
     for const_name, (_mod, _attr, baseval) in consts.items():
         for frac in perturbations:
             if frac == 0.0:
-                # Record a per-constant copy of the shared baseline row.
+                # Records a per-constant copy of the shared baseline row
                 rec = dict(base)
                 rec["constant"] = const_name
                 rec["perturbation_frac"] = 0.0
@@ -250,12 +276,12 @@ def sensitivity_sweep(
                 _set_const(const_name, value, consts)
                 run_cell(f"{const_name} {frac:+.0%}", const_name, frac, value)
             finally:
-                _set_const(const_name, baseval, consts)  # restore
+                _set_const(const_name, baseval, consts)  # Restores the baseline value
 
     df = pd.DataFrame(records)
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "sensitivity_sweep.csv")
-    df.to_csv(out_path, index=False)
+    round_released_columns(df).to_csv(out_path, index=False)
 
     _print_summary(df, base, consts, out_path)
     return df

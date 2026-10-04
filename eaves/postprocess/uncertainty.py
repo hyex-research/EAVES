@@ -23,8 +23,8 @@ The band combines three independent error sources in quadrature:
    anchor-position error) and therefore does **not vanish at the anchor**.
    SRTM-derived dams measure A_cap directly from the DEM, so this term is
    zero for them.
-2. **Exponent-spread error** ``(b_sigma * log10(A/A_cap))``. The original
-   term: the dam-to-dam geometric spread of $b$, which fans out away from
+2. **Exponent-spread error** ``(b_sigma * log10(A/A_cap))``. The
+   dam-to-dam geometric spread of $b$, which fans out away from
    full pool and is zero at the anchor.
 3. **Catalog-capacity error** ``sigma_logVcap``. A stated 1$\\sigma$ on the
    published storage capacity that anchors $V_\\mathrm{cap}$, taken from the
@@ -57,6 +57,7 @@ import pandas as pd
 
 import eaves.config as _cfg
 from .reliability import training_mask
+from ..utils import round_released_columns
 
 
 _FILL_LEVELS = {
@@ -115,7 +116,7 @@ def compute_sigma_log_vcap(summary_df: pd.DataFrame) -> float:
     """1$\\sigma$ (log10 units) catalog-capacity error.
 
     Estimated from the uncapped-training-fill spread of
-    $\\log_{10}(V_\\mathrm{SRTM}/V_\\mathrm{cap})$: how much the independent
+    $\\log_{10}(V_\\mathrm{SRTM}/V_\\mathrm{cap})$, which measures how much the independent
     geometric (SRTM) volume disagrees with the published catalog capacity on
     dams where both are trustworthy. Stands in for the unknown error on the
     catalog storage value that anchors every curve. Falls back to 0.08 log10
@@ -125,10 +126,7 @@ def compute_sigma_log_vcap(summary_df: pd.DataFrame) -> float:
         return 0.08
     m = training_mask(summary_df)
     sub = summary_df.loc[m]
-    # Capped fills are right-censored by the capacity cap (their ratio is
-    # pinned near unity), so only uncapped fills carry usable spread. The
-    # resulting estimate is conservative: the uncapped subset also contains
-    # genuine sub-pixel shortfall, which inflates the spread.
+    # Keeps only uncapped fills. Capped fills are right-censored by the capacity cap (their ratio is pinned near unity) and carry no usable spread. The resulting estimate is conservative, since the uncapped subset also contains genuine sub-pixel shortfall, which inflates the spread
     if "capped" in sub.columns:
         sub = sub[~sub["capped"].astype(bool)]
     vr = sub["vol_ratio"].dropna()
@@ -140,7 +138,7 @@ def compute_sigma_log_vcap(summary_df: pd.DataFrame) -> float:
 
 
 def _a_cap_m2(c: float, b: float, capacity_mcm: float) -> float:
-    """Implicit anchor area: solve V_cap = c * A_cap^b for A_cap."""
+    """Implicit anchor area, the solution of V_cap = c * A_cap^b for A_cap."""
     V_cap_m3 = capacity_mcm * 1e6
     return float((V_cap_m3 / c) ** (1.0 / b))
 
@@ -158,16 +156,16 @@ def compute_uncertainty_table(params_df: pd.DataFrame,
 
     The 1$\\sigma$ band on $\\log_{10}V$ combines three terms in quadrature:
 
-    - ``b * sigma_log_acap`` -- the A_cap-regression error, applied **only**
+    - ``b * sigma_log_acap``: the A_cap-regression error, applied **only**
       to regionalized (``regi_multi`` / ``regr_derived``) dams whose
       full-pool area is predicted. SRTM-derived dams measure A_cap from the
       DEM and carry no A_cap-regression error. Area-independent (does not
       vanish at the anchor).
-    - ``b_sigma * |log10(A/A_cap)|`` -- the exponent-spread error. Zero at
+    - ``b_sigma * |log10(A/A_cap)|``: the exponent-spread error. Zero at
       the anchor, fans out at low fill.
-    - ``sigma_log_vcap`` -- the catalog-capacity error. Area-independent.
+    - ``sigma_log_vcap``: the catalog-capacity error. Area-independent.
 
-    Setting ``sigma_log_acap = sigma_log_vcap = 0`` recovers the legacy
+    Setting ``sigma_log_acap = sigma_log_vcap = 0`` recovers the
     ``b_sigma``-only band.
     """
     rows = []
@@ -180,7 +178,7 @@ def compute_uncertainty_table(params_df: pd.DataFrame,
         a_cap = _a_cap_m2(c, b, cap)
         v_cap = cap * 1e6
         src = str(p.get("source", ""))
-        # Predicted-A_cap term applies to regionalized tiers only; SRTM dams measure A_cap.
+        # The predicted-A_cap term applies to regionalized tiers only. SRTM dams measure A_cap
         acap_term = (b * sigma_log_acap) if src.startswith("regi") or src.startswith("regr") else 0.0
         vcap_term = sigma_log_vcap
         row = {
@@ -217,7 +215,7 @@ def run(settings_path: str | None = None) -> pd.DataFrame:
     summary_path = Path(_cfg.CSV_DIR) / "eaves_summary.csv"
     if not params_path.exists() or not summary_path.exists():
         raise RuntimeError(
-            "eaves_params.csv or eaves_summary.csv missing -- run the "
+            "eaves_params.csv or eaves_summary.csv missing. Run the "
             "regionalization step first."
         )
     params_df  = pd.read_csv(params_path)
@@ -238,7 +236,7 @@ def run(settings_path: str | None = None) -> pd.DataFrame:
     out_dir = Path(_cfg.CSV_DIR) / "validation"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "v_uncertainty.csv"
-    df.to_csv(out_path, index=False)
+    round_released_columns(df).to_csv(out_path, index=False)
 
     print(f"wrote {out_path}  ({len(df)} dams)")
     if len(df) > 0:

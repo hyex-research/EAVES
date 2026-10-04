@@ -1,31 +1,17 @@
 #!/usr/bin/env bash
-#
-# End-to-end EAVES run: full pipeline + validation + uncertainty
-# propagation + panels (p1-p5 main + s1/s2/s3 supplementary, each in PNG
-# and PDF) + report.
-#
-# Usage:
-#   ./run_all.sh [settings.json]
-#
-# Defaults to region/ksa/ksa.json. Run from the project root.
-#
+
+# End-to-end EAVES run: full pipeline + validation + uncertainty propagation + panels (p1-p5 main + s1/s2/s3 supplementary, each in PNG and PDF) + report
+
+# Usage: ./run_all.sh [settings.json]. Defaults to region/ksa/ksa.json. Run from the project root
+
 # Steps (in order):
-#   1. python -m eaves --settings <X>
-#        Placement, flood-fill, power-law fit, regionalization.
-#   2. python -m eaves.postprocess.validation --settings <X>
-#        LOO regionalization validation + DEM-vs-satellite area diagnostics.
-#   3. python -m eaves.postprocess.uncertainty --settings <X>
-#        Per-dam V uncertainty propagation from b_sigma at half/quarter/
-#        tenth pool (writes validation/v_uncertainty.csv).
-#   4. python -m eaves.postprocess.panels --settings <X>
-#        Render p1-p5 main panels and s1 (b-clustering) + s2 (threshold)
-#        + s3 (uncertainty band) supplementary panels. s1 also computes
-#        the b-clustering diagnostic CSV on first invocation.
-#   5. python -m eaves.postprocess.report --settings <X>
-#        Domain characterization CSV + Markdown report (embeds the panels).
-#
-# Set RUN_TESTS=1 to also rebuild the 15-dam fixture and refresh
-# test/golden_hashes.json afterwards.
+#   1. python -m eaves --settings <X>: placement, flood-fill, power-law fit, regionalization
+#   2. python -m eaves.postprocess.validation --settings <X>: LOO regionalization validation, DEM-vs-satellite area check, goodness of fit and A_cap regression diagnostics
+#   3. python -m eaves.postprocess.uncertainty --settings <X>: per-dam V uncertainty propagation from b_sigma at half, quarter and tenth pool (writes validation/v_uncertainty.csv)
+#   4. python -m eaves.postprocess.panels --settings <X>: renders the p1-p5 main panels and the s1 (b-clustering), s2 (threshold) and s3 (uncertainty band) supplementary panels. s1 also computes the b-clustering diagnostic CSV
+#   5. python -m eaves.postprocess.report --settings <X>: domain characterization CSV + Markdown report (embeds the panels)
+
+# Set RUN_TESTS=1 to also rebuild the 15-dam fixture and refresh test/golden_hashes.json afterwards
 
 set -euo pipefail
 
@@ -59,7 +45,7 @@ python -m eaves.postprocess.panels --settings "$SETTINGS"
 
 echo
 echo "[run_all] (5/5) Report --------------------------------------------"
-# --ref-year pinned so the sediment budget is reproducible (paper states 2026).
+# Pins --ref-year, which keeps the sediment budget reproducible (the paper states 2026)
 python -m eaves.postprocess.report --settings "$SETTINGS" --ref-year 2026
 
 if [[ "${RUN_TESTS:-0}" == "1" ]]; then

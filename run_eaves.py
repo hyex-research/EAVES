@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Thin wrapper — equivalent to ``python -m eaves``."""
+"""Thin wrapper, equivalent to ``python -m eaves``."""
 
 from eaves.__main__ import main
 

@@ -4,13 +4,13 @@ Reads the EAVES pipeline outputs (``eaves_summary.csv``, ``eaves_params.csv``,
 ``failed_dams.csv``, ``validation/regionalization_loo.csv``,
 ``validation/dem_vs_sat_area.csv``) plus the auxiliary water-extent and
 sedimentation inputs, computes a characterization of the reservoir
-population in the configured region, and emits two artefacts:
+population in the configured region, and emits two artifacts:
 
 1. ``<CSV_DIR>/domain_characterization.csv``
    Machine-readable key/value table of every statistic computed below.
 2. ``<OUTPUT_DIR>/report.md``
    Prose Markdown report covering the pipeline, the physics behind the
-   power-law area--volume relation, domain characterization (catalogue
+   power-law area-volume relation, domain characterization (catalogue
    demographics, operational fill behavior, sediment budget, geometry
    distribution), the regionalization method and its accuracy, and the
    region-independent vs region-specific parts of the workflow.
@@ -36,9 +36,10 @@ import pandas as pd
 
 import eaves.config as _cfg
 from .reliability import training_mask
+from ..utils import round_released_value
 
 
-# --- Inputs ---
+# ---- Inputs ----
 
 def _load_inputs() -> dict:
     csv_dir = Path(_cfg.CSV_DIR)
@@ -57,7 +58,7 @@ def _load_inputs() -> dict:
     return out
 
 
-# --- Characterization ---
+# ---- Characterization ----
 
 _TRUSTED_FILTER_DOC = (
     "quality ∈ {A, B}, r² ≥ 0.98, "
@@ -80,9 +81,7 @@ def _q(s: pd.Series, q: float) -> float:
     return float(s.quantile(q))
 
 
-# sed_yield_t_ha_yr is delivered yield (Dash et al. 2025: RUSLE x Boyce SDR applied at source).
-# No further delivery ratio is applied here; a second SDR double-discounts (Baish miss ~10x -> ~1.5x).
-# sediment_sdr stays available as a constant factor for gross-erosion inputs.
+# sed_yield_t_ha_yr is delivered yield (Dash et al. 2025, RUSLE times the Boyce SDR applied at source), so no further delivery ratio is applied. sediment_sdr stays available as a constant factor for gross-erosion inputs
 
 
 def compute_characterization(data: dict, ref_year: int | None = None,
@@ -113,7 +112,7 @@ def compute_characterization(data: dict, ref_year: int | None = None,
         if len(regi_b):
             stats["b_regionalized"] = float(regi_b.median())
 
-    # Capacity stats span the released catalogue; year stats only dams with an SRTM footprint.
+    # Capacity statistics span the released catalogue and year statistics the dams with an SRTM footprint
     cap_src = params if (params is not None and "capacity_mcm" in params.columns) else summary
     if cap_src is not None and "capacity_mcm" in cap_src.columns:
         cap = cap_src["capacity_mcm"].dropna()
@@ -137,7 +136,7 @@ def compute_characterization(data: dict, ref_year: int | None = None,
             stats["n_1980_2000"]              = int(((cy >= 1980) & (cy < 2000)).sum())
             stats["n_2000_2010"]              = int(((cy >= 2000) & (cy < 2010)).sum())
             stats["n_post_2010"]              = int((cy >= 2010).sum())
-            # Unknown-year dams stay visible; the era counts above exclude them.
+            # Counts the dams without a year, which the era counts exclude
             stats["n_year_unknown"]           = int(summary["construction_year"].isna().sum())
 
         if "dam_height_m" in summary.columns:
@@ -160,8 +159,7 @@ def compute_characterization(data: dict, ref_year: int | None = None,
             stats["b_min"]      = float(b.min())
             stats["b_max"]      = float(b.max())
 
-        # Training set: trusted AND post-SRTM construction -- the population
-        # that trains the regionalization and sets the band's b_sigma.
+        # Training set, the trusted dams built after the SRTM acquisition, which trains the regionalization and sets b_sigma
         TR = summary[training_mask(summary)].copy()
         bt = TR["b"].dropna()
         stats["n_training"] = int(len(TR))
@@ -176,8 +174,7 @@ def compute_characterization(data: dict, ref_year: int | None = None,
             stats["b_min_training"]    = float(bt.min())
             stats["b_max_training"]    = float(bt.max())
 
-        # Log--log area-capacity fit on the training set (the retired
-        # single-feature recipe trains on the same population as the rest).
+        # Log-log area-capacity fit on the training set, the single-feature anchor
         if {"capacity_mcm", "footprint_area_km2"}.issubset(TR.columns):
             mask = (TR["capacity_mcm"] > 0) & (TR["footprint_area_km2"] > 0)
             x = np.log10(TR.loc[mask, "capacity_mcm"].values)
@@ -201,8 +198,7 @@ def compute_characterization(data: dict, ref_year: int | None = None,
         stats["fill_p95"]      = _q(d["sat_over_dem"], 0.95)
         stats["fill_n_above_half"] = int((d["sat_over_dem"] >= 0.5).sum())
 
-    # Sediment budget: delivered yield in, no additional delivery ratio (see note above).
-    # Reported loss is min(uncapped, 1): trap saturation caps a dam at 100% of its storage.
+    # Sediment budget from delivered yield with no additional delivery ratio. The reported loss is min(uncapped, 1), the trap saturation that caps a dam at 100% of its storage
     if summary is not None and {"sed_yield_t_ha_yr", "upstream_area_km2",
                                  "capacity_mcm", "construction_year"
                                  }.issubset(summary.columns):
@@ -227,12 +223,12 @@ def compute_characterization(data: dict, ref_year: int | None = None,
         stats["sediment_loss_p16"]       = _q(frac, 0.16)
         stats["sediment_loss_p84"]       = _q(frac, 0.84)
         stats["sediment_n_loss_above_50pct"] = int((frac > 0.5).sum())
-        # "Fully silted": the uncapped budget reached 100% of capacity.
+        # Counts the dams whose uncapped budget reaches 100% of capacity
         stats["sediment_n_fully_silted"] = int((frac_uncapped >= 1.0).sum())
-        # Legacy back-compat field: count whose uncapped budget exceeded capacity.
+        # Counts the dams whose uncapped budget exceeds capacity
         stats["sediment_n_filled_in"]    = int((frac_uncapped > 1.0).sum())
 
-    # LOO validation -- per recipe
+    # LOO validation per recipe
     loo = data["validation_loo"]
     if loo is not None:
         recipes = [("current", "sat_anchor"),
@@ -256,9 +252,7 @@ def compute_characterization(data: dict, ref_year: int | None = None,
             stats[f"loo_{label}_within_2x_frac"]  = float((r.abs() <= np.log10(2.0)).mean())
             stats[f"loo_{label}_within_3x_frac"]  = float((r.abs() <= np.log10(3.0)).mean())
             stats[f"loo_{label}_within_10x_frac"] = float((r.abs() <= np.log10(10.0)).mean())
-            # MedAPE and relRMSE are meaningful only for the shipped multi anchor.
-            # Retired anchors are off by up to ~10x; their relative RMSE carries no information.
-            # e = V_pred/V_obs - 1 = 10**(log10 ratio) - 1, so the metrics need no volumes.
+            # MedAPE and relRMSE of the shipped multi anchor, from e = V_pred/V_obs - 1 = 10**(log10 ratio) - 1
             if label == "multi_anchor":
                 rel_err = (10.0 ** r) - 1.0
                 stats[f"loo_{label}_medape_frac"] = float(rel_err.abs().median())
@@ -283,13 +277,13 @@ def compute_characterization(data: dict, ref_year: int | None = None,
 
 
 def write_characterization_csv(stats: dict, out_path: Path) -> None:
-    rows = [{"statistic": k, "value": v} for k, v in stats.items()]
+    rows = [{"statistic": k, "value": round_released_value(k, v)} for k, v in stats.items()]
     df = pd.DataFrame(rows)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_path, index=False)
 
 
-# Advisory sediment-risk bands on the capped silt fraction; (c, b), grades, filters untouched.
+# Advisory sediment-risk bands on the capped silt fraction
 _SILT_RISK_BANDS = (
     (0.10, "low"),        # < 10% capacity lost
     (0.25, "moderate"),   # 10-25%
@@ -321,7 +315,7 @@ def augment_summary_with_sediment_risk(summary, summary_path: Path,
     is applied unless ``sediment_sdr`` is given. ``sediment_risk`` is a
     categorical band (``low``/``moderate``/``high``/``severe``/
     ``fully_silted``/``unknown``). Columns are appended in place to
-    ``eaves_summary.csv``; the (c, b) parameters live in ``eaves_params.csv``
+    ``eaves_summary.csv``. The (c, b) parameters live in ``eaves_params.csv``
     and are not touched.
     """
     if summary is None or not summary_path.exists():
@@ -350,33 +344,37 @@ def augment_summary_with_sediment_risk(summary, summary_path: Path,
     capped = np.clip(frac, 0.0, 1.0)
     risk = [_silt_risk_label(f) for f in frac]
 
-    # Append via raw-text edit so existing columns keep their exact serialization.
-    if "predicted_silt_fraction" in df.columns or "sediment_risk" in df.columns:
+    # Appends the two columns as text, which keeps the serialization of the existing columns
+    lines = summary_path.read_text().splitlines()
+    if lines and lines[0].endswith(",predicted_silt_fraction,sediment_risk"):
+        # A rerun finds both columns at the end of each row and cuts them as text
+        lines = [ln.rsplit(",", 2)[0] for ln in lines]
+        df = df.drop(columns=["predicted_silt_fraction", "sediment_risk"])
+    elif "predicted_silt_fraction" in df.columns or "sediment_risk" in df.columns:
         df = df.drop(columns=[c for c in ("predicted_silt_fraction",
                                           "sediment_risk") if c in df.columns])
         df.to_csv(summary_path, index=False)
-
-    lines = summary_path.read_text().splitlines()
+        lines = summary_path.read_text().splitlines()
     if len(lines) - 1 != len(df):
-        # Row count mismatch (unexpected) -- fall back to a full rewrite.
+        # Rewrites the whole table when the row count does not match
         df["predicted_silt_fraction"] = [
-            "" if not np.isfinite(v) else f"{v:.6f}" for v in capped]
+            "" if not np.isfinite(v) else repr(round_released_value("predicted_silt_fraction", float(v))) for v in capped]
         df["sediment_risk"] = risk
         df.to_csv(summary_path, index=False)
         return
     out = [lines[0] + ",predicted_silt_fraction,sediment_risk"]
     for ln, v, r in zip(lines[1:], capped, risk):
-        cell = "" if not np.isfinite(v) else f"{v:.6f}"
+        cell = "" if not np.isfinite(v) else repr(round_released_value("predicted_silt_fraction", float(v)))
         out.append(f"{ln},{cell},{r}")
     summary_path.write_text("\n".join(out) + "\n")
 
 
-# --- Markdown report ---
+# ---- Markdown report ----
 
 def _fmt(x, prec: int = 2) -> str:
     """Compact number format that handles ``None`` / non-numerics."""
     if x is None or (isinstance(x, float) and (np.isnan(x) or not np.isfinite(x))):
-        return "—"
+        return "n/a"
     if isinstance(x, (int, np.integer)):
         return f"{int(x):,}"
     if isinstance(x, float):
@@ -392,11 +390,11 @@ def _pctfmt(f) -> str:
     """Format a decimal fraction for display.
 
     Percentages are stored as decimal fractions (0.29 = 29%, 1.32 = 132%).
-    A fraction ``f <= 1.0`` prints as a percentage (``f"{f*100:.0f}%"``); a
+    A fraction ``f <= 1.0`` prints as a percentage (``f"{f*100:.0f}%"``). A
     fraction ``f > 1.0`` (> 100%) prints as the multiplicative factor 1 + f (e.g. ``2.3×``).
     """
     if f is None or (isinstance(f, float) and (np.isnan(f) or not np.isfinite(f))):
-        return "—"
+        return "n/a"
     f = float(f)
     if f <= 1.0:
         return f"{f * 100:.0f}%"
@@ -406,13 +404,13 @@ def _pctfmt(f) -> str:
 def _relfmt(log10_val, signed: bool = False) -> str:
     """A base-10 log ratio shown in the relative convention (percent / factor).
 
-    Matches the manuscript: below 100% prints as a percentage, at or above 100%
-    as a multiplicative factor. log10 is the computation space only, never shown.
+    Below 100% it prints as a percentage, at or above 100% as a multiplicative
+    factor. log10 is the computation space only and is never shown.
     """
     if log10_val is None or (
         isinstance(log10_val, float) and (np.isnan(log10_val) or not np.isfinite(log10_val))
     ):
-        return "—"
+        return "n/a"
     rel = 10.0 ** float(log10_val) - 1.0
     if signed and 0.0 <= rel <= 1.0:
         return f"+{_pctfmt(rel)}"
@@ -421,10 +419,15 @@ def _relfmt(log10_val, signed: bool = False) -> str:
     return _pctfmt(rel)
 
 
+def _bandfmt(sigma_log10: float) -> str:
+    """Upper and lower relative width of a one-sigma band given in log10 units."""
+    return f"+{(10.0 ** sigma_log10 - 1.0) * 100:.0f}%/-{(1.0 - 10.0 ** -sigma_log10) * 100:.0f}%"
+
+
 def _yr(x) -> str:
     """Year format: no thousands separator."""
     if x is None or (isinstance(x, float) and (np.isnan(x) or not np.isfinite(x))):
-        return "—"
+        return "n/a"
     return f"{int(x)}"
 
 
@@ -456,9 +459,9 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     # ---- header ----
     A(f"# EAVES domain report: {region}")
     A("")
-    A(f"_Generated: {generated_at}_")
+    A(f"Generated: {generated_at}")
     A("")
-    A(f"_Source code: `eaves/` package; this report: `eaves.postprocess.report`._")
+    A("Source code: `eaves/` package. This report: `eaves.postprocess.report`.")
     A("")
     A("This document characterizes the reservoir population in the configured "
       "region and explains the EAVES pipeline that produced its "
@@ -539,10 +542,11 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "dam it executes the following stages, all coded in the `eaves` "
       "package:")
     A("")
-    A("1. **Preprocessing** (`eaves.preprocess`): MERIT-Hydro segments are "
-      "clipped to a per-dam bounding box, segments longer than "
-      "2 km are split, and each dam is snapped to the nearest "
-      "river segment within 1 km.")
+    A("1. **Preprocessing** (`eaves.preprocess`): the MERIT-Hydro reaches of "
+      "the country and of every reach that drains into it are clipped to a "
+      "per-dam bounding box, reaches longer than 2 km are split along the "
+      "channel, and each dam is snapped to the nearest river part within "
+      "1 km.")
     A("2. **DEM clip and reprojection** (`eaves.pipeline.terrain`): the SRTM "
       "tile mosaic is clipped to a per-dam radius and reprojected to the "
       "appropriate UTM zone.")
@@ -550,11 +554,11 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "`eaves.pipeline.curves`): a six-stage cascade tries an aligned crest "
       "at the catalogue location (Stage 1), walks upstream along the valley "
       "axis (Stage 2), recovers from poor geometry or under-volume fills "
-      "(Stage 3), retries upstream along the river vector (Stage 4), relaxes "
+      "(Stage 3), retries the wall along the river in both directions (Stage 4), relaxes "
       "the flow-alignment filter (Stage 5), and finally falls back to a "
       "multi-direction fill (Stage 6). Acceptance gates reject fills that "
-      "leak downstream, are centroid-displaced, or fail volume sanity "
-      "checks.")
+      "leak downstream, do not drain out through the wall, are "
+      "centroid-displaced, or fail volume sanity checks.")
     A("4. **Power-law fit** (`eaves.pipeline.curves`): the resulting "
       "(A, V) pairs over the elevation range [z_min, "
       "z_spillway] are fit to V = c A<sup>b</sup> by nonlinear least "
@@ -637,11 +641,11 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("### Catalogue demographics")
     A("")
     if "capacity_total_mcm" in stats:
-        A(f"The placement pipeline produces a fit summary for "
-          f"n = {_fmt(stats.get('n_dams_summary'))} dams. Together with "
-          f"{_fmt(stats.get('n_dams_failed_pipeline'))} additional records "
-          "that fail pipeline gating but carry enough catalogue metadata to "
-          "be regionalized, "
+        A(f"The placement pipeline produces a flood fill for "
+          f"n = {_fmt(stats.get('n_dams_summary'))} dams. Together with the "
+          f"{_fmt(stats.get('n_dams_with_params') - stats.get('n_dams_summary'))} dams "
+          "without a fill, which carry enough catalog metadata to be "
+          "regionalized, "
           f"**{_fmt(stats.get('n_dams_with_params'))} dams** in total receive "
           "an EAV curve assignment "
           f"({_fmt(stats.get('n_params_source_srtm_derived'))} SRTM-derived, "
@@ -683,7 +687,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         if n_unknown:
             A(f"The {_fmt(n_unknown)} year-unknown dams carry no catalogue "
               "construction date. They are retained in the population and in "
-              "every EAV product; only the age-dependent statistics (era "
+              "every EAV product. Only the age-dependent statistics (era "
               "assignment above, sediment budget below) exclude them, since "
               "fabricating a year would bias those figures.")
             A("")
@@ -722,7 +726,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "matches the design-table spillway area to within ~1%).")
         A("")
         A("This is the central physical fact that motivates the "
-          "regionalization recipe in this report: an anchor based on the "
+          "regionalization recipe in this report. An anchor based on the "
           "satellite-observed maximum extent does not match the design "
           "footprint the catalogue capacity refers to, so anchoring "
           "V_cap against A_sat<sup>P95</sup> inflates "
@@ -742,9 +746,9 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     if "sediment_loss_median" in stats:
         if stats.get("sediment_sdr_model") == "none_yield_is_delivered":
             sdr_eq = ("The yield input is _delivered_ sediment yield at the "
-                      "reservoir inlet -- Dash et al. (2025) compute it as "
+                      "reservoir inlet. Dash et al. (2025) compute it as "
                       "RUSLE gross erosion times the Boyce (1974) "
-                      "area-dependent delivery ratio (their Eqs. 2-4) -- so "
+                      "area-dependent delivery ratio (their Eqs. 2–4), so "
                       "no additional delivery ratio is applied here "
                       "(a second SDR would double-discount delivery).")
         else:
@@ -833,12 +837,12 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("## SRTM-derived curves")
     A("")
     A("For each dam that survives placement and quality gating, the curve "
-      "is fit directly from the SRTM-clipped flood-fill: at each elevation "
+      "is fit directly from the SRTM-clipped flood-fill. At each elevation "
       "bin in [z_min, z_spillway] the wetted area "
       "A(z) is computed by counting pixels below z in the footprint, "
       "the corresponding volume V(z) = ∫ A dz is obtained "
       "by trapezoidal integration, and the resulting (A, V) pairs are fit "
-      "to V = c A<sup>b</sup>. The procedure is purely geometric: it uses no "
+      "to V = c A<sup>b</sup>. The procedure is purely geometric and uses no "
       "satellite or in-situ data. Curves that pass the trusted-set filter "
       f"({_TRUSTED_FILTER_DOC}) are the reference against which all other "
       "claims in this report are calibrated.")
@@ -846,17 +850,17 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("Two cross-references against independently-produced datasets "
       "provide circumstantial consistency checks (not validation in the "
       "strict sense, because both anchors use methodologies distinct "
-      "from EAVES): (i) the Baish bathymetric sonar survey -- which "
+      "from EAVES). (i) The Baish bathymetric sonar survey, which "
       "measures the _current operational_ reservoir floor rather than "
-      "the pre-impoundment valley EAVES integrates -- lies well below the "
-      "SRTM curve at intermediate water levels (sonar volume ~30-65% under "
+      "the pre-impoundment valley EAVES integrates, lies well below the "
+      "SRTM curve at intermediate water levels (sonar volume ~30–65% under "
       "SRTM, the expected signature of ~16 yr of accumulated sediment), "
       "while the design table agrees with SRTM within ~2% in both volume "
-      "and area at the spillway level; (ii) three GRDL "
-      "Landsat-derived A--z curves -- reconstructed from "
+      "and area at the spillway level. (ii) Three GRDL "
+      "Landsat-derived A–z curves, reconstructed from "
       "Landsat-observed extents with a deep-learning bathymetry model "
       "rather than from SRTM topography "
-      "directly -- agree visually with the SRTM curves over the "
+      "directly, agree visually with the SRTM curves over the "
       "observed depth range. These anchor the EAVES output in the "
       "neighborhood of independently-measured datasets but do not "
       "constitute volumetric validation.")
@@ -884,7 +888,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         "Cross-reference comparison against sonar bathymetry and GRDL",
         "Figure 4. Cross-reference comparison against independently-"
         "produced reservoir datasets, not validation in the strict "
-        "sense: sonar measures the current operational bathymetry "
+        "sense. Sonar measures the current operational bathymetry "
         "(post-sediment) and GRDL reconstructs bathymetry from "
         "Landsat-observed extents with a deep-learning model, so both "
         "methodologies differ from EAVES. "
@@ -907,38 +911,37 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "coefficients are region-specific.")
     A("")
     A("_Choice of b._ The shipped recipe assigns every regionalized dam "
-      f"the regional median **b = {_fmt(stats.get('b_median'))}**. This is "
-      "the principled choice given a strong empirical result: b is **not "
-      "predictable from morphometric features alone** with the data we have. "
-      "We tested three increasingly flexible alternatives before settling "
-      "on the median, and each one fell short.")
+      f"the regional median **b = {_fmt(stats.get('b_regionalized', stats.get('b_median')))}**, "
+      "taken over the training dams at or above the reliability threshold. "
+      "The exponent b is **not predictable from morphometric features "
+      "alone** on this catalogue, as the three diagnostics below show.")
     A("")
     A("_1. Multivariate regression (linear and random forest)._ "
-      "Trained `valley_ratio`, `channel_slope`, `mean_catchment_slope`, "
-      "and `dam_height_m` against b on the training set in a "
-      "leave-one-out cross-validation. Both LinearRegression and "
-      "RandomForestRegressor were tried. The selection gate requires "
+      "A linear regression and a random forest of b on `valley_ratio`, "
+      "`channel_slope`, `mean_catchment_slope`, and `dam_height_m` are "
+      "evaluated on the training set by leave-one-out cross-validation. "
+      "The selection gate requires "
       "R²_LOO ≥ 0.25 for a regression to replace the "
-      "median. Both candidates fell below: each individual feature "
+      "median. Both models fall below the gate. Each individual feature "
       "explains less than 10% of the variance in b "
       "(Spearman |ρ| ≤ 0.31, so R² ≤ 0.10 per feature), "
       "and the features are partly redundant, so combining them adds "
-      "little. The regression branch is rejected; the median is used.")
+      "little. The regression branch is rejected and the median is used.")
     A("")
-    # Silhouette and LOO numbers come from b_clustering_diagnostic.csv so prose tracks the figure.
+    # Reads the silhouette and LOO numbers of b_clustering_diagnostic.csv
     gain = stats.get("b_cluster_best_gain_pct")
-    gain_str = f"{gain:.0f}" if gain is not None else "—"
+    gain_str = f"{gain:.0f}" if gain is not None else "n/a"
 
     A("_2. Morphological clustering with a per-cluster median._ "
-      "Even when features can't drive a smooth regression, they may "
+      "Even when features cannot drive a smooth regression, they may "
       "carve the training set into morphologically homogeneous clusters "
       "whose internal b spread is tighter than the population spread. "
-      "We tested this directly: k-means in log-space, z-scored, on the "
+      "A k-means clustering in log-space, z-scored, on the "
       "raw-morphometry feature set (released in "
-      "`validation/b_clustering_diagnostic.csv`), sweeping k = 2 … 12. "
+      "`validation/b_clustering_diagnostic.csv`) sweeps k = 2 … 12. "
       "Best LOO σ(Δb): "
       f"**{_fmt(stats.get('b_cluster_best_sigma'))} at "
-      f"k = {stats.get('b_cluster_best_k', '—')}**, "
+      f"k = {stats.get('b_cluster_best_k', 'n/a')}**, "
       f"versus **{_fmt(stats.get('b_cluster_baseline_sigma'))}** for "
       f"the global median, a genuine but modest "
       f"**~{gain_str} % tightening** (Fig. S1, panel b). "
@@ -952,7 +955,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "remaining gain: (a) every morphological feature individually has "
       "Spearman |ρ| ≤ 0.31 with b, so cluster boundaries blur; "
       "(b) the within-cluster variance of b is comparable to the "
-      "between-cluster differences, meaning the clusters don't actually "
+      "between-cluster differences, so the clusters do not "
       "separate the population into distinct b regimes.")
     L.extend(_embed_figure(
         "s1_b_clustering_silhouette.png",
@@ -962,7 +965,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         "(a) Mean silhouette coefficient versus number of clusters k "
         "for the raw-morphometry feature set. It remains below the "
         "conventional 0.50 _reasonable structure_ threshold for every "
-        f"k; the k = 2 peak at {_fmt(stats.get('b_cluster_silhouette_max'))} reflects a single "
+        f"k. The k = 2 peak at {_fmt(stats.get('b_cluster_silhouette_max'))} reflects a single "
         "elongated population, not two morphological types. (b) Leave-"
         "one-out σ(Δb) for a per-cluster-median predictor "
         "of b versus the global-median baseline (dashed). The best "
@@ -973,35 +976,35 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     ))
     A("")
     A("_3. The intrinsic noise floor._ "
-      "Across every regression and clustering configuration we tried, "
-      "the leave-one-out residual on b converges to "
-      "σ(Δb) ≈ 0.24. This is the noise floor of "
-      "fitting a two-parameter power law to integrated SRTM curves: the "
+      "Across the global median and every clustering configuration, "
+      "the leave-one-out residual on b stays between "
+      f"σ(Δb) = {_fmt(stats.get('b_cluster_best_sigma'))} and "
+      f"{_fmt(stats.get('b_cluster_baseline_sigma'))}, the noise floor of "
+      "fitting a two-parameter power law to integrated SRTM curves. The "
       "value of b is sensitive to (i) the discrete pixel-bin assignment "
       "of the flood fill, (ii) void interpolation in the DEM, (iii) the "
       "catalogue-driven spillway-height overrides that rewrite obviously-"
-      "mistyped catalogue rows (`curves.py:65-73`), and (iv) where the "
+      "mistyped catalogue rows (`eaves.pipeline.curves`), and (iv) where the "
       "capacity cap truncates the curve. Two dams with identical "
       "valley-ratio / slope / length / height signatures can fit "
-      "different b purely from these integration-side artefacts. No "
+      "different b purely from these integration-side artifacts. No "
       "feature-based predictor can resolve b below that floor.")
     A("")
     A("_Practical implication._ "
       "Adopting cluster-medians instead of the global median would buy "
       f"~ {gain_str} % tighter σ_b at the cost of an additional "
-      "moving part (cluster fit + per-dam assignment) that doesn't "
-      "change the qualitative story. We retain the **global median** as "
-      "the shipped recipe: it is the simplest assignment consistent with "
+      "moving part (cluster fit + per-dam assignment) that does not "
+      "change the qualitative story. The shipped recipe keeps the "
+      "**global median**, the simplest assignment consistent with "
       "the data, and the `b_sigma` column quantifies the residual "
-      "uncertainty without overclaiming structure we cannot resolve.")
+      "uncertainty.")
     A("")
-    A("_Regression branch retained as a region-portable fallback._ "
-      "If a future region's catchment-feature distribution produces "
-      "R²_LOO ≥ 0.25, the regression auto-activates "
-      "([`regionalization.py:259-298`]) and predicted b values are "
-      "written under the `regr_derived` source label (reserved for that "
-      "branch; absent from the released KSA files). This has never "
-      "fired on the KSA catalogue.")
+    A("_Regression branch as a region-portable fallback._ "
+      "Where a region's catchment features produce "
+      "R²_LOO ≥ 0.25, the regression activates "
+      "(`eaves.postprocess.regionalization.run_regionalization`) and the "
+      "predicted b values are written under the `regr_derived` source "
+      "label, which is reserved for that branch.")
     A("")
     A("_Choice of c._ The shipped recipe anchors each regionalized "
       "dam at the predicted full-pool area A_cap and back-"
@@ -1016,15 +1019,14 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "`mean_catchment_slope`, `upstream_area_km2` }. Any feature "
       "that is missing for a given dam is imputed with the training-set "
       "median before prediction, so the regression always returns a "
-      "finite value and there is a single recipe for every regionalized "
+      "finite value and a single recipe covers every regionalized "
       "row in `eaves_params.csv`.")
     A("")
-    A("Two earlier drafts of the pipeline are still evaluated by the "
-      "validation module for the comparison below: (i) anchoring at the "
+    A("The validation module evaluates two alternative anchors for the "
+      "comparison below: (i) the "
       "satellite 95th-percentile water area, and (ii) a single-feature "
       "log A_cap = α + β log V_cap "
-      "regression. Both were retired in favor of the multi-feature "
-      "anchor.")
+      "regression. The multi-feature anchor is the one shipped.")
     A("")
     if "fill_median" in stats:
         med = stats["fill_median"]
@@ -1042,10 +1044,10 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     # ---- validation ----
     A("## Validation")
     A("")
-    A("This is the formal validation of EAVES: a self-consistent test "
+    A("This is the formal validation of EAVES, a self-consistent test "
       "_within_ the EAVES methodology, in contrast to the cross-"
-      "references above which use independently-produced datasets. "
-      "Per-recipe accuracy is measured by masking each trusted dam in "
+      "references above, which use independently-produced datasets. "
+      "Per-recipe accuracy is measured by masking each training dam in "
       "turn, retraining the regionalization recipe on the remaining "
       "training dams, predicting the masked dam's V at "
       "A = A_DEM, and comparing against the SRTM-derived "
@@ -1056,7 +1058,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "summary in panel set p5.")
     A("")
     if "loo_multi_anchor_within_2x_frac" in stats:
-        A("| Metric | Satellite anchor (retired) | Log–log anchor | "
+        A("| Metric | Satellite anchor | Log–log anchor | "
           "Multi-feature LR (shipped) |")
         A("| --- | --- | --- | --- |")
         A(f"| n | {_fmt(stats.get('loo_sat_anchor_n'))} | "
@@ -1067,10 +1069,10 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           f"{_relfmt(stats['loo_loglog_anchor_median_log10'], signed=True)} | "
           f"**{_relfmt(stats['loo_multi_anchor_median_log10'], signed=True)}** |")
         A(f"| Median abs. % error | "
-          f"— | — | "
+          f"n/a | n/a | "
           f"**{_pctfmt(stats.get('loo_multi_anchor_medape_frac'))}** |")
         A(f"| Relative RMSE | "
-          f"— | — | "
+          f"n/a | n/a | "
           f"**{_pctfmt(stats.get('loo_multi_anchor_relrmse_frac'))}** |")
         A(f"| Within 2× | "
           f"{_pctfmt(stats.get('loo_sat_anchor_within_2x_frac'))} | "
@@ -1090,22 +1092,24 @@ def render_report_md(stats: dict, generated_at: str) -> str:
           "volume sits between V_SRTM / n and "
           "V_SRTM · n.")
         A("")
-        A("The shipped multi-feature recipe halves the 1σ spread "
-          "of the single-feature log–log alternative (and is roughly five "
-          "times tighter than the retired satellite anchor). The bias is "
-          "essentially zero across all three candidates, but only the "
-          "DEM-trained anchors stay in the design regime that the "
-          "catalogue V_cap refers to.")
+        A("The shipped multi-feature recipe has the tightest spread of the "
+          f"three, a 1σ of {_relfmt(stats.get('loo_multi_anchor_sigma_log10'))} "
+          f"against {_relfmt(stats.get('loo_loglog_anchor_sigma_log10'))} for the "
+          "single-feature log–log anchor and "
+          f"{_relfmt(stats.get('loo_sat_anchor_sigma_log10'))} for the satellite "
+          "anchor. Both DEM-trained anchors stay in the design regime that "
+          "the catalogue V_cap refers to, and the satellite anchor carries "
+          "the operational bias.")
         L.extend(_embed_figure(
             "p5_regionalization_validation.png",
             "Regionalization accuracy panel",
             "Figure 5. Leave-one-out validation of the regionalization "
-            "recipe on the trusted SRTM-derived dams. (a) Predicted vs "
+            "recipe on the training dams. (a) Predicted vs "
             "SRTM-truth volume at the DEM full-pool area, with 1:1 line "
-            "and ±factor-2 / ±factor-3 bands; the inset box lists the "
+            "and ±factor-2 / ±factor-3 bands. The inset box lists the "
             "headline accuracy statistics. (b) Signed prediction error "
             "distribution, zero line, median, and P16–P84 band marked. "
-            "(c) Error stability across catalogue capacity; the binned "
+            "(c) Error stability across catalogue capacity, where the binned "
             "median tracks zero across four decades of V_cap.",
         ))
         A("")
@@ -1114,18 +1118,29 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "reproduce _the SRTM-derived curve_, not the absolute truth. The "
       "SRTM curves themselves have an unquantified residual error "
       "(≲ 20% on the one available bathymetric anchor). "
-      "Second, the LOO test is run on trusted-like dams; the actual "
+      "Second, the LOO test is run on trusted-like dams. The actual "
       "regionalized population is systematically smaller and steeper, so "
-      "the realised accuracy on those dams may have a wider spread than "
-      "panel p5 reports. The structural bias correction (~10× on "
+      "the realized accuracy on those dams may have a wider spread than "
+      "panel p5 reports. The structural bias correction "
+      f"({_relfmt(stats.get('loo_sat_anchor_median_log10'))} on "
       "the satellite-anchor recipe) carries through regardless.")
     A("")
 
     # ---- uncertainty propagation ----
     A("## Uncertainty on volume predictions")
     A("")
-    A("The training-set spread of the exponent b (b_σ ≈ 0.27, the "
-      "dimensionless P16--P84 half-width, identical "
+    # Reads the band terms of v_uncertainty.csv
+    vunc_path = Path(_cfg.CSV_DIR) / "validation" / "v_uncertainty.csv"
+    vu = pd.read_csv(vunc_path) if vunc_path.exists() else None
+    floor_srtm = floor_regi = "n/a"
+    if vu is not None and {"source", "sigma_log_vcap", "sigma_acap_term"}.issubset(vu.columns):
+        floor_srtm = _bandfmt(float(vu["sigma_log_vcap"].median()))
+        regi = vu[vu["source"] != "srtm_derived"]
+        if len(regi) > 0:
+            floor_regi = _bandfmt(float(np.hypot(regi["sigma_log_vcap"], regi["sigma_acap_term"]).median()))
+    A("The training-set spread of the exponent b "
+      f"(b_σ ≈ {_fmt(stats.get('b_sigma_training'))}, the "
+      "dimensionless P16–P84 half-width, identical "
       "for every dam) is the single number that propagates into the V "
       "confidence band. It is released per dam as the `b_sigma` column of "
       "`validation/v_uncertainty.csv` (the near-identical "
@@ -1135,10 +1150,10 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "V band widens away from full pool. Because the fill is capped at the "
       "catalog capacity, every curve also carries the area-independent "
       "catalog-capacity term, which floors the SRTM-derived band at about "
-      "+39%/-28% even at the anchor; regionalized curves add the predicted-"
-      "area term and floor at about +87%/-47% (see `validation/v_uncertainty.csv`):")
+      f"{floor_srtm} even at the anchor. Regionalized curves add the predicted-"
+      f"area term and floor at about {floor_regi} (see `validation/v_uncertainty.csv`).")
     A("")
-    A("σ(log₁₀V) = b_σ · |log₁₀(A/A_cap)|.")
+    A("The geometric term of the band is σ(log₁₀V) = b_σ · |log₁₀(A/A_cap)|.")
     A("")
     A("A user wanting a confidence band on V at any area A should use:")
     A("")
@@ -1151,10 +1166,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "`<CSV_DIR>/validation/v_uncertainty.csv`. Population-median band widths "
       "for this region:")
     A("")
-    # Pull median sigmas from the freshly computed table so prose tracks data.
-    vunc_path = Path(_cfg.CSV_DIR) / "validation" / "v_uncertainty.csv"
-    if vunc_path.exists():
-        vu = pd.read_csv(vunc_path)
+    if vu is not None:
         A("| Fill level | V uncertainty (median) |")
         A("| --- | --- |")
         for label_h, key in [("half pool (A/A_cap=0.50)",     "half_pool"),
@@ -1169,14 +1181,14 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         "Figure S3. Propagation of the 1σ uncertainty on b into "
         "a V uncertainty band. (a) Worked example on the Baish reservoir: "
         "the ±b_σ band is forced through the catalogue full-pool "
-        "anchor (red star) and fans out at lower water levels; the "
-        "catalog-capacity floor (~+39%/-28%) applies even at the anchor. "
+        "anchor (red star) and fans out at lower water levels. The "
+        f"catalog-capacity floor ({floor_srtm}) applies even at the anchor. "
         "(b) The two σ(log₁₀V) tiers "
-        "versus normalized area: the SRTM-derived tier is floored by the "
+        "versus normalized area. The SRTM-derived tier is floored by the "
         "catalog-capacity term at the anchor and widens with the geometric "
         "b_σ term away from full pool, while the regionalized tier "
         "adds the area-independent "
-        "anchor terms and floors near +87%. The regional typical operational "
+        f"anchor terms and floors near {floor_regi}. The regional typical operational "
         "fill level is overlaid (vertical dashed line), so the V "
         "uncertainty at the fill level most reservoirs in this region "
         "actually operate at can be read off directly.",
@@ -1213,7 +1225,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "`n_pixels`), which are tuned to the noise of the region's DEM and "
       "catalogue.")
     A("")
-    A("To deploy EAVES on a new region: configure a settings JSON pointing "
+    A("To deploy EAVES on a new region, configure a settings JSON pointing "
       "to the local catalogue and SRTM mosaic, then run `./run_all.sh "
       "region/<country>/<country>.json` from the project root. The script "
       "chains the pipeline, validation, panels, and report in the correct "
@@ -1233,24 +1245,23 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "bathymetric campaigns are the only path to a rigorous "
       "SRTM-truth comparison.")
     A("- **Catalogue capacity is design, not as-built.** No correction is "
-      "applied for legacy errors in the published storage values, which "
+      "applied for errors in the published storage values, which "
       "the trusted set's vol_ratio histogram already shows can scatter "
       "over a decade.")
     A("- **Sediment loss is a first-order estimate.** Bulk density is "
       "uniform across the region and the delivery ratio follows a single "
       "area-dependent law. Bathymetric calibration of these on "
-      "a small panel of reservoirs would let us promote the operational "
-      "curve set from sensitivity scenario to canonical product.")
+      "a small panel of reservoirs would allow the operational "
+      "curve set to move from sensitivity scenario to canonical product.")
     A("- **Per-dam b uncertainty is population-level, not individual.** "
       "`validation/v_uncertainty.csv` and "
       "`domain_characterization.csv` carry the 1σ uncertainty on "
-      "b as a single region-level number (b_σ ≈ 0.27, dimensionless, from the training set), identical for every "
+      f"b as a single region-level number (b_σ ≈ {_fmt(stats.get('b_sigma_training'))}, dimensionless, from the training set), identical for every "
       "dam regardless of source. A per-dam narrowing of that interval would "
-      "require repeated DEM realizations or an ensemble of independent DEMs, "
-      "which is not currently feasible.")
+      "require repeated DEM realizations or an ensemble of independent DEMs.")
     A("")
 
-    # ---- artefacts ----
+    # ---- files produced ----
     A("## Files produced")
     A("")
     A("| Path | Content |")
@@ -1262,14 +1273,14 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "columns. The 1σ uncertainty on b is a single region-level "
       "scalar stored in `validation/v_uncertainty.csv` and "
       "`domain_characterization.csv`, not duplicated per row. |")
-    A("| `1_results_csv/failed_dams.csv` | Dams dropped before fitting, with "
-      "failure reason. |")
+    A("| `1_results_csv/failed_dams.csv` | Dams failing wall placement, fill "
+      "acceptance, or the power-law fit, with failure reason. |")
     A("| `1_results_csv/threshold_analysis.csv` | Reliability threshold "
       "sweep used to set the trusted-set cut. |")
     A("| `1_results_csv/eav_tables/<dam_id>_eav.csv` | Tabulated "
       "(z, A, V) per dam. |")
     A("| `1_results_csv/validation/regionalization_loo.csv` | Per-recipe "
-      "LOO residuals, every trusted dam. |")
+      "LOO residuals, every training dam. |")
     A("| `1_results_csv/validation/dem_vs_sat_area.csv` | A_DEM "
       "vs A_sat<sup>P95</sup> paired data. |")
     A("| `1_results_csv/validation/b_clustering_diagnostic.csv` | Silhouette "
@@ -1288,12 +1299,12 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "volume spread under SRTM vertical-error perturbations, backs the "
       "supplementary figure S4. |")
     A("| `1_results_csv/validation/sensitivity_sweep.csv` | Trusted-set "
-      "stability under ±20–30% perturbations of the placement constants "
-      "backs the supplementary figure S5. |")
+      "stability under ±20–30% perturbations of five placement and "
+      "drainage-rule constants, backs the supplementary figure S5. |")
     A("| `1_results_csv/domain_characterization.csv` | Flat table of every "
       "statistic referenced in this report. |")
     A("| `2_results_plots/p1`–`p5_*.{png,pdf}` | Publication-grade panel "
-      "figures; each panel is written as both a 300-dpi PNG (embedded in "
+      "figures. Each panel is written as both a 300-dpi PNG (embedded in "
       "this report) and a vector PDF (for journal submission). |")
     A("| `2_results_plots/s1_b_clustering_silhouette.{png,pdf}` | "
       "Supplementary figure S1: K-means clustering diagnostic for b. |")
@@ -1309,14 +1320,15 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "figure S4: DEM vertical-error Monte-Carlo volume spread by "
       "capacity class. |")
     A("| `2_results_plots/s5_sensitivity.{png,pdf}` | Supplementary "
-      "figure S5: placement-constant sensitivity sweep. |")
+      "figure S5: sensitivity sweep of the placement and drainage-rule "
+      "constants. |")
     A("| `report.md` | This document. |")
     A("")
 
     return "\n".join(L)
 
 
-# --- Entry points ---
+# ---- Entry points ----
 
 def run(settings_path: str | None = None,
         ref_year: int | None = None,
@@ -1326,7 +1338,7 @@ def run(settings_path: str | None = None,
 
     ``sediment_sdr=None`` (the default) applies no delivery ratio, because
     the ``sed_yield_t_ha_yr`` input is delivered yield (see module-level
-    note); pass a float to apply a constant SDR for regions whose yield
+    note). Pass a float to apply a constant SDR for regions whose yield
     input is gross erosion.
     """
     if settings_path is not None:
@@ -1373,7 +1385,7 @@ def main(argv=None) -> None:
     p.add_argument("--sediment-sdr", type=float, default=None,
                    help="Constant sediment delivery ratio. Default (None) "
                    "applies no SDR because the yield input is delivered "
-                   "yield; pass a float only if the input is gross erosion.")
+                   "yield. Pass a float only if the input is gross erosion.")
     p.add_argument("--sediment-bulk-density", type=float, default=1.3,
                    help="Deposited sediment bulk density in t/m³ "
                    "(default 1.3).")

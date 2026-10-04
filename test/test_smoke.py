@@ -1,7 +1,8 @@
-"""Fast sanity checks — run on every push.
+"""Fast sanity checks, run on every push.
 
 These tests exercise imports, settings loading, and value validation without
-invoking the per-dam pipeline. Total runtime should stay well under a second.
+invoking the per-dam pipeline. The module takes under 1 s on a 112-core
+workstation.
 """
 
 from __future__ import annotations

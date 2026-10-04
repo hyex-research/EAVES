@@ -1,4 +1,4 @@
-"""Worked-example dam helpers — shared by p3 (Baish DEM/A-V) and p4 (validation).
+"""Worked-example dam helpers, shared by p3 (Baish DEM/A-V) and p4 (validation).
 
 The dam id is read from ``eaves.config.BATHYMETRY_DAM_ID`` and resolves to the
 reservoir whose sonar bathymetry is shipped with the descriptor (Baish in KSA).

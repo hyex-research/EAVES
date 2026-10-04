@@ -35,19 +35,16 @@ def _synthetic_summary(tmp_path, capacity_mcm=10.0, yield_t_ha_yr=5.0,
 class TestDeliveredYieldBudget:
 
     def test_no_sdr_applied_by_default(self, tmp_path):
-        # The yield input is delivered yield (Boyce SDR applied at source,
-        # Dash et al. 2025 Eq. 3), so the default budget must not discount
-        # delivery a second time.
+        # The yield input is delivered yield (Boyce SDR applied at source, Dash et al. 2025 Eq. 3), so the default budget does not discount delivery a second time
         df, path = _synthetic_summary(tmp_path)
         augment_summary_with_sediment_risk(
             df, path, ref_year=2020, sediment_sdr=None,
             sediment_bulk_density=1.3)
         out = pd.read_csv(path)
-        # V_sed = Y * A_ha * years / rho / 1e6 [MCM], years = 20
-        # The CSV stores the fraction rounded to 6 decimals.
+        # V_sed = Y * A_ha * years / rho / 1e6 [MCM], years = 20. The CSV stores the fraction at the precision of the released tables
         expected = 5.0 * (100.0 * 100.0) * 20 / 1.3 / 1e6 / 10.0
         assert out["predicted_silt_fraction"].iloc[0] == pytest.approx(
-            min(expected, 1.0), abs=1e-6)
+            min(expected, 1.0), rel=1e-3)
 
     def test_constant_sdr_override(self, tmp_path):
         df, path = _synthetic_summary(tmp_path, capacity_mcm=100.0)
@@ -57,7 +54,7 @@ class TestDeliveredYieldBudget:
         out = pd.read_csv(path)
         expected = 5.0 * (100.0 * 100.0) * 20 * 0.5 / 1.3 / 1e6 / 100.0
         assert out["predicted_silt_fraction"].iloc[0] == pytest.approx(
-            expected, abs=1e-6)
+            expected, rel=1e-3)
 
     def test_trap_saturation_caps_at_one(self, tmp_path):
         df, path = _synthetic_summary(tmp_path, capacity_mcm=0.01)
@@ -67,6 +64,26 @@ class TestDeliveredYieldBudget:
         out = pd.read_csv(path)
         assert out["predicted_silt_fraction"].iloc[0] == pytest.approx(1.0)
         assert out["sediment_risk"].iloc[0] == "fully_silted"
+
+    def test_rerun_keeps_the_other_columns_as_written(self, tmp_path):
+        # An integer year beside a blank one reads back as a float, so a rewrite through pandas would turn 2000 into 2000.0
+        path = tmp_path / "eaves_summary.csv"
+        path.write_text(
+            "dam_id,sed_yield_t_ha_yr,upstream_area_km2,capacity_mcm,construction_year\n"
+            "id_a,5.0,100.0,10.0,2000\n"
+            "id_b,5.0,100.0,10.0,\n"
+        )
+        texts = []
+        for _ in range(2):
+            augment_summary_with_sediment_risk(
+                pd.read_csv(path), path, ref_year=2020, sediment_sdr=None,
+                sediment_bulk_density=1.3)
+            texts.append(path.read_text())
+        assert texts[0] == texts[1]
+        rows = texts[1].splitlines()
+        assert rows[0].endswith(",construction_year,predicted_silt_fraction,sediment_risk")
+        assert rows[1].startswith("id_a,5.0,100.0,10.0,2000,0.07692,")
+        assert rows[2] == "id_b,5.0,100.0,10.0,,,unknown"
 
 
 class TestSiltRiskLabel:

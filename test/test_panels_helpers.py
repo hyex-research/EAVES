@@ -1,7 +1,8 @@
 """Unit tests for s1 and s2 supplementary-panel helper functions.
 
 All checks run on small synthetic data (no disk I/O, no config loading).
-Total runtime is dominated by the LOO KMeans loop: ~0.5 s on a workstation.
+The LOO KMeans loop dominates the runtime, which is under 1 s on a 112-core
+workstation.
 """
 
 from __future__ import annotations
@@ -11,12 +12,10 @@ import pandas as pd
 import pytest
 
 
-# ---------------------------------------------------------------------------
-# Shared synthetic data
-# ---------------------------------------------------------------------------
+# ---- Shared synthetic data ----
 
 def _synthetic_trusted(n: int = 40, seed: int = 0) -> pd.DataFrame:
-    """DataFrame with the six s1 feature columns plus a 'b' column."""
+    """DataFrame with the s1 feature columns plus a 'b' column."""
     rng = np.random.default_rng(seed)
     return pd.DataFrame({
         "valley_ratio":         np.exp(rng.normal(3.5, 0.6, n)),
@@ -40,9 +39,7 @@ def _threshold_df(thresholds=(1.0, 2.0, 5.0, 10.0, 25.0)) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-# ---------------------------------------------------------------------------
-# s1 helpers
-# ---------------------------------------------------------------------------
+# ---- s1 helpers ----
 
 from eaves.postprocess.panels.s1 import (
     _FEATURES,
@@ -159,9 +156,7 @@ class TestLooClusterSigma:
         assert sigma_k1 == pytest.approx(baseline, rel=0.05)
 
 
-# ---------------------------------------------------------------------------
-# s2 helpers
-# ---------------------------------------------------------------------------
+# ---- s2 helpers ----
 
 from eaves.postprocess.panels.s2 import _chosen_threshold
 

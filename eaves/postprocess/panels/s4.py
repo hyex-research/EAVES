@@ -1,19 +1,19 @@
-"""Panel s4 -- supplementary: DEM vertical-error Monte-Carlo on V.
+"""Panel s4 (supplementary): DEM vertical-error Monte-Carlo on V.
 
-Per-reservoir SRTM vertical error is propagated through the area--volume
+Per-reservoir SRTM vertical error is propagated through the area–volume
 recipe with a Monte-Carlo ensemble. Each realization perturbs the DEM within
 its vertical-error envelope and re-derives the volume. The resulting spread of
 $\\log_{10}V$ (``sigma_logV_realizations``, log10 units) measures how much DEM
 noise alone moves the volume estimate, plotted here as a fractional volume
 uncertainty.
 
-Panel a -- per-dam fractional volume uncertainty versus storage capacity
+Panel a: per-dam fractional volume uncertainty versus storage capacity
 (log x), one point per dam, colored by size class. The DEM-error spread is the
-leading term for small reservoirs (~0.79) and sub-dominant for medium and large
-ones (~0.14-0.25), where many pixels average the noise out. One dam (id_100017) with
-only 5 valid realizations is excluded as unreliable.
+leading term for small reservoirs and sub-dominant for medium and large
+ones, where many pixels average the noise out. A dam with fewer than
+``_MIN_VALID_REALIZATIONS`` valid realizations is left out.
 
-Panel b -- by-size-class summary: median $\\pm$ P16-P84 of
+Panel b: by-size-class summary, median $\\pm$ P16-P84 of
 ``sigma_logV_realizations`` for the three capacity classes, with the per-class
 medians annotated.
 
@@ -35,16 +35,15 @@ import eaves.config as _cfg
 from ._shared import COL_REGI, COL_SRTM, apply_style, mm_to_in, panel_label, save_panel
 
 
-# Size classes use the catalog's 1 and 5 MCM cuts (same as report.py and Supp Note F).
-# Colors: small reservoirs orange (DEM error dominates), larger classes SRTM blue family.
+# Size classes use the 1 and 5 MCM cuts of the catalog (same as report.py and Supp Note F). Colors: small reservoirs orange (DEM error dominates), larger classes in the SRTM blue family
 _CLASS_EDGES = [(-np.inf, 1.0), (1.0, 5.0), (5.0, np.inf)]
 _CLASS_LABELS = [r"$<1$ MCM", r"$1$-$5$ MCM", r"$\geq 5$ MCM"]
 _CLASS_LABELS_SHORT = [r"$<1$", r"$1$-$5$", r"$\geq 5$"]
 _CLASS_KEYS = ["low", "mid", "high"]
 _CLASS_COLORS = [COL_REGI, COL_SRTM, "#54A24B"]
 _SIGMA = "sigma_logV_realizations"
-# id_100017: spurious factor-6 spread from only 5 valid realizations; dropped.
-_DROP_DAM = "id_100017"
+# Fewest valid realizations a dam needs to enter the panel
+_MIN_VALID_REALIZATIONS = 10
 
 
 def _size_class(capacity_mcm: float) -> int:
@@ -61,12 +60,12 @@ def make_s4_dem_error(out_dir: Path) -> Path:
         os.path.join(_cfg.CSV_DIR, "validation", "dem_error_montecarlo.csv")
     )
     df = df[(df["capacity_mcm"] > 0) & df[_SIGMA].notna()
-            & (df["dam_id"] != _DROP_DAM)].copy()
+            & (df["n_ok"] >= _MIN_VALID_REALIZATIONS)].copy()
     df["class_idx"] = df["capacity_mcm"].apply(_size_class)
 
     import matplotlib.pyplot as plt
 
-    # Uniform 12 pt text across every element; panel labels overridden to 14.
+    # Sets uniform 12 pt text across every element. Panel labels are overridden to 14
     rc_override = {
         "font.size":       12,
         "axes.labelsize":  12,
@@ -85,7 +84,7 @@ def make_s4_dem_error(out_dir: Path) -> Path:
     fig.subplots_adjust(left=0.075, right=0.985, top=0.90, bottom=0.13,
                         wspace=0.30)
 
-    # ---- panel a: per-dam sigma(log10 V) vs capacity ----
+    # ---- Panel a: per-dam sigma(log10 V) vs capacity ----
     medians = []
     for i, key in enumerate(_CLASS_KEYS):
         sub = df[df["class_idx"] == i]
@@ -96,7 +95,7 @@ def make_s4_dem_error(out_dir: Path) -> Path:
             s=22, color=_CLASS_COLORS[i], alpha=0.80, edgecolor="none",
             zorder=3, label=f"{_CLASS_LABELS[i]}  ($n = {len(sub)}$)",
         )
-        # Horizontal segment at the class median, spanning the class capacity range.
+        # Draws a horizontal segment at the class median, spanning the class capacity range
         if len(sub) and np.isfinite(med):
             lo = float(sub["capacity_mcm"].min())
             hi = float(sub["capacity_mcm"].max())
@@ -119,7 +118,7 @@ def make_s4_dem_error(out_dir: Path) -> Path:
     ax_a.set_ylim(0.0, (10.0 ** float(df[_SIGMA].max()) - 1.0) * 1.05)
     ax_a.legend(loc="upper right", frameon=True, framealpha=0.95)
 
-    # ---- panel b: by-size-class median +/- P16-P84 summary ----
+    # ---- Panel b: by-size-class median +/- P16-P84 summary ----
     xs = np.arange(len(_CLASS_KEYS))
     for i, key in enumerate(_CLASS_KEYS):
         sub = df[df["class_idx"] == i]
@@ -129,7 +128,7 @@ def make_s4_dem_error(out_dir: Path) -> Path:
         med = float(np.median(vals))
         p16 = float(np.quantile(vals, 0.16))
         p84 = float(np.quantile(vals, 0.84))
-        # Per-point strip (jittered) behind the summary marker.
+        # Draws a jittered per-point strip behind the summary marker
         jitter = (np.random.default_rng(i).random(len(vals)) - 0.5) * 0.18
         ax_b.scatter(xs[i] + jitter, vals, s=14, color=_CLASS_COLORS[i],
                      alpha=0.40, edgecolor="none", zorder=2)
@@ -161,7 +160,7 @@ def make_s4_dem_error(out_dir: Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "s4_dem_error.png"
-    # Open axes: no top/right spines.
+    # Opens the axes by hiding the top and right spines
     for _ax in fig.axes:
         _ax.spines["top"].set_visible(False)
         _ax.spines["right"].set_visible(False)

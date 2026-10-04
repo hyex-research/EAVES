@@ -6,76 +6,62 @@ Three layers, in order of cost.
 
 | File | Marker | Runtime | What it covers |
 | --- | --- | --- | --- |
-| `test_smoke.py` | (none) | < 1 s | Imports, settings loading, constants. Run on every push. |
-| `test_regionalization.py` | (none) | a few seconds | Unit tests for the multi-feature LR helpers in `eaves/postprocess/regionalization.py`. |
-| `test_panels_helpers.py` | (none) | a few seconds | Unit tests for the s1 / s2 supplementary-panel helpers (`_silhouette_curve`, `_loo_cluster_sigma`, `_baseline_sigma`, `_chosen_threshold`). |
-| `test_regression.py` | `slow` | ~5 min | End-to-end: re-runs the 15-dam fixture through `run_eaves.py` and compares every emitted CSV against the SHA-256 golden hashes in `golden_hashes.json`. |
+| `test_smoke.py` | (none) | under 1 s | Imports, settings loading, constants. Run on every push. |
+| `test_regionalization.py` | (none) | under 1 s | Unit tests for the multi-feature LR helpers in `eaves/postprocess/regionalization.py`. |
+| `test_panels_helpers.py` | (none) | under 1 s | Unit tests for the s1 / s2 supplementary-panel helpers (`_silhouette_curve`, `_loo_cluster_sigma`, `_baseline_sigma`, `_chosen_threshold`). |
+| `test_preprocess.py` | (none) | under 1 s | Unit tests for the domain preprocessing in `eaves/preprocess.py`: segment split, upstream closure, removal of zero-length reaches. |
+| `test_drainage.py` | (none) | under 1 s | Unit tests for the drainage of a DEM window and the drain-through-the-wall rule in `eaves/pipeline/drainage.py`. |
+| `test_curves_helpers.py` | (none) | under 1 s | Unit tests for the construction-year parsing in `eaves/pipeline/curves.py` and for the precision of the released tables (`round_released_columns` in `eaves/utils.py`). |
+| `test_uncertainty.py` | (none) | under 1 s | Unit tests for the V uncertainty band in `eaves/postprocess/uncertainty.py`: `b_sigma` estimator, anchor back-solve, band algebra. |
+| `test_sediment.py` | (none) | under 1 s | Unit tests for the sediment-budget helpers in `eaves/postprocess/report.py`: delivered-yield budget, trap-saturation cap, silt-risk bands. |
+| `test_regression.py` | `slow` | about 80 s | End-to-end: re-runs the 15-dam fixture through `run_eaves.py` and compares every emitted CSV against the SHA-256 golden hashes in `golden_hashes.json`. |
+
+Run times are measured on a 112-core workstation and grow as the core count falls. The fast tests (everything except the regression test) take about 3 s in total.
 
 ## Running
 
 ```bash
-pytest                       # fast tests only (smoke + unit)
+pytest                       # everything (fast tests + the slow regression test)
 pytest -m slow               # the regression test in isolation
 pytest -m "not slow"         # explicit fast subset
 pytest -k regionalization    # one file by keyword
 pytest test/test_smoke.py -v
 ```
 
-The first run of the regression test invokes the full pipeline; subsequent runs in the same `pytest` session reuse the `fixture_output` session-scoped fixture.
+The first run of the regression test invokes the full pipeline. Subsequent runs in the same `pytest` session reuse the `fixture_output` session-scoped fixture.
 
 ## The 15-dam fixture
 
-`test/fixture/input/dams_example.csv` lists 15 dams chosen to exercise every code path the production pipeline takes, without exceeding ~5 min wall time on a workstation:
+`test/fixture/input/dams_example.csv` lists 15 dams chosen to exercise every code path the production pipeline takes, while the regression run stays at about 80 s on a 112-core workstation:
 
-- **12 dams** that produce SRTM-derived curves — 4 large, 4 medium, 4 small reservoirs.
-- **3 dams** that fail SRTM placement and fall through to regionalization (`id_010007`, `id_020072`, `id_030036`).
+- **12 dams** that produce SRTM-derived curves (4 large, 4 medium, 4 small reservoirs).
+- **3 dams** that receive regionalized parameters. `id_010007` (`placement_failed`) and `id_030036` (`bad_fill_auto`) have no flood fill, and `id_020072` has a fill graded C, below the trusted gates.
 
 If you add a dam to the fixture, the slow test will fail because the CSVs change. Update `golden_hashes.json` after verifying the new outputs are correct (see below).
 
 ## Settings
 
-`test/fixture/settings.json` points the pipeline at the fixture inputs and at a writable `test/fixture/output/` tree. It uses the same SRTM tiles, MERIT shapefiles, and country shapefile as the production KSA run — those paths are absolute and machine-specific.
+`test/fixture/settings.json` points the pipeline at the fixture inputs and at a writable `test/fixture/output/` tree, with paths relative to the settings file. Every input a regression run reads sits under `test/fixture/input/`, so the regression test runs with the tracked settings and needs no external data.
 
-If you need to run the tests on a different machine, override those paths in `settings.json` or set the corresponding environment variables before `pytest`.
+Three paths in the file are placeholders (`/path/to/...`): the MERIT Hydro river shapefile, the MERIT Hydro basin shapefile, and the country shapefile. The pipeline reads them only when it rebuilds the domain cache with `--rebuild-domain`. To rebuild the cache, copy `settings.json` to `settings_local.json` in the same folder, set the three paths in the copy, and pass the copy to `run_eaves.py` together with `--rebuild-domain`. `settings_local.json` is ignored by git, and the test suite uses it whenever it exists.
 
-## Running the regression test in CI (current limitation and the path to closing it)
+`grdl_dir` names a folder the fixture does not ship. Only the `--panels` step reads it, and the regression run skips that step (see `conftest.py`).
 
-Most fixture inputs are already self-contained and committed with relative
-paths under `test/fixture/input/`: the 15-dam catalog (`dams_example.csv`),
-the per-dam water-extent series (`water_extent_ts/`), the
-sedimentation/evaporation inputs (`sedimentation_owe/`), and the **cached**
-clipped river/dam geometry (`domain_inputs/dams_snapped.geojson`,
-`rivers_split.geojson`). Because the domain cache is committed, the raw MERIT
-shapefiles (`merit_rivers_shp`, `merit_basins_shp`) and the country shapefile
-(`country_shp`) are only touched if the cache is rebuilt with
-`--rebuild-domain`, so they are not needed for a normal regression run.
+## Running the regression test in CI
 
-Two settings still block an out-of-the-box CI run:
+The fixture is self-contained. `pytest -m slow` runs from a fresh clone, in CI and on any machine, with the environment of `environment.yml` and no machine-specific path. `test/fixture/input/` holds every input of a regression run:
 
-1. **`srtm_dir`** points at absolute, non-shipped SRTM GL1 tiles
-   (`/mnt/datawaha/...`). This is the one true blocker — without the DEM the
-   flood-fill cannot run.
-2. **`grdl_dir`** is referenced but does not exist; it is only consumed by the
-   `--panels` step, which the regression fixture intentionally skips (see
-   `conftest.py`), so it does not affect the CSV golden-hash check.
+| Path | Content |
+| --- | --- |
+| `dams_example.csv` | The 15-dam catalog. |
+| `water_extent_ts/` | The per-dam water-extent series. |
+| `sedimentation_owe/` | The sedimentation and evaporation inputs. |
+| `domain_inputs/` | The cached river and dam geometry (`rivers_split.geojson`, `dams_snapped.geojson`). |
+| `srtm/` | The SRTM GL1 elevation around the 15 dams (17 files, about 6 MB). |
 
-**Sketch of a self-contained fixture.** To let `pytest -m slow` run in CI with
-no machine-specific paths:
+`srtm/` holds one file for every SRTM GL1 tile the pipeline opens for a fixture dam. Each file has the name, grid, georeference, data type and nodata value of the original tile. Cells inside the window the pipeline loads around a dam keep their elevation, and every other cell holds the nodata value. The window spans the dam buffer (0.03° to 0.12°, set by the storage capacity) plus the 0.02° loading margin and four cells of padding on every side, taken at the catalog coordinate and at the snapped coordinate of the dam. The files are deflate-compressed GeoTIFFs that carry the `.hgt` tile names, and GDAL identifies the format from the file content. The pipeline derives the same outputs from them as from the full tiles, byte for byte. SRTM GL1 is public domain data from NASA and USGS.
 
-- Commit a tiny clipped SRTM GL1 stack covering only the 15 fixture dams (a few
-  small GeoTIFF windows, public USGS/NASA SRTM, redistributable) under
-  `test/fixture/input/srtm/`, and point `srtm_dir` there with a path relative
-  to the repo root.
-- Keep the already-committed `domain_inputs/` cache so the MERIT and country
-  shapefiles are never needed; document that `--rebuild-domain` is a
-  maintainer-only path requiring the full datasets.
-- Drop or stub the unused `grdl_dir` entry.
-
-With those clipped DEM windows committed and `settings.json` rewritten to
-repo-relative paths, the golden-hash regression becomes runnable by any
-outsider and in CI. Until the clipped SRTM tiles are added, the slow regression
-test only verifies byte stability on the authors' reference environment and
-cannot be exercised in the open.
+The elevation set covers the 15 fixture dams only. When a dam is added to the catalog or moved, rebuild the set from the full tiles with `python -m test.build_fixture_srtm --srtm-dir <full SRTM folder>`, run from the repository root.
 
 ## Golden hashes
 
@@ -93,10 +79,10 @@ python run_eaves.py --settings test/fixture/settings.json
 python -c "
 import hashlib, json
 from pathlib import Path
-root = Path('test/fixture/output')
-csvs = sorted(p for p in root.rglob('*.csv'))
-out = {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in csvs}
-Path('test/golden_hashes.json').write_text(json.dumps(out, indent=2) + '\n')
+out = Path('test/fixture/output')
+h = {str(p.relative_to(out)): hashlib.sha256(p.read_bytes()).hexdigest()
+     for p in sorted((out / '1_results_csv').rglob('*.csv'))}
+Path('test/golden_hashes.json').write_text(json.dumps(h, indent=2, sort_keys=True))
 "
 
 # 4. commit golden_hashes.json with the same commit that changed behavior
@@ -104,7 +90,7 @@ Path('test/golden_hashes.json').write_text(json.dumps(out, indent=2) + '\n')
 
 ## Common gotchas
 
-- **Stale domain cache.** If you change the dam catalogue or the rivers shapefile, delete `test/fixture/input/domain_inputs/` and rerun with `--rebuild-domain` (the pipeline caches MERIT clips per catchment).
-- **Slow test takes longer than expected.** A single bad SRTM tile or a dam with a very large reservoir can dominate runtime. The fixture was curated to avoid the worst offenders — if you swap a dam, re-time the run.
-- **Floating-point drift between machines.** The golden hashes are byte-exact. Different NumPy / GDAL / SciPy versions can produce slightly different floats. Hashes were last refreshed on the workstation listed in the project README; if you see hash mismatches but the values look identical, regenerate the goldens.
+- **Stale domain cache.** If you change the dam catalog or the rivers shapefile, delete `test/fixture/input/domain_inputs/` and rerun with `--rebuild-domain` (the pipeline reuses the cached `rivers_split.geojson` and `dams_snapped.geojson` whenever both exist).
+- **Slow test takes longer than expected.** A single bad SRTM tile or a dam with a very large reservoir can dominate runtime. The fixture avoids the worst offenders. If you swap a dam, re-time the run.
+- **Floating-point drift between machines.** The golden hashes are byte-exact. Different NumPy / GDAL / SciPy versions can produce slightly different floats. If you see hash mismatches but the values look identical, regenerate the goldens.
 - **PNG timestamps.** PNGs under `0_check_dams/` get rewritten on every run with a new timestamp in the metadata. The regression test only hashes CSVs, so this is not a problem.

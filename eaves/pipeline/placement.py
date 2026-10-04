@@ -28,14 +28,17 @@ from ..config import (
     FALLBACK_MIN_PIXELS,
 )
 from .terrain import get_downstream_direction_from_dem
+from .drainage import drains_through_wall
 from ..utils import (
     _upstream_sample_distances_m,
     _approx_cone_volume_m3,
     _bresenham,
 )
 
+_EIGHT_CONNECTED = np.ones((3, 3), dtype=bool)
 
-# --- Cross-channel barrier snapping ---
+
+# ---- Cross-channel barrier snapping ----
 
 def _snap_cross_channel_barrier_px(
     dem, r0, c0, pixel_size_m, half_width_m=120.0, step_m=15.0,
@@ -81,7 +84,7 @@ def _snap_cross_channel_barrier_px(
     return best_r, best_c
 
 
-# --- Wall orientation scoring and iteration ---
+# ---- Wall orientation scoring and iteration ----
 
 def _wall_pair_from_crest(wr, wc, ds_dem):
     """Crest unit vector -> (crest_xy, upstream_xy) in pixel row/col space."""
@@ -125,9 +128,28 @@ def _crest_gap_m_at_angle(dem, dam_r, dam_c, wr, wc, z_spillway, pixel_size, max
     return gap_px * pixel_size
 
 
+def _first_bank_px(dem, dam_r, dam_c, wr, wc, z_spillway, max_search):
+    """Steps from the dam cell to the first cell at or above ``z_spillway``, one value per direction.
+
+    A direction that leaves the window first, or meets no such cell within ``max_search`` steps, gives 0.
+    """
+    nrows, ncols = dem.shape
+    steps = np.arange(1, max_search + 1)
+    r = np.rint(dam_r + wr[:, None] * steps[None, :]).astype(np.int64)
+    c = np.rint(dam_c + wc[:, None] * steps[None, :]).astype(np.int64)
+    inside = (r >= 0) & (r < nrows) & (c >= 0) & (c < ncols)
+    elev = np.full(r.shape, np.nan)
+    elev[inside] = dem[r[inside], c[inside]]
+    bank = inside & (elev >= z_spillway)
+    stop = bank | ~inside
+    first = np.argmax(stop, axis=1)
+    found = bank[np.arange(len(wr)), first]
+    return np.where(found, first + 1, 0)
+
+
 def iter_wall_placements_from_terrain(
     dem, dam_r, dam_c, dam_length_m, z_spillway, pixel_size, *,
-    flow_dir_px=None, top_k=TERRAIN_WALL_TOP_K,
+    river_dir_px=None, top_k=TERRAIN_WALL_TOP_K,
     prepend_angles_deg=None, prepend_bypass_flow_align=False,
 ):
     """Yield up to ``top_k`` (crest, upstream) pairs, best first."""
@@ -138,11 +160,11 @@ def iter_wall_placements_from_terrain(
     max_search_prepend = int(min(lim, max(int(dam_length_px * 3.2) + 55, 55)))
 
     ds_dem = get_downstream_direction_from_dem(dem, dam_r, dam_c)
-    flow_u = None
-    if flow_dir_px is not None:
-        nrm = np.linalg.norm(flow_dir_px)
+    river_u = None
+    if river_dir_px is not None:
+        nrm = np.linalg.norm(river_dir_px)
         if nrm > 1e-9:
-            flow_u = flow_dir_px / nrm
+            river_u = river_dir_px / nrm
 
     seen = set()
     n_out = 0
@@ -168,7 +190,7 @@ def iter_wall_placements_from_terrain(
             if not prepend_bypass_flow_align:
                 if abs(float(np.dot(wall, ds_dem))) > MAX_CREST_FLOW_DOT:
                     continue
-                if flow_u is not None and abs(float(np.dot(wall, flow_u))) > MAX_CREST_FLOW_DOT:
+                if river_u is not None and abs(float(np.dot(wall, river_u))) > MAX_CREST_FLOW_DOT:
                     continue
             key = (round(wr, 4), round(wc, 4))
             if key in seen:
@@ -182,34 +204,19 @@ def iter_wall_placements_from_terrain(
     candidates = []
     raw_by_gap = []
 
-    for angle_deg in range(0, 180, 1):
-        angle_rad = np.radians(angle_deg)
-        wr = np.cos(angle_rad)
-        wc = np.sin(angle_rad)
+    angles_deg = range(0, 180, 1)
+    wr_all = np.array([np.cos(np.radians(a)) for a in angles_deg])
+    wc_all = np.array([np.sin(np.radians(a)) for a in angles_deg])
+    d_pos_all = _first_bank_px(dem, dam_r, dam_c, wr_all, wc_all, z_spillway, max_search)
+    d_neg_all = _first_bank_px(dem, dam_r, dam_c, -wr_all, -wc_all, z_spillway, max_search)
 
-        d_pos = None
-        for d in range(1, max_search + 1):
-            r = int(round(dam_r + wr * d))
-            c = int(round(dam_c + wc * d))
-            if r < 0 or r >= nrows or c < 0 or c >= ncols:
-                break
-            elev = dem[r, c]
-            if not np.isnan(elev) and elev >= z_spillway:
-                d_pos = d
-                break
+    for angle_deg in angles_deg:
+        wr = wr_all[angle_deg]
+        wc = wc_all[angle_deg]
+        d_pos = int(d_pos_all[angle_deg])
+        d_neg = int(d_neg_all[angle_deg])
 
-        d_neg = None
-        for d in range(1, max_search + 1):
-            r = int(round(dam_r - wr * d))
-            c = int(round(dam_c - wc * d))
-            if r < 0 or r >= nrows or c < 0 or c >= ncols:
-                break
-            elev = dem[r, c]
-            if not np.isnan(elev) and elev >= z_spillway:
-                d_neg = d
-                break
-
-        if d_pos is None or d_neg is None:
+        if d_pos == 0 or d_neg == 0:
             continue
 
         gap_px = d_pos + d_neg
@@ -221,9 +228,9 @@ def iter_wall_placements_from_terrain(
 
         width_err_m = abs(gap_m - dam_length_m)
         crest = np.array([wr, wc], dtype=float)
-        a_flow = abs(float(np.dot(crest, flow_u))) if flow_u is not None else 0.0
+        a_flow = abs(float(np.dot(crest, river_u))) if river_u is not None else 0.0
         a_dem = abs(float(np.dot(crest, ds_dem)))
-        if flow_u is not None:
+        if river_u is not None:
             align = max(a_flow, a_dem)
         else:
             align = a_dem
@@ -252,9 +259,9 @@ def iter_wall_placements_from_terrain(
             continue
         perr = abs(pgap - dam_length_m)
         pc = np.array([pwr, pwc], dtype=float)
-        pa_flow = abs(float(np.dot(pc, flow_u))) if flow_u is not None else 0.0
+        pa_flow = abs(float(np.dot(pc, river_u))) if river_u is not None else 0.0
         pa_dem = abs(float(np.dot(pc, ds_dem)))
-        pa = max(pa_flow, pa_dem) if flow_u is not None else pa_dem
+        pa = max(pa_flow, pa_dem) if river_u is not None else pa_dem
         pcombined = perr + pa * dam_length_m * ALIGN_WEIGHT
         candidates.append((pcombined, perr, pa, pwr, pwc))
 
@@ -270,16 +277,16 @@ def iter_wall_placements_from_terrain(
         wall, upstream = _wall_pair_from_crest(wr, wc, ds_dem)
         if abs(float(np.dot(wall, ds_dem))) > MAX_CREST_FLOW_DOT:
             continue
-        if flow_u is not None and abs(float(np.dot(wall, flow_u))) > MAX_CREST_FLOW_DOT:
+        if river_u is not None and abs(float(np.dot(wall, river_u))) > MAX_CREST_FLOW_DOT:
             continue
         yield wall, upstream
         n_out += 1
         if n_out >= top_k:
             break
 
-    # River-perpendicular bonus candidate (bypasses DEM-alignment filter)
-    if flow_u is not None:
-        rp_wr, rp_wc = float(-flow_u[1]), float(flow_u[0])
+    # Yields the river-perpendicular bonus candidate, which bypasses the DEM-alignment filter
+    if river_u is not None:
+        rp_wr, rp_wc = float(-river_u[1]), float(river_u[0])
         if rp_wr < 0:
             rp_wr, rp_wc = -rp_wr, -rp_wc
         rp_key = (round(rp_wr, 4), round(rp_wc, 4))
@@ -294,7 +301,7 @@ def iter_wall_placements_from_terrain(
                 yield rp_wall, rp_up
 
 
-# --- Wall rasterization and flood fill ---
+# ---- Wall rasterization and flood fill ----
 
 def place_wall(dem, dam_row, dam_col, perp_vec_px,
                wall_elev, spillway_elev, thickness=2):
@@ -345,24 +352,9 @@ def flood_fill_8(dem, seed_row, seed_col, max_elev):
     if np.isnan(seed_val) or seed_val > max_elev:
         return mask
 
-    stack = [(seed_row, seed_col)]
-    mask[seed_row, seed_col] = True
-
-    neighbors = [(-1, -1), (-1, 0), (-1, 1),
-                 (0, -1),          (0, 1),
-                 (1, -1),  (1, 0), (1, 1)]
-
-    while stack:
-        r, c = stack.pop()
-        for dr, dc in neighbors:
-            nr, nc = r + dr, c + dc
-            if 0 <= nr < nrows and 0 <= nc < ncols and not mask[nr, nc]:
-                val = dem[nr, nc]
-                if not np.isnan(val) and val <= max_elev:
-                    mask[nr, nc] = True
-                    stack.append((nr, nc))
-
-    return mask
+    # The fill is the 8-connected component of cells at or below max_elev that holds the seed, voids never qualify
+    labels, _ = label(dem <= max_elev, structure=_EIGHT_CONNECTED)
+    return labels == labels[seed_row, seed_col]
 
 
 def detect_flat_water(dem_footprint, min_pixels=FLAT_MIN_PIXELS,
@@ -397,7 +389,7 @@ def detect_flat_water(dem_footprint, min_pixels=FLAT_MIN_PIXELS,
     return True, float(np.nanmean(cluster_vals))
 
 
-# --- Fill seed finder and validation helpers ---
+# ---- Fill seed finder and validation helpers ----
 
 def _find_seed_upstream(dem_walled, dam_r, dam_c, upstream_vec, seed_dist, z_spillway):
     seed_r = int(round(dam_r + upstream_vec[0] * seed_dist))
@@ -514,7 +506,7 @@ def _snap_dam_elev(dem_utm, dam_r, dam_c):
     return dam_r, dam_c, np.nan
 
 
-# --- Upstream valley walk ---
+# ---- Upstream valley walk ----
 
 def _iter_upstream_positions_walked(dem_utm, dam_r0, dam_c0, upstream_offsets,
                                     pixel_size, walk_step_m=None, downstream_walk=False):
@@ -542,12 +534,12 @@ def _iter_upstream_positions_walked(dem_utm, dam_r0, dam_c0, upstream_offsets,
         yield target, ri, ci
 
 
-# --- Single-try terrain placement ---
+# ---- Single-try terrain placement ----
 
 def _try_terrain_placement_once(
     dem_utm, dam_r, dam_c, dam_elev,
     eff_length, dam_height, spillway_height, capacity_m3, pixel_area,
-    flow_dir_px, wall_thickness, seed_dist,
+    river_dir_px, wall_thickness, seed_dist,
     prepend_angles_deg=None, prepend_bypass_flow_align=False,
     deadline=None,
 ):
@@ -568,7 +560,7 @@ def _try_terrain_placement_once(
 
     for wall_vec, upstream_vec in iter_wall_placements_from_terrain(
         dem_utm, dam_r, dam_c, eff_length, z_spillway,
-        pixel_size, flow_dir_px=flow_dir_px, top_k=TERRAIN_WALL_TOP_K,
+        pixel_size, river_dir_px=river_dir_px, top_k=TERRAIN_WALL_TOP_K,
         prepend_angles_deg=prepend_angles_deg,
         prepend_bypass_flow_align=prepend_bypass_flow_align,
     ):
@@ -607,6 +599,12 @@ def _try_terrain_placement_once(
             ):
                 continue
 
+            # Rejects a fill on the downstream side of the wall, which drains out at its far end and is not the reservoir
+            if not drains_through_wall(
+                fp, dem_utm, dam_r, dam_c, eff_length, capacity_m3, pixel_area,
+            ):
+                continue
+
             approx_vol = _approx_cone_volume_m3(n_px, pixel_area, spillway_height)
             vol_err = abs(np.log(max(approx_vol, 1.0) / max(capacity_m3, 1.0)))
             area_km2 = n_px * pixel_area / 1e6
@@ -634,11 +632,11 @@ def _try_terrain_placement_once(
     return best_up or best_dn
 
 
-# --- Extended upstream search ---
+# ---- Extended upstream search ----
 
 def search_terrain_wall_extended_upstream(
     dem_utm, dam_r0, dam_c0, dam_length_base_m,
-    dam_height, spillway_height, capacity_m3, pixel_area, flow_dir_px,
+    dam_height, spillway_height, capacity_m3, pixel_area, river_dir_px,
     wall_thickness, seed_dist,
     skip_duplicate_nominal=False,
     max_shift_px=None,
@@ -663,7 +661,7 @@ def search_terrain_wall_extended_upstream(
         )
     )
 
-    # Phase 0: local grid search
+    # Phase 0 tries every cell of the local grid around the nominal dam cell
     h, w = dem_utm.shape
     _LOCAL_RADIUS = 2
     local_seen = set()
@@ -685,7 +683,7 @@ def search_terrain_wall_extended_upstream(
             res = _try_terrain_placement_once(
                 dem_utm, lr, lc, lelev,
                 dam_length_base_m, dam_height, spillway_height, capacity_m3,
-                pixel_area, flow_dir_px, wall_thickness, seed_dist,
+                pixel_area, river_dir_px, wall_thickness, seed_dist,
                 prepend_angles_deg=prepend_angles_deg,
                 prepend_bypass_flow_align=prepend_bypass_flow_align,
                 deadline=deadline,
@@ -694,7 +692,7 @@ def search_terrain_wall_extended_upstream(
                 fp, n_px, area_km2, _dr, _dc, _de, wv, el = res
                 return fp, n_px, area_km2, _dr, _dc, _de, 0.0, wv, el
 
-    # Phase 1: base crest length
+    # Phase 1 tries the base crest length at each walked upstream position
     for upstream_m, dam_r, dam_c in walked:
         if deadline is not None and time.time() > deadline:
             break
@@ -706,7 +704,7 @@ def search_terrain_wall_extended_upstream(
         res = _try_terrain_placement_once(
             dem_utm, dam_r, dam_c, dam_elev,
             dam_length_base_m, dam_height, spillway_height, capacity_m3, pixel_area,
-            flow_dir_px, wall_thickness, seed_dist,
+            river_dir_px, wall_thickness, seed_dist,
             prepend_angles_deg=prepend_angles_deg,
             prepend_bypass_flow_align=prepend_bypass_flow_align,
             deadline=deadline,
@@ -715,7 +713,7 @@ def search_terrain_wall_extended_upstream(
             fp, n_px, area_km2, dr, dc, delev, wv, el = res
             return fp, n_px, area_km2, dr, dc, delev, upstream_m, wv, el
 
-    # Phase 2: lengthen crest
+    # Phase 2 lengthens the crest at each walked upstream position
     for upstream_m, dam_r, dam_c in walked:
         if deadline is not None and time.time() > deadline:
             break
@@ -731,7 +729,7 @@ def search_terrain_wall_extended_upstream(
             res = _try_terrain_placement_once(
                 dem_utm, dam_r, dam_c, dam_elev,
                 eff_length, dam_height, spillway_height, capacity_m3, pixel_area,
-                flow_dir_px, wall_thickness, seed_dist,
+                river_dir_px, wall_thickness, seed_dist,
                 prepend_angles_deg=prepend_angles_deg,
                 prepend_bypass_flow_align=prepend_bypass_flow_align,
                 deadline=deadline,
@@ -744,17 +742,17 @@ def search_terrain_wall_extended_upstream(
     return None, 0, 0.0, dam_r0, dam_c0, np.nan, np.nan, None, np.nan
 
 
-# --- Fallback multi-direction fill ---
+# ---- Fallback multi-direction fill ----
 
 def fallback_multidirection_fill(
     dem_utm, dam_r, dam_c, dam_elev, z_spillway, z_wall,
     spillway_height, dam_height, capacity_m3, pixel_area,
     wall_thickness, seed_dist, area_cap_km2,
-    flow_dir_px=None,
+    river_dir_px=None, dam_length_m=0.0,
 ):
     downstream_candidates = []
-    if flow_dir_px is not None:
-        v = np.asarray(flow_dir_px, dtype=float)
+    if river_dir_px is not None:
+        v = np.asarray(river_dir_px, dtype=float)
         nn = np.linalg.norm(v)
         if nn > 1e-9:
             downstream_candidates.append(v / nn)
@@ -794,6 +792,10 @@ def fallback_multidirection_fill(
             ):
                 continue
             if not _accept_fallback_fill(fp, dem_utm, dam_elev, dam_height, spillway_height):
+                continue
+            if not drains_through_wall(
+                fp, dem_utm, dam_r, dam_c, dam_length_m, capacity_m3, pixel_area,
+            ):
                 continue
 
             max_vol_approx = n_px * pixel_area * spillway_height / 3.0

@@ -20,12 +20,12 @@ from .config import (
 import eaves.config as _cfg
 
 
-# --- Placement-override loaders ---
+# ---- Placement-override loaders ----
 
 def _load_placement_overrides():
-    """Load ``dam_placement_overrides.csv`` once; keyed by dam_id.
+    """Load ``dam_placement_overrides.csv`` once, keyed by dam_id.
 
-    Path is read from ``_cfg.PLACEMENT_OVERRIDES_CSV`` if set (see settings);
+    Path is read from ``_cfg.PLACEMENT_OVERRIDES_CSV`` if set (see settings) and
     silently skipped otherwise.
     """
     if _cfg._placement_overrides_cache is not None:
@@ -122,10 +122,10 @@ def _ov_preferred_crest_angles_deg(ov):
     return out
 
 
-# --- Upstream walk distances ---
+# ---- Upstream walk distances ----
 
 def _upstream_sample_distances_m(pixel_size_m, max_shift_px=None):
-    """Distances (m) along the valley walk at which we try a wall."""
+    """Distances (m) along the valley walk at which a wall is tried."""
     if pixel_size_m <= 0 or not np.isfinite(pixel_size_m):
         return np.array([0.0], dtype=float)
     mx_px = float(UPSTREAM_MAX_SHIFT_PX if max_shift_px is None else max_shift_px)
@@ -140,7 +140,7 @@ def _upstream_sample_distances_m(pixel_size_m, max_shift_px=None):
     return np.array(out, dtype=float)
 
 
-# --- Coordinate / tile helpers ---
+# ---- Coordinate / tile helpers ----
 
 def utm_epsg_from_lon(lon):
     zone = int((lon + 180) / 6) + 1
@@ -153,7 +153,7 @@ def srtm_tile_name(lat, lon):
     return f"{ns}{abs(int(np.floor(lat))):02d}{ew}{abs(int(np.floor(lon))):03d}.hgt"
 
 
-# --- Power-law fit ---
+# ---- Power-law fit ----
 
 def power_law_2p(area, c, b):
     return c * np.power(area, b)
@@ -177,7 +177,44 @@ def fit_power_law(area_m2, vol_m3):
         return np.nan, np.nan, np.nan
 
 
-# --- Misc helpers ---
+# ---- Released precision ----
+
+def _released_decimals(column):
+    if column in _cfg.RELEASE_DECIMALS:
+        return _cfg.RELEASE_DECIMALS[column]
+    if "b" in str(column).split("_"):
+        return _cfg.RELEASE_DECIMALS["b"]
+    return None
+
+
+def round_released_value(column, value):
+    """Round one value of ``column`` to the precision of the released tables.
+
+    A floating-point value keeps ``RELEASE_SIGNIFICANT_DIGITS`` significant
+    digits and never fewer than ``RELEASE_MIN_DECIMALS`` decimals. The columns
+    of ``RELEASE_DECIMALS`` keep a fixed number of decimals. The columns of
+    ``RELEASE_VERBATIM`` and every value that is not a float pass unchanged.
+    """
+    if column in _cfg.RELEASE_VERBATIM or not isinstance(value, (float, np.floating)) or not np.isfinite(value):
+        return value
+    value = float(value)
+    decimals = _released_decimals(column)
+    if decimals is None:
+        digits = _cfg.RELEASE_SIGNIFICANT_DIGITS
+        exponent = int(f"{value:.{digits - 1}e}".split("e")[1])
+        decimals = max(_cfg.RELEASE_MIN_DECIMALS, digits - 1 - exponent)
+    return round(value, decimals)
+
+
+def round_released_columns(df):
+    """Round the floating-point columns of ``df`` in place to the precision of the released tables."""
+    for column in df.columns:
+        if df[column].dtype.kind == "f":
+            df[column] = df[column].map(lambda value, column=column: round_released_value(column, value))
+    return df
+
+
+# ---- Misc helpers ----
 
 def interpolate_nans(data):
     from scipy.ndimage import distance_transform_edt

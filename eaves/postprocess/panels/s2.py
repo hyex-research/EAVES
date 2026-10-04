@@ -1,4 +1,4 @@
-"""Panel s2 -- supplementary: capacity-threshold sweep for the reliability cut.
+"""Panel s2 (supplementary): capacity-threshold sweep for the reliability cut.
 
 Two questions:
 
@@ -32,7 +32,7 @@ _GRADE_COLORS = {
     "B": "#54A24B",   # green
     "C": "#F58518",   # orange
     "D": "#E45756",   # red
-    "F": "#54585A",   # dark grey
+    "F": "#54585A",   # dark gray
 }
 
 
@@ -62,7 +62,7 @@ def make_s2_threshold(out_dir: Path) -> Path:
 
     import matplotlib.pyplot as plt
 
-    # Uniform 10 pt text across every element; panel labels overridden to 12.
+    # Sets uniform 10 pt text across every element. Panel labels are overridden to 12
     rc_override = {
         "font.size":       10,
         "axes.labelsize":  10,
@@ -81,7 +81,7 @@ def make_s2_threshold(out_dir: Path) -> Path:
     fig.subplots_adjust(left=0.07, right=0.93, top=0.90, bottom=0.13,
                         wspace=0.45)
 
-    # ---- panel a: R^2 vs capacity, colored by quality grade ----
+    # ---- Panel a: R^2 vs capacity, colored by quality grade ----
     s = summary_df[summary_df["capacity_mcm"] > 0].copy()
     for grade in ["A", "B", "C", "D", "F"]:
         sub = s[s["quality"] == grade]
@@ -110,7 +110,7 @@ def make_s2_threshold(out_dir: Path) -> Path:
     ax_a.legend(loc="lower right", frameon=True, framealpha=0.95)
     ax_a.set_ylim(max(0.85, float(s["r_squared"].quantile(0.02)) - 0.01), 1.005)
 
-    # ---- panel b: fraction reliable vs threshold + n_above bars ----
+    # ---- Panel b: fraction reliable vs threshold + n_above bars ----
     t = threshold_df.sort_values("threshold_mcm")
     ax_b_bars = ax_b.twinx()
     ax_b_bars.bar(
@@ -142,7 +142,7 @@ def make_s2_threshold(out_dir: Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "s2_threshold_analysis.png"
-    # Open axes on panel a (panel b keeps its right spine for the twin bar axis).
+    # Opens the axes on panel a. Panel b keeps its right spine for the twin bar axis
     ax_a.spines["top"].set_visible(False)
     ax_a.spines["right"].set_visible(False)
     ax_b.spines["top"].set_visible(False)

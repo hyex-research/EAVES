@@ -11,12 +11,13 @@
 │   ├── cli.py                   # Command-line interface: argparse + main()
 │   ├── config.py                # Paths, algorithm constants, runtime reconfiguration
 │   ├── settings.py              # JSON settings loader -> config.configure()
-│   ├── preprocess.py            # MERIT -> country-clipped river network + dam snapping
-│   ├── utils.py                 # Math helpers, override loaders, SRTM/UTM utilities
+│   ├── preprocess.py            # MERIT -> river network closed upstream and split along the channel + dam snapping
+│   ├── utils.py                 # Math helpers, override loaders, SRTM/UTM utilities, released-table rounding
 │   │
 │   ├── pipeline/                # Per-dam EAV computation (runs in workers)
-│   │   ├── terrain.py           # DEM loading, clipping, reprojection, flow direction
+│   │   ├── terrain.py           # DEM loading, clipping, reprojection, river direction
 │   │   ├── placement.py         # Wall search, flood fill, upstream walk (6 stages)
+│   │   ├── drainage.py          # Drainage of the DEM window, drain-through-the-wall test
 │   │   ├── curves.py            # Per-dam EAV curve construction (process_dam)
 │   │   └── workers.py           # Multiprocessing worker wrappers
 │   │
@@ -30,7 +31,7 @@
 │       ├── dem_error.py         # Opt-in: SRTM vertical-error Monte-Carlo
 │       ├── uncertainty.py       # Three-term per-dam V uncertainty band (b_sigma, capacity, predicted-area terms)
 │       ├── report.py            # Domain-characterization CSV + Markdown report
-│       └── panels/              # Publication panels (p1-p5 main, s1-s5 supplementary; PNG + PDF)
+│       └── panels/              # Publication panels (p1-p5 main, s1-s5 supplementary) as PNG + PDF
 │
 ├── region/                      # Per-region spatial runs
 │   └── <country>/               # Full regional deployment
@@ -51,7 +52,8 @@
 │   ├── conftest.py              # Session fixtures (repo_root, fixture_output, golden_hashes)
 │   ├── test_*.py                # Fast unit suites + slow regression test
 │   ├── golden_hashes.json       # Expected-output spec for the regression test
-│   └── fixture/                 # Self-contained 15-dam fixture (settings, inputs, reference outputs)
+│   ├── build_fixture_srtm.py    # Cuts the fixture elevation set from full SRTM tiles
+│   └── fixture/                 # 15-dam fixture (settings, inputs, reference outputs)
 │
 ├── pytest.ini                   # Pytest config (registers `slow` marker)
 ├── environment.yml              # Conda environment specification

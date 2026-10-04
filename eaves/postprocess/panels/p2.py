@@ -1,8 +1,8 @@
-"""Panel set p2 — dam wall placement, three exemplars from the six-stage algorithm.
+"""Panel set p2: dam wall placement, three exemplars from the six-stage algorithm.
 
-Panel a — Stage 1 direct placement (King Fahad).
-Panel b — Stage 4 river-direction retry (Hafar Al-Batin).
-Panel c — Stage 6 fallback (Marat).
+Panel a: Stage 1 direct placement (King Fahad).
+Panel b: Stage 4 river-direction retry (Marikh).
+Panel c: Stage 6 fallback (Marat).
 """
 
 from __future__ import annotations
@@ -43,21 +43,21 @@ _STAGE_TITLES: dict[str, str] = {
     "c": "Stage 6: fallback",
 }
 
-# Preferred exemplar dam IDs (tried first; automatic ranking used as fallback).
+# Pins the preferred exemplar dam IDs, tried first, with the automatic ranking as fallback
 _PINNED_EXEMPLARS: dict[str, str] = {
-    "a": "id_070014",  # King Fahad Dam — Stage 1 fast path
-    "b": "id_050001",  # Hafar Al-Batin Dam — Stage 4 river-direction retry
-    "c": "id_010024",  # Marat Dam — Stage 6 synthetic fallback
+    "a": "id_070014",  # King Fahad Dam, Stage 1 fast path
+    "b": "id_020000",  # Marikh Dam, Stage 4 river-direction retry
+    "c": "id_010024",  # Marat Dam, Stage 6 synthetic fallback
 }
 
 
 def _candidate_pool(summary_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     """Return ranked candidate DataFrames keyed by panel letter ('a','b','c').
 
-    Selection rules (NATURE_FIG_SPEC.md §11f):
-      a — Stage 1, quality A, height ≥ 20 m, vol_ratio in [0.8, 1.3].
-      b — Stage 4; rank by height descending.
-      c — Stage 6; rank by closeness of vol_ratio to 1.0.
+    Selection rules:
+      a: Stage 1, quality A, height ≥ 20 m, vol_ratio in [0.8, 1.3].
+      b: Stage 4, ranked by height descending.
+      c: Stage 6, ranked by closeness of vol_ratio to 1.0.
     """
     mask_a = (
         (summary_df["placement_method"] == "stage_1_fast_path")
@@ -215,7 +215,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
 
     full_left, full_right, full_bottom, full_top = _dem_extent_m(dem_tf, dem.shape)
 
-    # Centre window on midpoint between catalogue dam and accepted wall pixel.
+    # Centers the window on the midpoint between the catalogue dam and the accepted wall pixel
     tr_fwd = Transformer.from_crs("EPSG:4326", f"EPSG:{target_epsg}", always_xy=True)
     tr_back = Transformer.from_crs(f"EPSG:{target_epsg}", "EPSG:4326", always_xy=True)
     cat_x, cat_y = tr_fwd.transform(cat_lon, cat_lat)
@@ -228,7 +228,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
     win_left, win_right = centre_x - half, centre_x + half
     win_bottom, win_top = centre_y - half, centre_y + half
 
-    # Gainsboro land base + LightSource hillshade overlay at alpha=0.45.
+    # Draws the gainsboro land base and the LightSource hillshade overlay at alpha=0.45
     ax.set_facecolor(COL_LAND)
     ls = LightSource(azdeg=315, altdeg=45)
     dem_for_shade = np.where(np.isnan(dem), np.nanmean(dem), dem)
@@ -240,14 +240,14 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
               origin="upper", cmap="gray", vmin=0.0, vmax=1.0, alpha=0.45,
               interpolation="bilinear", zorder=1)
 
-    # Flooded basin (filled polygon + outline).
+    # Draws the flooded basin as a filled polygon with an outline
     for poly_xy in _footprint_to_polygon_patches(fp, dem_tf):
         ax.fill(poly_xy[:, 0], poly_xy[:, 1],
                 facecolor=COL_BASIN, alpha=0.45, edgecolor="none", zorder=3)
         ax.plot(poly_xy[:, 0], poly_xy[:, 1],
                 color=COL_BASIN, alpha=0.85, lw=0.8, zorder=4)
 
-    # MERIT rivers within the panel window.
+    # Draws the MERIT rivers within the panel window
     if gdf_rivers_lonlat is not None and not gdf_rivers_lonlat.empty:
         corners_x = [win_left, win_right, win_right, win_left]
         corners_y = [win_bottom, win_bottom, win_top, win_top]
@@ -278,7 +278,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
                     ax.plot(xs_l, ys_l, color=COL_RIVER, lw=lw,
                             solid_capstyle="round", zorder=2)
 
-    # Accepted wall (black halo + amber core for contrast on any hillshade).
+    # Draws the accepted wall with a black halo and an amber core, for contrast on any hillshade
     wall_vec = result.get("wall_vec")
     eff_length_m = result.get("eff_length_m")
     if wall_vec is not None and eff_length_m and pixel_size_m:
@@ -294,7 +294,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
         ax.plot(x_wall, y_wall, color=COL_WALL, lw=2.6,
                 solid_capstyle="round", zorder=6)
 
-    # Catalogue dam location (red star) and MERIT-snapped node (if offset).
+    # Marks the catalogue dam location (red star) and the MERIT-snapped node where it is offset
     ax.scatter([cat_x], [cat_y], marker="*", s=85,
                facecolor=COL_DAM, edgecolor="white", linewidth=0.8, zorder=7)
     snap_x, snap_y = tr_fwd.transform(snap_lon, snap_lat)
@@ -302,7 +302,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
         ax.scatter([snap_x], [snap_y], marker="v", s=28,
                    facecolor="white", edgecolor="black", linewidth=0.4, zorder=7)
 
-    # Window + axes cosmetics (geographic degree tick labels).
+    # Sets the window and the axes cosmetics, with geographic degree tick labels
     ax.set_xlim(win_left, win_right)
     ax.set_ylim(win_bottom, win_top)
     ax.set_aspect("equal")
@@ -326,7 +326,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
     panel_label(ax, letter, y_offset_pt=22.0, fontsize=12)
     ax.set_title(_STAGE_TITLES[letter], fontsize=10, pad=4, loc="left")
 
-    # Dam name, top-right corner (name only — no dam_id).
+    # Writes the dam name in the top-right corner, without the dam_id
     if dam_name:
         ax.text(0.98, 0.97, dam_name, transform=ax.transAxes,
                 fontsize=10, ha="right", va="top",
@@ -335,7 +335,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
 
 
 def _placement_legend(fig) -> None:
-    """Shared figure-level legend below all three placement panels."""
+    """Shared figure-level legend below the placement panels."""
     handles = [
         plt.Line2D([0], [0], marker="*", linestyle="none",
                    markerfacecolor=COL_DAM, markeredgecolor="white",
@@ -373,7 +373,7 @@ def _select_with_reproducibility(letter: str, candidates: pd.DataFrame,
             print(f"[p2] panel {letter}: trying {dam_id} (expects {expected})")
             result = _compute_placement_result(dam_id, gdf_dams, gdf_rivers)
         except Exception as exc:
-            print(f"[p2]   {dam_id}: placement raised {exc}; trying next.")
+            print(f"[p2]   {dam_id}: placement raised {exc}, trying next.")
             last_exc = exc
             continue
         method = result.get("placement_method", "")
@@ -387,7 +387,7 @@ def _select_with_reproducibility(letter: str, candidates: pd.DataFrame,
         method = result.get("placement_method", "?")
         print(
             f"[p2] WARNING panel {letter}: no candidate reproduced "
-            f"{expected!r}; falling back to {dam_id} ({method!r})."
+            f"{expected!r}, falling back to {dam_id} ({method!r})."
         )
         return first_success
     raise RuntimeError(
@@ -407,7 +407,7 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
     summary_df = pd.read_csv(Path(_cfg.CSV_DIR) / "eaves_summary.csv")
     pools = _candidate_pool(summary_df)
 
-    # Prepend pinned exemplars so _select_with_reproducibility tries them first.
+    # Prepends the pinned exemplars, which _select_with_reproducibility then tries first
     for letter, pinned_id in _PINNED_EXEMPLARS.items():
         pin_rows = summary_df[summary_df["dam_id"] == pinned_id]
         if not pin_rows.empty:
@@ -429,7 +429,7 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
         exemplars[letter] = (dam_id, sum_row)
         results[letter] = result
 
-    # Uniform 10 pt text across every element; panel labels overridden to 12.
+    # Sets uniform 10 pt text across every element. Panel labels are overridden to 12
     rc_override = {
         "font.size":       10,
         "axes.labelsize":  10,

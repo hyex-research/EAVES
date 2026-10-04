@@ -5,7 +5,7 @@ volumes and power-law exponents. It perturbs the raw SRTM mosaic with
 spatially-correlated Gaussian noise at the published low-relief SRTM accuracy
 and re-runs the *real* EAVES flood-fill + power-law fit over many realizations,
 on a log-capacity-stratified sample of trusted ``srtm_derived`` dams spanning
-the full capacity range. The unperturbed run is the per-dam reference; the
+the full capacity range. The unperturbed run is the per-dam reference. The
 routine reports the *fractional* spread of recovered max volume (and of ``b``)
 across realizations relative to that reference.
 
@@ -19,18 +19,18 @@ perturbed so that NaN voids are never turned into spurious terrain.
 
 Robustness against being killed mid-run
 ---------------------------------------
-Results are written INCREMENTALLY: each dam's row is appended to the output CSV
+Results are written INCREMENTALLY. Each dam's row is appended to the output CSV
 (with ``flush`` + ``fsync`` under an advisory file lock) the moment that dam
 finishes. A run that is killed therefore preserves every completed dam.
-Re-launching resumes -- dams already present in the CSV are skipped, and the
+Re-launching resumes. Dams already present in the CSV are skipped, and the
 header is written once. A per-dam wall-clock budget caps the time spent on any
-single (possibly giant) reservoir: once exceeded, drawing stops and whatever is
+single (possibly giant) reservoir. Once exceeded, drawing stops and whatever is
 banked is recorded.
 
 Param-safe
 ----------
 This step never calls ``run_regionalization``, never writes any released
-artefact, and never touches ``eaves_params.csv``. It reads ``eaves_summary.csv``
+artifact, and never touches ``eaves_params.csv``. It reads ``eaves_summary.csv``
 only to select trusted dams and writes a single new file:
 ``validation/dem_error_montecarlo.csv``.
 """
@@ -50,10 +50,10 @@ from ..settings import load_settings
 from ..pipeline import terrain as _terrain
 from ..pipeline.curves import process_dam
 from ..pipeline.workers import DamRow
-from ..utils import buffer_deg_for_dam
+from ..utils import buffer_deg_for_dam, round_released_value
 
 
-# Column order for the incremental CSV (must stay stable across appends).
+# Fixes the column order of the incremental CSV, which must stay stable across appends
 FIELDS = [
     "dam_id", "capacity_mcm", "released_b", "released_max_vol_mcm",
     "ref_b", "ref_max_vol_mcm", "n_realizations", "n_ok", "n_fail",
@@ -101,13 +101,12 @@ def _select_dams(summary_csv: str, n_dams: int, seed: int = 0):
 
     Uses log-capacity quantile bins so the sample spans small -> large
     reservoirs rather than clustering at the dense small end. Reproduces the
-    trusted-set gate (the 322 srtm_derived dams) exactly; recomputes no
-    parameter.
+    trusted-set gate exactly and recomputes no parameter.
     """
     s = pd.read_csv(summary_csv)
     trusted = s[_trusted_mask(s)].copy()
     trusted = trusted[trusted["capacity_mcm"] > 0].reset_index(drop=True)
-    # id_100017 gave an unstable spread from 5 realizations (factor-6 outlier); excluded.
+    # Excludes id_100017, whose spread from 5 realizations is unstable (factor-6 outlier)
     trusted = trusted[trusted["dam_id"] != "id_100017"].reset_index(drop=True)
     logcap = np.log10(trusted["capacity_mcm"].values)
     edges = np.quantile(logcap, np.linspace(0, 1, n_dams + 1))
@@ -125,7 +124,7 @@ def _select_dams(summary_csv: str, n_dams: int, seed: int = 0):
         picks.append(int(rng.choice(idxs)))
     picks = sorted(set(picks))
     out = trusted.iloc[picks].reset_index(drop=True)
-    # Small dams first; a kill then costs only the unfinished expensive giants.
+    # Orders small dams first. A kill then costs only the unfinished expensive giants
     return out.sort_values("capacity_mcm").reset_index(drop=True)
 
 
@@ -159,7 +158,7 @@ def _run_one(dam_dict, gdf_rivers, sigma_m=0.0, corr_px=0.0, rng=None):
                 dam_lat, dam_lon, buffer_deg=buf_deg + 0.02
             )
             if sigma_m > 0:
-                # Perturb only finite elevations; NaN voids must not become terrain.
+                # Perturbs only finite elevations. NaN voids stay voids and never become terrain
                 pert = srtm_data.copy()
                 finite = np.isfinite(pert)
                 noise_field = _correlated_noise(pert.shape, sigma_m, corr_px, rng)
@@ -179,7 +178,7 @@ def _run_one(dam_dict, gdf_rivers, sigma_m=0.0, corr_px=0.0, rng=None):
                 "n_pixels": int(result["n_pixels"]),
                 "curve_type": result["curve_type"],
             }
-        except Exception:  # placement / void / fit failure for this draw
+        except Exception:  # Placement, void or fit failure for this draw
             continue
         finally:
             for src in _cfg._srtm_cache.values():
@@ -194,7 +193,7 @@ def _run_one(dam_dict, gdf_rivers, sigma_m=0.0, corr_px=0.0, rng=None):
 def _row_text(record):
     vals = []
     for k in FIELDS:
-        v = record[k]
+        v = round_released_value(k, record[k])
         vals.append(repr(v) if isinstance(v, float) else str(v))
     return ",".join(vals) + "\n"
 
@@ -210,7 +209,7 @@ def _append_row(out_path, record):
     import fcntl
 
     line = _row_text(record)
-    # Open in a+ so the file is created if needed; lock before deciding header.
+    # Opens in a+ mode, which creates the file if needed, and takes the lock before deciding on the header
     with open(out_path, "a+", newline="") as fh:
         fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
         try:
@@ -227,10 +226,10 @@ def _append_row(out_path, record):
 
 def _compute_dam(dam_dict, srow, gdf_rivers, n_real, sigma_m, corr_px,
                  seed_d, per_dam_budget_s):
-    """Reference + perturbed realizations for one dam; returns a record or None.
+    """Reference + perturbed realizations for one dam. Returns a record or None.
 
     Returns ``None`` if the unperturbed reference run fails (the dam is then
-    skipped). The per-dam wall-clock budget stops drawing once exceeded; the
+    skipped). The per-dam wall-clock budget stops drawing once exceeded. The
     record then reflects whatever was banked.
     """
     ref = _run_one(dam_dict, gdf_rivers, sigma_m=0.0)
@@ -302,13 +301,13 @@ def _compute_dam(dam_dict, srow, gdf_rivers, n_real, sigma_m, corr_px,
     return record
 
 
-# --- Parallel worker plumbing: module-level so the spawn-context Pool can import it ---
+# ---- Parallel worker plumbing, module-level so the spawn-context Pool can import it ----
 _W: dict = {}
 
 
 def _worker_init(settings_json, domain_dir, out_path, n_real, sigma_m, corr_px,
                  per_dam_budget_s):
-    # Import here so the spawned interpreter resolves them in its own namespace.
+    # Imports inside the worker, where the spawned interpreter resolves the names in its own namespace
     from ..cli import _load_translit_map, _build_dam_data_list
 
     load_settings(settings_json)
@@ -337,7 +336,7 @@ def _worker_task(payload):
     if rec is None:
         return (dam_id, None, "reference run failed")
     budget_hit = rec.pop("_budget_hit", False)
-    _append_row(_W["out_path"], rec)  # lock decides header
+    _append_row(_W["out_path"], rec)  # The lock decides the header
     return (dam_id, rec, "budget-capped" if budget_hit else "ok")
 
 
@@ -376,7 +375,7 @@ def dem_error_montecarlo(
     Parameters
     ----------
     summary_csv : path to ``eaves_summary.csv`` (sample selection).
-    settings_json : region settings JSON; re-loaded inside each spawned worker.
+    settings_json : region settings JSON, re-loaded inside each spawned worker.
     domain_dir : domain directory holding ``dams_snapped.geojson`` and
         ``rivers_split.geojson`` (used by spawned workers).
     out_dir : directory to write ``dem_error_montecarlo.csv`` into.
@@ -411,14 +410,14 @@ def dem_error_montecarlo(
         print(f"Resuming: {len(done)} dams already in CSV will be skipped",
               flush=True)
 
-    # Deterministic per-dam seeds, stable across resumes; queue dams missing from the CSV.
+    # Draws deterministic per-dam seeds, stable across resumes, and queues the dams missing from the CSV
     rng_master = np.random.default_rng(seed)
     tasks = []
     for _, srow in sample.iterrows():
         dam_id = str(srow["dam_id"]).strip()
         seed_d = int(rng_master.integers(0, 2**31 - 1))
         if dam_id in done:
-            print(f"  {dam_id} already done; skip", flush=True)
+            print(f"  {dam_id} already done, skipped", flush=True)
             continue
         tasks.append((srow.to_dict(), seed_d))
 
@@ -446,7 +445,7 @@ def dem_error_montecarlo(
     initargs = (settings_json, domain_dir, out_path, n_real, sigma_m, corr_px,
                 per_dam_budget_s)
     if workers <= 1:
-        # Serial path uses the already-loaded data passed in by the caller.
+        # The serial path uses the already-loaded data passed in by the caller
         _W["by_id"] = {str(d["dam_id"]).strip(): d for d in dam_data_list}
         _W["gdf_rivers"] = gdf_rivers
         _W["out_path"] = out_path
@@ -466,7 +465,7 @@ def dem_error_montecarlo(
                     pool.imap_unordered(_worker_task, tasks), 1):
                 _report(dam_id, rec, status, i)
 
-    # Final aggregate summary from whatever is on disk (covers resumed runs too).
+    # Prints the final aggregate summary from whatever is on disk, which covers resumed runs too
     df = pd.read_csv(out_path) if os.path.isfile(out_path) and os.path.getsize(out_path) > 0 \
         else pd.DataFrame(columns=FIELDS)
     _print_summary(df, n_written, n_real, sigma_m, corr_px, out_path)

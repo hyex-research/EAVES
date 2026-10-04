@@ -1,6 +1,6 @@
 # 🏔️💧 **EAVES: Elevation-Area-Volume Estimation from SRTM**
 
-*Reconstructing reservoir bathymetry for ungaged arid-basin dams from SRTM topography acquired before most of them were built.*
+_Reconstructing reservoir bathymetry for ungaged arid-basin dams from SRTM topography acquired before most of them were built._
 
 ---
 
@@ -28,14 +28,14 @@ For each dam the pipeline:
 
 The headline product, `eaves_params.csv`, provides the area-volume relationship for every dam in the study domain, enabling satellite-observed water extent to be converted into storage estimates for downstream hydrological modeling.
 
-> **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia** (526 dams: 322 SRTM-derived, 204 regionalized). The codebase is portable and can be applied to any region for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalog) are available.
+> **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia** (526 dams: 320 SRTM-derived, 206 regionalized). The codebase is portable and can be applied to any region for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalog) are available.
 
 ## 📂 The data
 
 The Saudi Arabia EAV curves are ready to use directly, no run required:
 
 - **[`eaves_params.csv`](region/ksa/output/1_results_csv/eaves_params.csv)** - power-law coefficients (c, b) for all 526 dams. The one file most users need.
-- **[`eaves_summary.csv`](region/ksa/output/1_results_csv/eaves_summary.csv)** - full per-dam table: quality grade, uncertainty flags, fitted statistics, and topographic features.
+- **[`eaves_summary.csv`](region/ksa/output/1_results_csv/eaves_summary.csv)** - full per-dam table for the 503 dams with a flood fill: quality grade, uncertainty flags, fitted statistics, and topographic features.
 - **[`DATA_DICTIONARY.md`](region/ksa/output/1_results_csv/DATA_DICTIONARY.md)** - every column defined, with units.
 
 Convert a satellite-observed water area A to storage with the dam's own coefficients: V = c · A<sup>b</sup>. The full release (per-dam hypsometries and the validation suite) is archived on Zenodo (<https://doi.org/10.5281/zenodo.20728129>).

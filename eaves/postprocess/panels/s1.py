@@ -1,4 +1,4 @@
-"""Panel s1 -- supplementary: K-means clustering of trusted SRTM dams.
+"""Panel s1 (supplementary): K-means clustering of trusted SRTM dams.
 
 Two questions the paper needs to defend:
 
@@ -15,7 +15,7 @@ Writes:
 - ``<PLOT_DIR>/s1_b_clustering_silhouette.png``         two-panel figure.
 
 The CSV write happens here (rather than in :mod:`eaves.postprocess.validation`)
-because the diagnostic is panel-local: nothing downstream consumes it.
+because the diagnostic is panel-local. Nothing downstream consumes it.
 """
 
 from __future__ import annotations
@@ -28,11 +28,12 @@ import pandas as pd
 
 import eaves.config as _cfg
 from ..reliability import training_mask
+from ...utils import round_released_columns
 
 from ._shared import apply_style, mm_to_in, panel_label, save_panel
 
 
-# --- Feature set and k range ---
+# ---- Feature set and k range ----
 _FEATURES: list[str] = [
     "valley_ratio", "channel_slope", "mean_catchment_slope",
     "dam_height_m", "spillway_height_m", "dam_length_m",
@@ -41,10 +42,9 @@ _K_RANGE = list(range(2, 13))
 _CURVE_COLOR = "#D62728"   # red
 
 
-# --- Preprocessing ---
+# ---- Preprocessing ----
 def _trusted(df: pd.DataFrame) -> pd.DataFrame:
-    # Training population: trusted gates AND post-SRTM construction, matching
-    # the dams the regionalization recipe is actually trained on.
+    # Selects the training population (trusted gates and post-SRTM construction), the dams the regionalization recipe is trained on
     return df[training_mask(df)].copy().reset_index(drop=True)
 
 
@@ -55,7 +55,7 @@ def _design_matrix(df: pd.DataFrame, feats: list[str]) -> np.ndarray:
     return (X - mu) / sd
 
 
-# --- Silhouette and LOO sigma(delta b) ---
+# ---- Silhouette and LOO sigma(delta b) ----
 def _silhouette_curve(X: np.ndarray, ks: list[int], seed: int = 42) -> list[float]:
     from sklearn.cluster import KMeans
     from sklearn.metrics import silhouette_score
@@ -72,8 +72,8 @@ def _loo_cluster_sigma(T: pd.DataFrame, feats: list[str], k: int,
     """Mean LOO sigma(delta_b) for per-cluster-median prediction at the given k.
 
     Uses ``n_init=3`` (rather than the silhouette curve's 10) because each
-    LOO fold runs an independent KMeans on ~n-1 points; ``n_init=3`` keeps
-    the cumulative cost tractable (~3,500 fits for n=322) and the resulting
+    LOO fold runs an independent KMeans on ~n-1 points. ``n_init=3`` keeps
+    the cumulative cost tractable (n fits for each k) and the resulting
     ``sigma`` is stable to <0.005 against ``n_init=10``.
     """
     from sklearn.cluster import KMeans
@@ -104,7 +104,7 @@ def _compute(summary_csv: str, out_csv_dir: str) -> pd.DataFrame:
     T = _trusted(pd.read_csv(summary_csv))
     if len(T) < 10:
         raise RuntimeError(
-            f"trusted SRTM set too small (n={len(T)}); the silhouette "
+            f"trusted SRTM set too small (n={len(T)}). The silhouette "
             "diagnostic needs ~50+ dams to be meaningful"
         )
     base = _baseline_sigma(T)
@@ -125,18 +125,18 @@ def _compute(summary_csv: str, out_csv_dir: str) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     os.makedirs(out_csv_dir, exist_ok=True)
     out = os.path.join(out_csv_dir, "b_clustering_diagnostic.csv")
-    df.to_csv(out, index=False)
+    round_released_columns(df).to_csv(out, index=False)
     return df
 
 
-# --- Figure ---
+# ---- Figure ----
 def make_s1_clustering(out_dir: Path) -> Path:
     """Compute the b-clustering diagnostic and render the supplementary figure.
 
     The CSV write target is fixed at ``<CSV_DIR>/validation/`` rather than
     ``out_dir`` because the CSV is referenced by the report under the
-    validation/ namespace; ``out_dir`` controls only the PNG destination.
-    The diagnostic is *always recomputed* on each invocation -- caching it
+    validation/ namespace. ``out_dir`` controls only the PNG destination.
+    The diagnostic is *always recomputed* on each invocation, since caching it
     would silently keep stale residuals around after a pipeline rerun.
     """
     apply_style()
@@ -147,7 +147,7 @@ def make_s1_clustering(out_dir: Path) -> Path:
 
     import matplotlib.pyplot as plt
 
-    # Uniform 10 pt text across every element; panel labels overridden to 12.
+    # Sets uniform 10 pt text across every element. Panel labels are overridden to 12
     rc_override = {
         "font.size":       10,
         "axes.labelsize":  10,
@@ -167,7 +167,7 @@ def make_s1_clustering(out_dir: Path) -> Path:
 
     sub = df.sort_values("k")
 
-    # ---- panel a: silhouette vs k ----
+    # ---- Panel a: silhouette vs k ----
     ax_a.plot(sub["k"], sub["silhouette"],
               color=_CURVE_COLOR, marker="o", linewidth=1.2, markersize=4.0,
               label="raw morphometry")
@@ -187,7 +187,7 @@ def make_s1_clustering(out_dir: Path) -> Path:
     ax_a.set_axisbelow(True)
     ax_a.legend(loc="upper right", frameon=True, framealpha=0.95)
 
-    # ---- panel b: LOO sigma(delta_b) vs k ----
+    # ---- Panel b: LOO sigma(delta_b) vs k ----
     base = float(sub["loo_sigma_baseline"].iloc[0])
     ax_b.plot(sub["k"], sub["loo_sigma_delta_b"],
               color=_CURVE_COLOR, marker="o", linewidth=1.2, markersize=4.0,
@@ -228,7 +228,7 @@ def make_s1_clustering(out_dir: Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "s1_b_clustering_silhouette.png"
-    # Open axes: no top/right spines.
+    # Opens the axes by hiding the top and right spines
     for _ax in fig.axes:
         _ax.spines["top"].set_visible(False)
         _ax.spines["right"].set_visible(False)

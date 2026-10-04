@@ -1,14 +1,14 @@
-"""Panel set p4 — comparison against independently-produced datasets.
+"""Panel set p4: comparison against independently-produced datasets.
 
-Not a validation in the strict sense: both anchors below use methodologies
+Not a validation in the strict sense. Both anchors below use methodologies
 distinct from EAVES (sonar measures the current operational bathymetry,
-GRDL fuses Landsat extents with an external DEM) so we present them as
+GRDL fuses Landsat extents with an external DEM), so they are presented as
 cross-references rather than ground truth.
 
-Panel a — sonar bathymetry vs SRTM for the Baish reservoir (V-A and E-A).
-Panel b — GRDL Landsat-derived extents vs EAVES SRTM for three reference dams.
-Panel c — distribution of (SRTM spillway volume / catalogue capacity) over the
-          full domain, with Grade A/B reliability bands.
+Panel a: sonar bathymetry vs SRTM for the Baish reservoir (V-A and E-A).
+Panel b: GRDL Landsat-derived extents vs EAVES SRTM for the reference dams.
+Panel c: distribution of (SRTM spillway volume / catalogue capacity) over the
+         full domain, with Grade A/B reliability bands.
 """
 
 from __future__ import annotations
@@ -57,8 +57,7 @@ def _read_grdl_csv(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 def _load_bathy_validation_data() -> dict:
     """Read sonar bathymetry from ``BATHYMETRY_EAV_CSV`` and the example dam's
-    SRTM EAV table directly. No intermediate ``bathymetry_validation.csv`` is
-    required.
+    SRTM EAV table directly.
     """
     bathy_csv = getattr(_cfg, "BATHYMETRY_EAV_CSV", None)
     if not bathy_csv or not os.path.isfile(bathy_csv):
@@ -139,11 +138,11 @@ def _draw_bathy_va(ax, data: dict, panel_label_char=None) -> None:
     ax.plot(a_srt, v_srt, color="#FFA500", lw=1.4, label="SRTM (pre-dam valley)")
     ax.plot(a_des, v_des, color="#228B22", lw=1.4, label="Design (documented)")
 
-    # Canonical pipeline fit so c, b match the shipped eaves_params.csv.
+    # Uses the canonical pipeline fit, so c and b match the shipped eaves_params.csv
     from ...utils import fit_power_law as _canon_fit
     c_son_si, b_son, _ = _canon_fit(a_son * 1e6, v_son * 1e6)
     c_srt_si, b_srt, _ = _canon_fit(a_srt * 1e6, v_srt * 1e6)
-    # Convert c to the km^2/MCM system: V_mcm = c_si * 1e6^(b-1) * A_km2^b.
+    # Converts c to the km^2/MCM system: V_mcm = c_si * 1e6^(b-1) * A_km2^b
     c_son = c_son_si * 1e6 ** (b_son - 1)
     c_srt = c_srt_si * 1e6 ** (b_srt - 1)
     a_g = np.linspace(0, a_son.max(), 200)
@@ -187,7 +186,7 @@ def _draw_bathy_ea(ax, data: dict) -> None:
 
 def _draw_grdl_va(ax, comp: dict, show_xlabel: bool = False,
                   panel_label_char=None) -> None:
-    """V vs A — GRDL vs EAVES."""
+    """V vs A, GRDL vs EAVES."""
     ax.plot(comp["grdl_area_km2"], comp["grdl_vol_mcm"],
             color="#9370DB", marker="o", lw=1.2, ms=3, label="GRDL")
     ax.plot(comp["eaves_area_km2"], comp["eaves_vol_mcm"],
@@ -209,7 +208,7 @@ def _draw_grdl_va(ax, comp: dict, show_xlabel: bool = False,
 
 def _draw_grdl_da(ax, comp: dict, show_xlabel: bool = True,
                   show_ylabel: bool = True) -> None:
-    """Depth vs A — GRDL vs EAVES."""
+    """Depth vs A, GRDL vs EAVES."""
     ax.plot(comp["grdl_area_km2"], comp["grdl_depth"],
             color="#9370DB", marker="o", lw=1.2, ms=3, label="GRDL")
     ax.plot(comp["eaves_area_km2"], comp["eaves_depth"],
@@ -280,9 +279,9 @@ def _draw_panel_c(ax) -> None:
 def make_p4_comparison(output_dir: str | os.PathLike) -> Path:
     """Render p4 (cross-reference comparison panels).
 
-    Left column  — panel a (sonar vs SRTM: A-V scatter + E-A) stacked above
-                   panel c (vol-ratio histogram).
-    Right column — panel b (GRDL comparison: A-V + D-A for each dam, 3 rows).
+    Left column:  panel a (sonar vs SRTM: A-V scatter + E-A) stacked above
+                  panel c (vol-ratio histogram).
+    Right column: panel b (GRDL comparison: A-V + D-A for each dam, one row per dam).
     """
     from matplotlib.gridspec import GridSpecFromSubplotSpec
 
@@ -310,7 +309,7 @@ def make_p4_comparison(output_dir: str | os.PathLike) -> Path:
             left=0.06, right=0.985, top=0.97, bottom=0.06,
         )
 
-        # ---- left column: panel a (same height as 1 GRDL row) + panel c ----
+        # ---- Left column: panel a (same height as 1 GRDL row) + panel c ----
         gs_left = GridSpecFromSubplotSpec(
             2, 1, subplot_spec=gs[0, 0],
             height_ratios=[1.7, 1.3],
@@ -321,7 +320,7 @@ def make_p4_comparison(output_dir: str | os.PathLike) -> Path:
         _draw_bathy_ea(fig.add_subplot(gs_a[1]), bathy)
         _draw_panel_c(fig.add_subplot(gs_left[1]))
 
-        # ---- right column: panel b (n_dams rows × 2 cols) ----
+        # ---- Right column: panel b (n_dams rows × 2 cols) ----
         gs_b = GridSpecFromSubplotSpec(
             n_dams, 2, subplot_spec=gs[0, 1],
             hspace=0.10, wspace=0.20,
@@ -344,7 +343,7 @@ def make_p4_comparison(output_dir: str | os.PathLike) -> Path:
             if not is_last:
                 ax_da.tick_params(labelbottom=False)
 
-        # Open axes: no top/right spines anywhere in the panel set.
+        # Opens the axes by hiding the top and right spines across the panel set
         for _ax in fig.axes:
             _ax.spines["top"].set_visible(False)
             _ax.spines["right"].set_visible(False)

@@ -14,10 +14,16 @@ p2   Dam wall placement on three exemplar reservoirs illustrating the six
      pipeline stages: Stage 1 direct placement (a), Stage 4 river-direction
      retry (b), Stage 6 fallback (c).
 p3   Worked example for the bathymetry-validated reservoir: SRTM DEM (a),
-     area--volume log--log curve with power-law fit (b), histogram of the
-     volume--area exponent ``b`` over the trusted set (c).
-p4   Cross-reference comparison: sonar vs. SRTM (a), EAVES vs. GRDL for three reference
+     area–volume log–log curve with power-law fit (b), histogram of the
+     volume–area exponent ``b`` over the trusted set (c).
+p4   Cross-reference comparison: sonar vs. SRTM (a), EAVES vs. GRDL for the reference
      reservoirs (b), volume-ratio distribution across the domain (c).
+p5   Leave-one-out validation of the regionalization recipe.
+s1   K-means clustering diagnostic for the exponent ``b``.
+s2   Capacity-threshold sweep behind the reliability cut.
+s3   Volume uncertainty band from ``b_sigma``.
+s4   DEM vertical-error Monte Carlo on the volume.
+s5   Sensitivity of the trusted set to the placement and drainage constants.
 
 CLI
 ---
@@ -85,7 +91,7 @@ def _default_output_dir() -> Path:
     plot_dir = getattr(_cfg, "PLOT_DIR", None)
     if not plot_dir:
         raise RuntimeError(
-            "PLOT_DIR is not set; load a settings file or pass --output-dir."
+            "PLOT_DIR is not set. Load a settings file or pass --output-dir."
         )
     return Path(plot_dir)
 
@@ -102,7 +108,7 @@ def make_panels(
         Destination directory. Defaults to ``<OUTPUT_DIR>/2_results_plots``.
     figures
         Subset of ``{"1", "2", "3", "4", "5", "s1", "s2", "s3", "s4", "s5"}``
-        to render; defaults to all ten. Integer items are accepted too and
+        to render. Defaults to every figure. Integer items are accepted too and
         converted to strings.
 
     Returns
@@ -135,6 +141,6 @@ def make_panels(
         try:
             rendered[pid] = [fn(out_dir)]
         except Exception as e:
-            # A panel failure (usually a missing input) must not abort sibling panels.
+            # A panel failure (usually a missing input) is reported and does not abort sibling panels
             print(f"[panels] skipped {pid}: {type(e).__name__}: {e}")
     return rendered

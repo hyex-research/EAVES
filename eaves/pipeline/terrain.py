@@ -1,7 +1,8 @@
 """SRTM terrain utilities.
 
-Tile loading and mosaicking, clip and UTM reprojection around a dam, flow
-direction from the river network or the DEM gradient, and the topographic
+Tile loading and mosaicking, clip and UTM reprojection around a dam, river
+direction from the river network, downstream direction from the DEM gradient,
+and the topographic
 feature extraction used by regionalization.
 """
 
@@ -19,7 +20,7 @@ import eaves.config as _cfg
 from ..utils import srtm_tile_name
 
 
-# --- SRTM tile loading and mosaic ---
+# ---- SRTM tile loading and mosaic ----
 
 def load_srtm_tiles(lat, lon, buffer_deg=0.15):
     lat_min = np.floor(lat - buffer_deg)
@@ -54,7 +55,7 @@ def load_srtm_tiles(lat, lon, buffer_deg=0.15):
     return data, out_transform, datasets[0].crs
 
 
-# --- DEM clipping and reprojection ---
+# ---- DEM clipping and reprojection ----
 
 def clip_and_reproject_dem(dem_data, dem_transform, dem_crs,
                            center_lat, center_lon, radius_deg, target_epsg):
@@ -105,10 +106,16 @@ def clip_and_reproject_dem(dem_data, dem_transform, dem_crs,
     return dst_data, dst_transform, pixel_area, dst_crs
 
 
-# --- Flow direction from river segment geometry ---
+# ---- River direction from segment geometry ----
 
-def get_flow_direction_from_segment(gdf_rivers, segment_id, dam_lon, dam_lat,
-                                    smooth_m=500.0):
+def get_river_direction_from_segment(gdf_rivers, segment_id, dam_lon, dam_lat,
+                                     smooth_m=500.0):
+    """Unit vector along the river reach at the dam, pointing up the channel.
+
+    The chord spans ``smooth_m`` along the reach on either side of the vertex
+    nearest the dam. Reach vertices run from the outlet up the channel, so the
+    chord points upstream. Returns ``None`` for a missing or degenerate reach.
+    """
     mask = gdf_rivers["index"] == segment_id
     if mask.sum() == 0:
         return None
@@ -146,12 +153,12 @@ def get_flow_direction_from_segment(gdf_rivers, segment_id, dam_lon, dam_lat,
         p1 = np.array(coords[idx + 1])
         return p0 + frac * (p1 - p0)
 
-    s_up = max(dam_s - smooth_m, 0)
-    s_dn = min(dam_s + smooth_m, total_len)
-    p_up = _interp(s_up)
-    p_dn = _interp(s_dn)
+    s_lower = max(dam_s - smooth_m, 0)
+    s_upper = min(dam_s + smooth_m, total_len)
+    p_lower = _interp(s_lower)
+    p_upper = _interp(s_upper)
 
-    chord = p_dn - p_up
+    chord = p_upper - p_lower
     norm = np.linalg.norm(chord)
     if norm < 1e-12:
         return None
@@ -239,12 +246,13 @@ def _flood_river_overlay_from_segment(
         "line_rr": rr,
         "arrow_cc": np.asarray(acx, dtype=float),
         "arrow_rr": np.asarray(acy, dtype=float),
-        "arrow_uc": np.asarray(uc, dtype=float),
-        "arrow_vr": np.asarray(vr, dtype=float),
+        # Reach vertices run from the outlet up the channel, and the arrows point downstream
+        "arrow_uc": -np.asarray(uc, dtype=float),
+        "arrow_vr": -np.asarray(vr, dtype=float),
     }
 
 
-# --- DEM-gradient downstream direction ---
+# ---- DEM-gradient downstream direction ----
 
 def get_downstream_direction_from_dem(dem, dam_row, dam_col, search_radius=5):
     nrows, ncols = dem.shape
@@ -273,7 +281,7 @@ def get_downstream_direction_from_dem(dem, dam_row, dam_col, search_radius=5):
     return downstream / norm
 
 
-# --- Topographic feature extraction (for regionalization) ---
+# ---- Topographic feature extraction (for regionalization) ----
 
 def compute_valley_width(dem_utm, dam_r, dam_c, spillway_height, dam_elev, pixel_size):
     """Minimum cross-section gap width at spillway level (meters).
@@ -283,12 +291,11 @@ def compute_valley_width(dem_utm, dam_r, dam_c, spillway_height, dam_elev, pixel
     over all angles is the reported valley width.
 
     When no angle produces a two-sided wall pair within the search radius the
-    function returns ``2 * max_search * pixel_size`` -- the full diameter of
+    function returns ``2 * max_search * pixel_size``, the full diameter of
     the search window. This is the conservative lower bound for floodplain or
     wide-pan reservoirs where spillway-level terrain is genuinely farther
     away than the search radius and is the right physical answer for those
-    sites (rather than the not-a-number sentinel that the old behavior
-    produced and that propagated downstream as a missing feature).
+    sites.
     """
     z_spillway = dam_elev + spillway_height
     nrows, ncols = dem_utm.shape

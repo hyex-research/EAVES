@@ -1,14 +1,14 @@
-"""Panel s3 -- supplementary: V uncertainty propagation from ``b_sigma``.
+"""Panel s3 (supplementary): V uncertainty propagation from ``b_sigma``.
 
 Two-panel illustration of how the population-level 1$\\sigma$ uncertainty
 on $b$ propagates to a volume confidence band:
 
-Panel a -- Baish reservoir: SRTM-derived $V(A)$ curve with the $\\pm b_\\sigma$
+Panel a: Baish reservoir, SRTM-derived $V(A)$ curve with the $\\pm b_\\sigma$
 fan band, all curves pinned through the catalogue full-pool anchor
 $(A_\\mathrm{cap}, V_\\mathrm{cap})$. Band and curve span the full SRTM
 data range so the fan is visible end-to-end.
 
-Panel b -- Two $\\sigma(\\log_{10}V)$ tiers as a function of normalized area.
+Panel b: Two $\\sigma(\\log_{10}V)$ tiers as a function of normalized area.
 The SRTM-derived tier follows the band algebra
 ($\\sigma_{\\log V} = b_\\sigma \\cdot |\\log_{10}(A/A_\\mathrm{cap})|$) and
 vanishes at the anchor because the curve is pinned to a known
@@ -16,7 +16,7 @@ $(A_\\mathrm{cap}, V_\\mathrm{cap})$. The regionalized tier adds the
 anchor-parameter uncertainty,
 $\\sigma_\\mathrm{regi}(A) = \\sqrt{(b\\,\\sigma_{\\log A_\\mathrm{cap}})^2
 + (b_\\sigma\\,\\log_{10}(A/A_\\mathrm{cap}))^2 + \\sigma_{\\log V_\\mathrm{cap}}^2}$,
-so it does not vanish at the anchor and instead floors near 0.79. The
+so it does not vanish at the anchor. The
 regionalized constants are the ``regi_multi`` medians read from
 ``<CSV_DIR>/validation/v_uncertainty.csv``. The regional typical operational
 fill level is overlaid so a reader can read off the V uncertainty at the
@@ -114,7 +114,7 @@ def make_s3_uncertainty(out_dir: Path) -> Path:
 
     import matplotlib.pyplot as plt
 
-    # Uniform 12 pt text across every element; panel labels overridden to 14.
+    # Sets uniform 12 pt text across every element. Panel labels are overridden to 14
     rc_override = {
         "font.size":       12,
         "axes.labelsize":  12,
@@ -135,7 +135,7 @@ def make_s3_uncertainty(out_dir: Path) -> Path:
     c, b, b_sigma = info["c"], info["b"], info["b_sigma"]
     A_cap, V_cap  = info["A_cap_m2"], info["V_cap_m3"]
 
-    # ---- panel a: Baish V(A) with +/- b_sigma band ----
+    # ---- Panel a: Baish V(A) with +/- b_sigma band ----
     if not eav.empty:
         m = (eav["area_m2"] > 0) & (eav["volume_m3"] > 0)
         A_data = eav.loc[m, "area_m2"].values
@@ -178,13 +178,13 @@ def make_s3_uncertainty(out_dir: Path) -> Path:
     ax_a.set_axisbelow(True)
     ax_a.legend(loc="lower right", frameon=True, framealpha=0.95)
 
-    # ---- panel b: SRTM-derived vs regionalized sigma(log10 V) vs A/A_cap ----
+    # ---- Panel b: SRTM-derived vs regionalized sigma(log10 V) vs A/A_cap ----
     sig_acap = regi["sigma_acap_term"]   # b * sigma_log_acap
     sig_vcap = regi["sigma_log_vcap"]
     regi_floor = float(np.hypot(sig_acap, sig_vcap))
 
     frac = np.geomspace(0.03, 1.0, 240)
-    # SRTM tier: geometric b_sigma term plus the catalog-capacity floor (matches v_uncertainty).
+    # The SRTM tier combines the geometric b_sigma term with the catalog-capacity floor, as in v_uncertainty
     sigma_srtm = np.sqrt((b_sigma * np.log10(frac)) ** 2 + sig_vcap ** 2)
     sigma_regi = np.sqrt(
         sig_acap**2 + (b_sigma * np.log10(frac))**2 + sig_vcap**2
@@ -244,7 +244,7 @@ def make_s3_uncertainty(out_dir: Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "s3_uncertainty_band.png"
-    # Open axes: no top/right spines.
+    # Opens the axes by hiding the top and right spines
     for _ax in fig.axes:
         _ax.spines["top"].set_visible(False)
         _ax.spines["right"].set_visible(False)

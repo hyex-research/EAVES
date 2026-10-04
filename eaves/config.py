@@ -20,7 +20,7 @@ import rasterio
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-# --- Nature-style figure settings (Arial/Helvetica, 5-7 pt, 300 DPI) ---
+# ---- Nature-style figure settings (Arial/Helvetica, 5-7 pt, 300 DPI) ----
 _BASE_FS = 7
 _mpl.rcParams.update({
     "font.family": "sans-serif",
@@ -35,11 +35,11 @@ _mpl.rcParams.update({
     "figure.dpi": 300,
 })
 
-# --- Paths: populated by configure() from the settings JSON (see eaves.settings) ---
+# ---- Paths, populated by configure() from the settings JSON (see eaves.settings) ----
 
 COUNTRY_NAME_COL = "NAME"
 
-# --- Processing parameters ---
+# ---- Processing parameters ----
 BIN_Z = 0.5
 VOID_THRESHOLD = 0.05
 WALL_BUFFER_PX = 5
@@ -57,19 +57,37 @@ MAX_CREST_FLOW_DOT = 0.74
 TERRAIN_WALL_TOP_K = 18
 ALIGN_WEIGHT = 2.35
 
-# Stage-2/5 early-exit tolerance on the volume error |log(approx_vol / catalogue_capacity)|.
+# Stage-2/5 early-exit tolerance on the volume error |log(approx_vol / catalogue_capacity)|
 PLACEMENT_GOOD_ENOUGH_VOL_ERR = 0.26
-# Loose fallback tolerance when no early-exit candidate wins the upstream walk.
+# Loose fallback tolerance when no early-exit candidate wins the upstream walk
 PLACEMENT_UPSTREAM_MAX_VOL_ERR = 1.5
-# Minimum footprint pixels for a stage-6 multi-direction fallback fill.
+# Minimum footprint pixels for a stage-6 multi-direction fallback fill
 FALLBACK_MIN_PIXELS = 10
+
+# Share of the capacity-level pool that must drain out next to the wall for a fill to count as the reservoir
+DRAIN_MIN_SHARE = 0.5
+# Distance past the half wall (m) within which the outlet of a pool counts as next to the wall
+DRAIN_WALL_TOLERANCE_M = 1000.0
+# Largest position of the outlets along the capacity-level pool, 0 at the dam cell and 1 at its farthest cell
+DRAIN_MAX_OUTLET_POSITION = 0.65
+# Capacity-level pools smaller than this many pixels are too small to judge and pass
+DRAIN_MIN_PIXELS = 30
 
 _PLACEMENT_BUDGET_S = 300.0
 
-# Preprocessing (MERIT clip + segment split + dam snap).
+# Significant digits kept by a floating-point value in the released tables
+RELEASE_SIGNIFICANT_DIGITS = 4
+# Decimals always kept, so that large values such as elevations are not coarsened
+RELEASE_MIN_DECIMALS = 2
+# Columns that keep a fixed number of decimals, where the entry of b also covers the columns named after the exponent, such as b_reg and ref_b
+RELEASE_DECIMALS = {"capacity_mcm": 4, "b": 4}
+# Coordinates and dam dimensions, written as they come from the catalog
+RELEASE_VERBATIM = ("lat", "lon", "latitude", "longitude", "dam_height_m", "spillway_height_m", "dam_length_m")
+
+# Preprocessing (MERIT clip + segment split + dam snap)
 MAX_SEG_LEN_M = 2000.0
 MAX_SNAP_DISTANCE_M = 1000.0
-# Buffer (degrees) applied around each dam when clipping the MERIT network.
+# Buffer (degrees) applied around each dam when clipping the MERIT network
 DAM_BBOX_BUFFER_DEG = 0.3
 
 GRDL_NAME_MAP = {
@@ -78,12 +96,12 @@ GRDL_NAME_MAP = {
     "rabigh": "id_020018",
 }
 
-# --- Module-level caches (shared across workers via import) ---
+# ---- Module-level caches (shared across workers via import) ----
 _srtm_cache: dict = {}
 _placement_overrides_cache = None
 
 
-# --- Runtime reconfiguration (programmatic / CLI overrides) ---
+# ---- Runtime reconfiguration (programmatic / CLI overrides) ----
 def configure(
     *,
     output_dir: str | None = None,

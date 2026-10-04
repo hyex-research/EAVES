@@ -1,9 +1,9 @@
-"""QC plotting helpers — styled for the Scientific Data submission.
+"""QC plotting helpers, styled for the Scientific Data submission.
 
 Panel labels use bold lowercase letters (a, b, c, ...).
 Font sizes: 5-7 pt (Nature max 7 pt), Arial / Helvetica.
 Figure widths: 89 mm / 3.5 in (single column), 183 mm / 7.2 in (double column).
-Colourblind-safe palette throughout; viridis as default sequential cmap.
+Colorblind-safe palette throughout, viridis as default sequential cmap.
 Flood QC maps stay at 100 DPI (not for publication).
 """
 
@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import eaves.config as _cfg
 
 
-# --- Flood map (QC only, 100 DPI, not publication) ---
+# ---- Flood map (QC only, 100 DPI, not publication) ----
 
 _QC_RC = {
     "font.size": 12,

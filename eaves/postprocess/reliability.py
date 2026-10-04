@@ -2,7 +2,7 @@
 
 Each flag marks a geometry regime where SRTM can't reliably resolve
 the reservoir (grid resolution, vertical noise, or topographic edge cases).
-Flags are additive — a dam can be tagged by several at once.
+Flags are additive, so a dam can be tagged by several at once.
 
 Thresholds are calibrated to SRTM 1 arc-sec (~30 m grid, LE90 ~6 m vertical
 accuracy, i.e. sigma ~3.6 m, ~10 m horizontal LE90).
@@ -23,10 +23,10 @@ _FLAGS = [
     "flat_terrain",    # low catchment slope AND shallow depression
     "tall_narrow",     # high spillway_height / valley_width ratio
     "pre_srtm",        # built before the Feb 2000 SRTM acquisition
-    "unknown_year",    # no catalog construction year: pre/post-2000 unverifiable
+    "unknown_year",    # no catalog construction year, pre/post-2000 unverifiable
 ]
 
-# SRTM C-band acquisition: February 2000.
+# SRTM C-band acquisition: February 2000
 SRTM_ACQUISITION_YEAR = 2000
 
 
@@ -74,9 +74,9 @@ def add_uncertainty_flags(
 ) -> pd.DataFrame:
     """Append ``uncertainty_flags`` and ``uncertainty_score`` columns.
 
-    ``uncertainty_flags`` is a ``;``-joined list of active flag names (empty
-    string when none apply). ``uncertainty_score`` is the number of active
-    flags (0..7).
+    ``uncertainty_flags`` is a ``;``-joined list of active flag names (``-``
+    when none apply). ``uncertainty_score`` is the number of active
+    flags.
     """
     if len(summary_df) == 0:
         summary_df["uncertainty_flags"] = "-"
@@ -103,12 +103,10 @@ def add_uncertainty_flags(
         active["tall_narrow"] = aspect > 0.2
     else:
         active["tall_narrow"] = pd.Series(False, index=summary_df.index)
-    # pre_srtm marks definite pre-2000 construction: the curve describes the
-    # as-of-2000 valley (possibly already silted), not pristine design geometry.
+    # pre_srtm marks definite pre-2000 construction. The curve describes the as-of-2000 valley (possibly already silted), not pristine design geometry
     cy = pd.to_numeric(summary_df.get("construction_year"), errors="coerce")
     active["pre_srtm"] = pd.Series(cy < SRTM_ACQUISITION_YEAR, index=summary_df.index)
-    # unknown_year marks dams whose pre/post-acquisition status cannot be
-    # verified; like pre_srtm dams they are excluded from training.
+    # unknown_year marks dams whose pre/post-acquisition status cannot be verified. Like pre_srtm dams they are excluded from training
     active["unknown_year"] = pd.Series(cy.isna(), index=summary_df.index)
 
     for name in _FLAGS:

@@ -50,7 +50,7 @@ from ..settings import load_settings
 from ..pipeline import terrain as _terrain
 from ..pipeline.curves import process_dam
 from ..pipeline.workers import DamRow
-from ..utils import buffer_deg_for_dam, round_released_value
+from ..utils import buffer_deg_for_dam, dams_with_fill, round_released_value
 
 
 # Fixes the column order of the incremental CSV, which must stay stable across appends
@@ -103,7 +103,7 @@ def _select_dams(summary_csv: str, n_dams: int, seed: int = 0):
     reservoirs rather than clustering at the dense small end. Reproduces the
     trusted-set gate exactly and recomputes no parameter.
     """
-    s = pd.read_csv(summary_csv)
+    s = dams_with_fill(pd.read_csv(summary_csv))
     trusted = s[_trusted_mask(s)].copy()
     trusted = trusted[trusted["capacity_mcm"] > 0].reset_index(drop=True)
     # Excludes id_100017, whose spread from 5 realizations is unstable (factor-6 outlier)

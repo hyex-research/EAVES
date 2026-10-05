@@ -23,6 +23,7 @@ from pathlib import Path
 import pandas as pd
 
 import eaves.config as _cfg
+from ...utils import dams_with_fill
 
 from ._shared import apply_style, mm_to_in, panel_label, save_panel
 
@@ -56,7 +57,7 @@ def _chosen_threshold(threshold_df: pd.DataFrame, default_mcm: float = 5.0) -> f
 def make_s2_threshold(out_dir: Path) -> Path:
     apply_style()
 
-    summary_df = pd.read_csv(os.path.join(_cfg.CSV_DIR, "eaves_summary.csv"))
+    summary_df = dams_with_fill(pd.read_csv(os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")))
     threshold_df = pd.read_csv(os.path.join(_cfg.CSV_DIR, "threshold_analysis.csv"))
     cutoff = _chosen_threshold(threshold_df)
 

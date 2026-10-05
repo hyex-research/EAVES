@@ -22,7 +22,7 @@ import eaves.config as _cfg
 from .config import configure
 from .preprocess import ensure_inputs
 from .settings import load_settings
-from .utils import round_released_columns
+from .utils import dams_with_fill, round_released_columns
 from .pipeline.workers import _init_worker, _worker_indexed
 from .postprocess.regionalization import assign_quality, run_regionalization
 from .postprocess.reliability import add_uncertainty_flags, print_flag_tally
@@ -89,9 +89,56 @@ def _build_dam_data_list(gdf_dams, translit_map):
     return dam_data_list
 
 
-def _run_plots_and_regionalization(summary_df, failures, dam_data_list):
-    """Run regionalization and rename per-dam flood plots by source."""
-    run_regionalization(summary_df, failures, dam_data_list)
+_UNFILLED_KEYS = (
+    "dam_name", "construction_year", "dam_height_m", "spillway_height_m", "dam_length_m", "capacity_mcm",
+    "valley_width_m", "valley_ratio", "channel_slope", "mean_catchment_slope", "upstream_area_km2",
+)
+_SUMMARY_INT_COLUMNS = {"construction_year": "Int32", "n_pixels": "Int64", "uncertainty_score": "Int64"}
+
+
+def _append_dams_without_fill(summary_df, failures):
+    """Add one summary row per failed dam that has no flood fill.
+
+    The row carries the catalog attributes, the coordinates and the
+    topographic features of the failure record. The cells of the fill and of
+    the fit stay empty, so the summary holds every dam of ``eaves_params.csv``.
+    """
+    have = set(summary_df["dam_id"]) if "dam_id" in summary_df.columns else set()
+    rows = []
+    for f in failures:
+        dam_id = f.get("dam_id", "")
+        if not dam_id or dam_id in have:
+            continue
+        have.add(dam_id)
+        row = {"dam_id": dam_id}
+        row.update({key: f.get(key, np.nan) for key in _UNFILLED_KEYS})
+        row["lat"] = f.get("latitude", np.nan)
+        row["lon"] = f.get("longitude", np.nan)
+        rows.append(row)
+    if not rows:
+        return summary_df
+    if len(summary_df.columns) == 0:
+        return pd.DataFrame(rows)
+    return pd.concat([summary_df, pd.DataFrame(rows)], ignore_index=True)
+
+
+def _finalize_summary(summary_df):
+    """Sort the summary by dam, hold its counts as integers and round it to the released precision.
+
+    The empty cells of a dam without a flood fill turn a plain integer column
+    into floats, so the year, the pixel count and the flag count are nullable
+    integers. Known values stay integral and unknown ones stay blank.
+    """
+    summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
+    for column, dtype in _SUMMARY_INT_COLUMNS.items():
+        if column in summary_df.columns:
+            summary_df[column] = pd.to_numeric(summary_df[column], errors="coerce").round().astype(dtype)
+    return round_released_columns(summary_df)
+
+
+def _run_plots_and_regionalization(summary_df):
+    """Run regionalization on the summary of every dam and rename per-dam flood plots by source."""
+    run_regionalization(summary_df)
     _rename_flood_plots_by_source()
 
 
@@ -245,7 +292,9 @@ def main():
             return
 
         print("--plot-only: loading existing results...")
-        summary_df = pd.read_csv(summary_path)
+        summary_all = pd.read_csv(summary_path)
+        summary_df = dams_with_fill(summary_all)
+        unfilled_df = summary_all[~summary_all["dam_id"].isin(summary_df["dam_id"])]
         if "quality" not in summary_df.columns and len(summary_df) > 0:
             if "srtm_max_vol_mcm" not in summary_df.columns:
                 max_vols = []
@@ -270,22 +319,23 @@ def main():
                 )
             summary_df["quality"] = summary_df.apply(assign_quality, axis=1)
 
-        if len(summary_df) > 0:
-            add_uncertainty_flags(summary_df)
-            summary_df = add_sedimentation_columns(summary_df, getattr(_cfg, "SEDIMENTATION_DIR", None))
-            summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
-            summary_df = round_released_columns(summary_df)
-            summary_df.to_csv(summary_path, index=False)
-
         failures = []
         if os.path.isfile(fail_path):
             fail_df = pd.read_csv(fail_path)
             failures = fail_df.to_dict("records")
 
-        dam_data_list = _build_dam_data_list(gdf_dams, translit_map)
+        if len(summary_df) > 0:
+            add_uncertainty_flags(summary_df)
+        # The dams without a flood fill keep their rows, and a failed dam that has none yet gains one
+        summary_all = _append_dams_without_fill(pd.concat([summary_df, unfilled_df], ignore_index=True), failures)
+        if len(summary_all) > 0:
+            summary_all = add_sedimentation_columns(summary_all, getattr(_cfg, "SEDIMENTATION_DIR", None))
+            summary_all = _finalize_summary(summary_all)
+            summary_all.to_csv(summary_path, index=False)
+            summary_df = dams_with_fill(summary_all)
 
         print(f"  Loaded {len(summary_df)} succeeded, {len(failures)} failed dams.\n")
-        _run_plots_and_regionalization(summary_df, failures, dam_data_list)
+        _run_plots_and_regionalization(summary_all)
 
         if args.panels:
             make_panels()
@@ -416,6 +466,9 @@ def main():
         )
         summary_df["quality"] = summary_df.apply(assign_quality, axis=1)
         add_uncertainty_flags(summary_df)
+    # A dam without a flood fill gains a row of its own, so the summary holds every dam of eaves_params.csv
+    summary_df = _append_dams_without_fill(summary_df, failures)
+    if len(summary_df) > 0:
         summary_df = add_sedimentation_columns(summary_df, getattr(_cfg, "SEDIMENTATION_DIR", None))
 
     processed_ids = {str(d.get("dam_id", "")).strip() for d in dam_data_list}
@@ -428,14 +481,10 @@ def main():
         else:
             summary_df = old_sum
 
-    summary_df = summary_df.sort_values("dam_id", kind="stable").reset_index(drop=True)
-    # Casts the year to nullable Int32. Known years stay integral and unknown years stay blank (int32 cannot hold NA)
-    if "construction_year" in summary_df.columns:
-        summary_df["construction_year"] = (
-            summary_df["construction_year"].round().astype("Int32")
-        )
-    summary_df = round_released_columns(summary_df)
-    summary_df.to_csv(summary_path, index=False)
+    summary_all = _finalize_summary(summary_df)
+    summary_all.to_csv(summary_path, index=False)
+    # The counts printed below describe the dams with a flood fill
+    summary_df = dams_with_fill(summary_all) if "n_pixels" in summary_all.columns else pd.DataFrame()
     print(f"\nSummary saved: {len(summaries)} dams succeeded.")
     if len(summary_df) > 0:
         qcounts = summary_df["quality"].value_counts().sort_index()
@@ -492,7 +541,7 @@ def main():
     fail_df.to_csv(fail_path, index=False)
     print(f"Failed/flagged dams: {len(failures)}")
 
-    _run_plots_and_regionalization(summary_df, failures, dam_data_list)
+    _run_plots_and_regionalization(summary_all)
 
     if args.panels:
         make_panels()

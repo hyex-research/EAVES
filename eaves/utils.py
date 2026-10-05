@@ -214,6 +214,26 @@ def round_released_columns(df):
     return df
 
 
+# ---- Summary rows ----
+
+_FILL_DTYPES = {"n_pixels": "int64", "uncertainty_score": "int64", "capped": "bool"}
+
+
+def dams_with_fill(df):
+    """Return the rows of a summary table whose dam has a flood fill.
+
+    ``eaves_summary.csv`` holds every dam of ``eaves_params.csv``. A dam
+    without a flood fill leaves the cells of its fill and of its fit empty,
+    and such a row has no ``n_pixels``. The count and flag columns of the
+    remaining rows return to their integer and boolean types, so the result
+    reads as a table of fills alone.
+    """
+    if "n_pixels" not in df.columns:
+        return df
+    out = df[df["n_pixels"].notna()].reset_index(drop=True)
+    return out.astype({column: dtype for column, dtype in _FILL_DTYPES.items() if column in out.columns})
+
+
 # ---- Misc helpers ----
 
 def interpolate_nans(data):

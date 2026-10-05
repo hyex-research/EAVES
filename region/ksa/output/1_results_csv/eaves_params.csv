@@ -209,7 +209,7 @@ id_030035,Al-Far'ah,20.0,0.178,1.1963,srtm_derived
 id_030036,Hadhawadha,40.0,0.001405,1.5345,regi_multi
 id_030037,Qusayba' Al-Tad'imi,0.2241,0.01465,1.4326,srtm_derived
 id_030038,Al-Hasid,0.4,0.01978,1.3714,srtm_derived
-id_030039,Al-Aqul Al-Hajari,17.0,0.002155,1.5345,regi_multi
+id_030039,Al-Aqul Al-Hajari,17.0,0.002156,1.5345,regi_multi
 id_040000,Aba Al-Hiyas,0.0795,0.009517,1.5345,regi_multi
 id_040001,Al-Rubiqah,0.1122,0.001616,1.5345,regi_multi
 id_040002,Al-Matla' Al-Aysar,0.1227,0.005156,1.5345,regi_multi
@@ -374,7 +374,7 @@ id_080022,Al-Hijah,0.1,0.008716,1.5345,regi_multi
 id_080023,Ajlan,0.1,0.01095,1.5345,regi_multi
 id_080024,Al-Malad,0.1,0.009824,1.5345,regi_multi
 id_080025,Shahbah,0.1,0.0113,1.5345,regi_multi
-id_080026,Al-Aja'idah,0.1519,0.008809,1.5345,regi_multi
+id_080026,Al-Aja'idah,0.1519,0.008807,1.5345,regi_multi
 id_080027,Dhark,0.1114,0.006228,1.5591,srtm_derived
 id_080028,Am Rijlan,0.118,0.01242,1.5345,regi_multi
 id_080029,Al-Marbah,0.12,0.01192,1.5345,regi_multi
@@ -413,7 +413,7 @@ id_090004,Al-Ratiq,0.106,0.01227,1.5345,regi_multi
 id_090005,Taba,0.1544,0.007917,1.483,srtm_derived
 id_090006,Tawarin,0.12,0.008182,1.5345,regi_multi
 id_090007,Al-Jahifah,0.4932,0.005928,1.5345,regi_multi
-id_090008,Al-Mudih,0.1077,0.005357,1.5345,regi_multi
+id_090008,Al-Mudih,0.1077,0.005356,1.5345,regi_multi
 id_090009,Fayd,0.1675,0.003224,1.5345,regi_multi
 id_090010,Aqalat Bin Jabrin,0.7146,0.007805,1.4208,srtm_derived
 id_090011,Al-Salaf,0.15,0.007537,1.5345,regi_multi
@@ -512,7 +512,7 @@ id_130012,Thar,0.36,0.002982,1.6092,srtm_derived
 id_130013,Humayran,0.4918,0.03156,1.4636,srtm_derived
 id_130014,Al-Ashah,0.27,0.01359,1.483,srtm_derived
 id_130015,Qatan,0.7585,0.0001328,1.8325,srtm_derived
-id_130016,(Surum) Halal,0.5856,0.007475,1.5345,regi_multi
+id_130016,(Surum) Halal,0.5856,0.007476,1.5345,regi_multi
 id_130017,Al-Khadarah,0.6,0.004304,1.5345,regi_multi
 id_130018,Na'wan,0.532,0.9781,1.1,srtm_derived
 id_130019,Al-Safah,0.3663,0.005671,1.5345,regi_multi

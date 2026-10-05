@@ -36,7 +36,7 @@ import pandas as pd
 
 import eaves.config as _cfg
 from .reliability import training_mask
-from ..utils import round_released_value
+from ..utils import dams_with_fill, round_released_value
 
 
 # ---- Inputs ----
@@ -55,6 +55,10 @@ def _load_inputs() -> dict:
     out: dict[str, pd.DataFrame | None] = {}
     for k, p in paths.items():
         out[k] = pd.read_csv(p) if p.exists() else None
+    # The statistics of the fill and of the fit describe the dams with a flood fill, and the catalog statistics every dam
+    out["summary_all"] = out["summary"]
+    if out["summary"] is not None:
+        out["summary"] = dams_with_fill(out["summary"])
     return out
 
 
@@ -98,6 +102,10 @@ def compute_characterization(data: dict, ref_year: int | None = None,
     summary = data["summary"]
     params = data["params"]
     failed = data["failed"]
+    # Every dam of the summary, for the statistics that need no flood fill (construction year, dam height, sediment budget)
+    catalog = data.get("summary_all")
+    if catalog is None:
+        catalog = summary
 
     if summary is not None:
         stats["n_dams_summary"] = int(len(summary))
@@ -112,7 +120,7 @@ def compute_characterization(data: dict, ref_year: int | None = None,
         if len(regi_b):
             stats["b_regionalized"] = float(regi_b.median())
 
-    # Capacity statistics span the released catalogue and year statistics the dams with an SRTM footprint
+    # Capacity, year, dam height and sediment statistics span the released catalogue
     cap_src = params if (params is not None and "capacity_mcm" in params.columns) else summary
     if cap_src is not None and "capacity_mcm" in cap_src.columns:
         cap = cap_src["capacity_mcm"].dropna()
@@ -126,9 +134,9 @@ def compute_characterization(data: dict, ref_year: int | None = None,
         stats["n_cap_above_100mcm"]   = int((cap >= 100).sum())
         stats["n_cap_below_1mcm"]     = int((cap < 1).sum())
 
-    if summary is not None:
-        if "construction_year" in summary.columns:
-            cy = summary["construction_year"].dropna()
+    if catalog is not None:
+        if "construction_year" in catalog.columns:
+            cy = catalog["construction_year"].dropna()
             stats["construction_year_min"]    = int(cy.min())
             stats["construction_year_median"] = int(cy.median())
             stats["construction_year_max"]    = int(cy.max())
@@ -137,10 +145,10 @@ def compute_characterization(data: dict, ref_year: int | None = None,
             stats["n_2000_2010"]              = int(((cy >= 2000) & (cy < 2010)).sum())
             stats["n_post_2010"]              = int((cy >= 2010).sum())
             # Counts the dams without a year, which the era counts exclude
-            stats["n_year_unknown"]           = int(summary["construction_year"].isna().sum())
+            stats["n_year_unknown"]           = int(catalog["construction_year"].isna().sum())
 
-        if "dam_height_m" in summary.columns:
-            dh = summary["dam_height_m"].dropna()
+        if "dam_height_m" in catalog.columns:
+            dh = catalog["dam_height_m"].dropna()
             stats["dam_height_median_m"] = float(dh.median())
             stats["dam_height_max_m"]    = float(dh.max())
 
@@ -199,10 +207,10 @@ def compute_characterization(data: dict, ref_year: int | None = None,
         stats["fill_n_above_half"] = int((d["sat_over_dem"] >= 0.5).sum())
 
     # Sediment budget from delivered yield with no additional delivery ratio. The reported loss is min(uncapped, 1), the trap saturation that caps a dam at 100% of its storage
-    if summary is not None and {"sed_yield_t_ha_yr", "upstream_area_km2",
+    if catalog is not None and {"sed_yield_t_ha_yr", "upstream_area_km2",
                                  "capacity_mcm", "construction_year"
-                                 }.issubset(summary.columns):
-        m = summary.dropna(subset=["sed_yield_t_ha_yr", "upstream_area_km2",
+                                 }.issubset(catalog.columns):
+        m = catalog.dropna(subset=["sed_yield_t_ha_yr", "upstream_area_km2",
                                     "capacity_mcm", "construction_year"])
         m = m[(m["capacity_mcm"] > 0) & (m["upstream_area_km2"] > 0)].copy()
         years = ref_year - m["construction_year"]
@@ -1266,8 +1274,10 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("")
     A("| Path | Content |")
     A("| --- | --- |")
-    A("| `1_results_csv/eaves_summary.csv` | Per-dam pipeline outputs: "
-      "placement metadata, fit results, quality flags, external attributes. |")
+    A("| `1_results_csv/eaves_summary.csv` | One row per dam of "
+      "`eaves_params.csv`. Per-dam pipeline outputs: "
+      "placement metadata, fit results, quality flags, external attributes. "
+      "A dam without a flood fill has empty fill and fit cells. |")
     A("| `1_results_csv/eaves_params.csv` | Lean per-dam parameter table: "
       "(c, b) plus identification and the assignment source. Six "
       "columns. The 1σ uncertainty on b is a single region-level "

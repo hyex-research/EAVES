@@ -11,6 +11,7 @@ from pathlib import Path
 import pandas as pd
 
 import eaves.config as _cfg
+from ...utils import dams_with_fill
 
 
 def example_dam_id() -> str:
@@ -31,7 +32,7 @@ def example_paths() -> tuple[Path, Path]:
 
 def example_summary_row() -> pd.Series:
     _, summary_csv = example_paths()
-    summary = pd.read_csv(summary_csv)
+    summary = dams_with_fill(pd.read_csv(summary_csv))
     row = summary[summary["dam_id"] == example_dam_id()]
     if row.empty:
         raise RuntimeError(f"Dam {example_dam_id()!r} not found in {summary_csv}")

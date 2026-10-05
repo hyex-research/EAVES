@@ -53,7 +53,7 @@ from ..pipeline import curves as _curves
 from ..pipeline import drainage as _drainage
 from ..pipeline.curves import process_dam
 from ..pipeline.workers import DamRow
-from ..utils import buffer_deg_for_dam, round_released_columns
+from ..utils import buffer_deg_for_dam, dams_with_fill, round_released_columns
 from .regionalization import assign_quality
 
 
@@ -169,7 +169,7 @@ def _select_sample(summary_csv: str, n_dams: int, seed: int):
     than clustering at the dense small end. Reproduces the production trusted
     gate exactly and computes no parameter.
     """
-    s = pd.read_csv(summary_csv)
+    s = dams_with_fill(pd.read_csv(summary_csv))
     trusted = s[_trusted_mask(s)].copy()
     trusted = trusted[trusted["capacity_mcm"] > 0].reset_index(drop=True)
     logcap = np.log10(trusted["capacity_mcm"].values)

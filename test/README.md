@@ -13,8 +13,9 @@ Three layers, in order of cost.
 | `test_drainage.py` | (none) | under 1 s | Unit tests for the drainage of a DEM window and the drain-through-the-wall rule in `eaves/pipeline/drainage.py`. |
 | `test_curves_helpers.py` | (none) | under 1 s | Unit tests for the construction-year parsing in `eaves/pipeline/curves.py` and for the precision of the released tables (`round_released_columns` in `eaves/utils.py`). |
 | `test_uncertainty.py` | (none) | under 1 s | Unit tests for the V uncertainty band in `eaves/postprocess/uncertainty.py`: `b_sigma` estimator, anchor back-solve, band algebra. |
-| `test_sediment.py` | (none) | under 1 s | Unit tests for the sediment-budget helpers in `eaves/postprocess/report.py`: delivered-yield budget, trap-saturation cap, silt-risk bands. |
-| `test_regression.py` | `slow` | about 80 s | End-to-end: re-runs the 15-dam fixture through `run_eaves.py` and compares every emitted CSV against the SHA-256 golden hashes in `golden_hashes.json`. |
+| `test_summary_rows.py` | (none) | under 2 s | Unit tests for the summary rows of dams without a flood fill: the row a failed dam gains (`_append_dams_without_fill` and `_finalize_summary` in `eaves/cli.py`) the selection of the dams with a fill (`dams_with_fill` in `eaves/utils.py`), and the column order of the external attributes on a second pass. |
+| `test_sediment.py` | (none) | under 1 s | Unit tests for the sediment-budget helpers in `eaves/postprocess/report.py`: delivered-yield budget, trap-saturation cap, silt-risk bands, and the span of the budget over every dam. |
+| `test_regression.py` | `slow` | about 90 s | End-to-end: re-runs the 15-dam fixture through `run_eaves.py` and compares every emitted CSV against the SHA-256 golden hashes in `golden_hashes.json`. A second test checks that the summary of the same run holds every dam of `eaves_params.csv`, and a third that `--plot-only` and a single-dam `--only` run reproduce its tables. |
 
 Run times are measured on a 112-core workstation and grow as the core count falls. The fast tests (everything except the regression test) take about 3 s in total.
 

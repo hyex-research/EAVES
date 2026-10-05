@@ -4,6 +4,60 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] - 2026-10-05
+
+### Changed
+
+- **`eaves_summary.csv` holds every dam of `eaves_params.csv`** (`eaves.cli`,
+  `eaves.utils.dams_with_fill`). A dam without a flood fill gains a row with
+  its catalog attributes, coordinates, topographic features, upstream area,
+  sediment yield, evaporation and sediment risk. The cells of its fill and
+  of its fit are empty, and `n_pixels` is empty for such a row alone. On
+  the Saudi Arabian catalog the summary grows from 503 to 526 rows, and
+  the 503 existing rows keep every value. `failed_dams.csv` lists the
+  failures as before. The statistics, the validation tables, the figures
+  and the report describe the dams with a flood fill, as before.
+- **The regionalization reads every dam from the summary**
+  (`eaves.postprocess.regionalization`). A dam without a flood fill is
+  regionalized from the features of its summary row, at the precision of
+  the released table, as a dam with an untrusted fill already was. The
+  parameters of every dam follow from `eaves_summary.csv` alone, and the
+  full run, `--plot-only` and `--only` write the same tables. On the Saudi
+  Arabian catalog the coefficient `c` of 4 dams without a flood fill
+  changes in its fourth significant digit (`id_030039`, `id_080026`,
+  `id_090008`, `id_130016`), and `A_cap_km2` of the first three follows
+  in `validation/v_uncertainty.csv`. Every other value of the released
+  tables and every figure stays as it is.
+- **The catalog statistics of the report span every dam**
+  (`eaves.postprocess.report`). The construction-year breakdown, the dam
+  height statistics and the sediment budget are computed over all dams of
+  the summary, as the capacity statistics already were. The statistics of
+  the fill and of the fit keep to the dams with a flood fill. On the Saudi
+  Arabian catalog the era table sums to 526 dams, 21 of them of unknown
+  year, and the sediment budget covers 505 dams in place of 483, with a
+  median predicted capacity loss of 44.4% and 151 dams at full siltation.
+- **Tests.** `test/test_summary_rows.py` pins the row of a dam without a
+  flood fill, the selection of the dams with one and the column order of
+  the external attributes. `test/test_regression.py` checks that the
+  summary of the fixture run holds every dam of the parameter table, and
+  that `--plot-only` and a single-dam `--only` run reproduce the tables of
+  the full run. The golden hash of the fixture summary follows its two
+  added rows.
+
+### Fixed
+
+- **`--only` keeps `eaves_params.csv` complete** (`eaves.cli`,
+  `eaves.postprocess.regionalization`). A single-dam run handed the
+  regionalization the failures of its subset alone, which removed every
+  other dam without a flood fill from the parameter table.
+- **`--plot-only` keeps the summary as written** (`eaves.cli`,
+  `eaves.postprocess.external_data`). The table was rewritten with the
+  construction years as floats, and with `sed_yield_t_ha_yr` and
+  `owe_mm_year` moved behind the two sediment columns of the report step.
+  The full run and `--plot-only` write the summary through one function,
+  and a second pass of `add_sedimentation_columns` leaves every column in
+  its place.
+
 ## [1.3.0] - 2026-10-04
 
 ### Changed
@@ -400,6 +454,7 @@ downstream simulation.
   sediment-loss budget beyond the first-order estimate currently
   reported.
 
+[1.3.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.1
 [1.3.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.0
 [1.2.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.2.1
 [1.2.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.2.0

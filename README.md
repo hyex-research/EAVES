@@ -35,7 +35,7 @@ The headline product, `eaves_params.csv`, provides the area-volume relationship 
 The Saudi Arabia EAV curves are ready to use directly, no run required:
 
 - **[`eaves_params.csv`](region/ksa/output/1_results_csv/eaves_params.csv)** - power-law coefficients (c, b) for all 526 dams. The one file most users need.
-- **[`eaves_summary.csv`](region/ksa/output/1_results_csv/eaves_summary.csv)** - full per-dam table for the 503 dams with a flood fill: quality grade, uncertainty flags, fitted statistics, and topographic features.
+- **[`eaves_summary.csv`](region/ksa/output/1_results_csv/eaves_summary.csv)** - full per-dam table for the same 526 dams: quality grade, uncertainty flags, fitted statistics, and topographic features. The 23 dams without a flood fill keep their catalog attributes and topographic features, and their fill and fit cells are empty.
 - **[`DATA_DICTIONARY.md`](region/ksa/output/1_results_csv/DATA_DICTIONARY.md)** - every column defined, with units.
 
 Convert a satellite-observed water area A to storage with the dam's own coefficients: V = c · A<sup>b</sup>. The full release (per-dam hypsometries and the validation suite) is archived on Zenodo (<https://doi.org/10.5281/zenodo.20728129>).

@@ -30,6 +30,7 @@ def add_sedimentation_columns(summary_df: pd.DataFrame, sedimentation_dir: str |
     if not sedimentation_dir or not os.path.isdir(sedimentation_dir):
         return summary_df
 
+    order = list(summary_df.columns)
     summary_df = summary_df.drop(
         columns=[c for c in _MANAGED_COLS if c in summary_df.columns]
     )
@@ -44,4 +45,6 @@ def add_sedimentation_columns(summary_df: pd.DataFrame, sedimentation_dir: str |
         owe = pd.read_csv(owe_path)[["dam_id", "owe_mm_year"]]
         summary_df = summary_df.merge(owe, on="dam_id", how="left")
 
-    return summary_df
+    # A column of an earlier pass keeps its place, and a new column lands at the end
+    kept = [c for c in order if c in summary_df.columns]
+    return summary_df[kept + [c for c in summary_df.columns if c not in order]]

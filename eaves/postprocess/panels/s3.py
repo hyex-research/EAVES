@@ -32,6 +32,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
+from ...utils import dams_with_fill
 
 from ._shared import (
     COL_REGI,
@@ -52,7 +53,7 @@ _ANCHOR_COLOR = "#D62728"   # red (full-pool anchor marker)
 def _load_baish() -> tuple[dict, pd.DataFrame]:
     from eaves.postprocess.uncertainty import compute_b_sigma
     params = pd.read_csv(os.path.join(_cfg.CSV_DIR, "eaves_params.csv"))
-    summary = pd.read_csv(os.path.join(_cfg.CSV_DIR, "eaves_summary.csv"))
+    summary = dams_with_fill(pd.read_csv(os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")))
     p = params[params["dam_id"] == _BAISH_ID]
     s = summary[summary["dam_id"] == _BAISH_ID]
     if p.empty or s.empty:

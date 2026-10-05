@@ -18,6 +18,7 @@ from matplotlib.colors import LightSource
 from matplotlib.patches import Patch
 
 import eaves.config as _cfg
+from ...utils import dams_with_fill
 
 from ._shared import (
     COL_BASIN,
@@ -404,7 +405,7 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "p2_placement.png"
 
-    summary_df = pd.read_csv(Path(_cfg.CSV_DIR) / "eaves_summary.csv")
+    summary_df = dams_with_fill(pd.read_csv(Path(_cfg.CSV_DIR) / "eaves_summary.csv"))
     pools = _candidate_pool(summary_df)
 
     # Prepends the pinned exemplars, which _select_with_reproducibility then tries first

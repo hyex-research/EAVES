@@ -2,8 +2,8 @@
 :mod:`eaves.postprocess.report`.
 
 Covers the delivered-yield budget (no additional SDR by default, constant
-override available), the trap-saturation cap, and the categorical silt-risk
-banding.
+override available), the trap-saturation cap, the categorical silt-risk
+banding, and the span of the budget over every dam of the summary.
 """
 
 from __future__ import annotations
@@ -15,7 +15,9 @@ import pytest
 from eaves.postprocess.report import (
     _silt_risk_label,
     augment_summary_with_sediment_risk,
+    compute_characterization,
 )
+from eaves.utils import dams_with_fill
 
 
 def _synthetic_summary(tmp_path, capacity_mcm=10.0, yield_t_ha_yr=5.0,
@@ -106,3 +108,24 @@ class TestSiltRiskLabel:
         order = ["low", "moderate", "high", "severe", "fully_silted"]
         labels = [_silt_risk_label(f) for f in (0.05, 0.2, 0.4, 0.75, 1.0)]
         assert labels == order
+
+
+class TestBudgetSpansEveryDam:
+
+    def test_dam_without_a_fill_counts_in_the_budget(self):
+        # The third dam has no flood fill and the fourth no construction year
+        every_dam = pd.DataFrame({
+            "dam_id": ["id_a", "id_b", "id_c", "id_d"],
+            "n_pixels": [120.0, 60.0, np.nan, 80.0],
+            "sed_yield_t_ha_yr": [5.0, 5.0, 5.0, 5.0],
+            "upstream_area_km2": [100.0, 100.0, 100.0, 100.0],
+            "capacity_mcm": [10.0, 10.0, 10.0, 10.0],
+            "construction_year": [2000.0, 2010.0, 1990.0, np.nan],
+        })
+        data = dict.fromkeys(("params", "failed", "threshold", "validation_loo", "validation_area", "b_clustering_diag"))
+        data.update(summary=dams_with_fill(every_dam), summary_all=every_dam)
+        stats = compute_characterization(data, ref_year=2020)
+        assert stats["n_dams_summary"] == 3
+        assert stats["sediment_n"] == 3
+        assert stats["n_year_unknown"] == 1
+        assert stats["construction_year_min"] == 1990

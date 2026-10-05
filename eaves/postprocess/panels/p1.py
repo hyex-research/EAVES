@@ -18,6 +18,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Ellipse, FancyArrowPatch, FancyBboxPatch, Polygon
 
 import eaves.config as _cfg
+from ...utils import dams_with_fill
 
 from ._shared import (
     COL_BORDER,
@@ -48,7 +49,7 @@ def _load_dam_points() -> pd.DataFrame:
     params_csv = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
     failed_csv = os.path.join(_cfg.CSV_DIR, "failed_dams.csv")
 
-    summary = pd.read_csv(summary_csv, usecols=["dam_id", "lat", "lon", "capacity_mcm"])
+    summary = dams_with_fill(pd.read_csv(summary_csv, usecols=["dam_id", "lat", "lon", "capacity_mcm", "n_pixels"])).drop(columns="n_pixels")
     params = pd.read_csv(params_csv, usecols=["dam_id", "source", "capacity_mcm"])
     failed_ids = pd.read_csv(failed_csv, usecols=["dam_id"])["dam_id"].tolist()
 

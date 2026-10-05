@@ -57,7 +57,7 @@ full statement.
 | `dam_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Meters, full catalog precision (up to 2 decimals). |
 | `spillway_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Meters, full catalog precision (up to 3 decimals). |
 | `dam_length_m` | `eaves_summary.csv`, `failed_dams.csv` | Meters, full catalog precision (up to 2 decimals). |
-| `construction_year` | `eaves_summary.csv`, `failed_dams.csv` | Year, written as an integer (parse as nullable Int64). Blank when the catalog has no year (20 dams in `eaves_summary.csv`, 1 in `failed_dams.csv`). |
+| `construction_year` | `eaves_summary.csv`, `failed_dams.csv` | Year, written as an integer (parse as nullable Int64). Blank when the catalog has no year (21 dams in `eaves_summary.csv`, 1 in `failed_dams.csv`). |
 
 Note: for Baish (`id_120000`), the one dam with full design documentation, the capacity is sourced directly from the design table: 193.644 MCM at the spillway crest, 327.0 m a.s.l. (`baish_bathymetry/baish_area_elev_vol.csv`). See the paper's Input data section.
 
@@ -79,35 +79,39 @@ Note: for Baish (`id_120000`), the one dam with full design documentation, the c
 
 ---
 
-## `eaves_summary.csv`: full per-dam diagnostics (503 rows)
+## `eaves_summary.csv`: full per-dam diagnostics (526 rows)
 
-The 503 dams that produced a curve (`526 − 23` regionalized-only without a DEM
-footprint). The 26 pipeline failures live in `failed_dams.csv`, and 3 of them
-were recovered into this summary.
+One row per dam of `eaves_params.csv`. Of the 526 dams, 503 have a flood fill
+and 23 have none. A dam without a flood fill keeps its catalog attributes,
+coordinates, topographic features and external attributes, and the cells of
+its fill and of its fit are empty. `n_pixels` is empty for these 23 rows only,
+so a filled `n_pixels` selects the 503 dams with a fill. The 26 pipeline
+failures are listed in `failed_dams.csv`: the 23 dams without a fill and 3
+dams with a fill whose power-law fit failed.
 
 | Column | Definition | Unit | dtype | Missing |
 | --- | --- | --- | --- | --- |
 | `dam_id` | Persistent dam identifier | - | str | never |
 | `dam_name` | Latin-transliterated dam name | - | str | may be empty |
-| `construction_year` | Catalog construction year | year | Int (nullable) | blank for 20 dams |
+| `construction_year` | Catalog construction year | year | Int (nullable) | blank for 21 dams |
 | `dam_height_m` | Catalog dam height | m | float | catalog-derived |
 | `spillway_height_m` | Catalog spillway height (fill depth used) | m | float | catalog-derived |
 | `dam_length_m` | Catalog crest length | m | float | catalog-derived |
 | `capacity_mcm` | Catalog design capacity, rounded to 4 decimals | MCM | float | never |
-| `curve_type` | Whether SRTM saw a bare valley or standing water | - | str | never |
+| `curve_type` | Whether SRTM saw a bare valley or standing water | - | str | blank without a fill |
 | `srtm_water_level_m` | Detected flat-water surface elevation (partial curves only) | m | float | blank unless `curve_type=partial` |
-| `coverage_fraction` | Fraction of the vertical valley range above the detected water surface (1.0 for full curves) | - | float | never |
-| `z_min` | Minimum SRTM elevation in the flooded footprint | m | float | never |
-| `z_max` | Maximum SRTM elevation in the flooded footprint | m | float | never |
-| `footprint_area_km2` | Flooded footprint area at spillway level | km² | float | never |
-| `c` | Power-law coefficient in V = c · A<sup>b</sup>, rounded to 4 significant digits | - | float | blank for the 3 grade-F fits |
-| `b` | Power-law exponent, rounded to 4 decimals | - | float | blank for the 3 grade-F fits |
-| `r_squared` | R² of the log–log power-law fit | - | float | blank for the 3 grade-F fits |
-| `n_pixels` | Active (flooded) SRTM pixels in the footprint | count | int | never |
-| `void_fraction` | Fraction of footprint pixels that are SRTM voids | - | float | never |
-| `capped` | Integrated volume reached the catalog-capacity cap and was truncated at that cap (the catalog values are spillway/gross capacities, and the cap bounds the SRTM fill) | - | bool | never |
-| `placement_upstream_shift_m` | Distance the dam wall was shifted upstream during placement, negative when stage 4 moves it downstream | m | float | blank for the 3 `stage_6_fallback` dams |
-| `placement_method` | Which placement stage produced the wall | - | str | never |
+| `coverage_fraction` | Fraction of the vertical valley range above the detected water surface (1.0 for full curves) | - | float | blank without a fill |
+| `z_min` | Minimum SRTM elevation in the flooded footprint | m | float | blank without a fill |
+| `z_max` | Maximum SRTM elevation in the flooded footprint | m | float | blank without a fill |
+| `footprint_area_km2` | Flooded footprint area at spillway level | km² | float | blank without a fill |
+| `c` | Power-law coefficient in V = c · A<sup>b</sup>, rounded to 4 significant digits | - | float | blank for the 3 grade-F fits and without a fill |
+| `b` | Power-law exponent, rounded to 4 decimals | - | float | blank for the 3 grade-F fits and without a fill |
+| `r_squared` | R² of the log–log power-law fit | - | float | blank for the 3 grade-F fits and without a fill |
+| `n_pixels` | Active (flooded) SRTM pixels in the footprint | count | Int (nullable) | blank without a fill |
+| `void_fraction` | Fraction of footprint pixels that are SRTM voids | - | float | blank without a fill |
+| `capped` | Integrated volume reached the catalog-capacity cap and was truncated at that cap (the catalog values are spillway/gross capacities, and the cap bounds the SRTM fill) | - | bool | blank without a fill |
+| `placement_upstream_shift_m` | Distance the dam wall was shifted upstream during placement, negative when stage 4 moves it downstream | m | float | blank for the 3 `stage_6_fallback` dams and without a fill |
+| `placement_method` | Which placement stage produced the wall | - | str | blank without a fill |
 | `valley_width_m` | Estimated valley width at the wall | m | float | may be NaN |
 | `valley_ratio` | Valley width / depth aspect ratio | - | float | may be NaN |
 | `channel_slope` | Local channel slope at the wall | m/m | float | may be NaN |
@@ -115,15 +119,15 @@ were recovered into this summary.
 | `upstream_area_km2` | Upstream contributing area (MERIT Hydro) | km² | float | may be NaN |
 | `lat` | Catalog latitude (WGS84) | deg | float | catalog-derived |
 | `lon` | Catalog longitude (WGS84) | deg | float | catalog-derived |
-| `srtm_max_vol_mcm` | Maximum volume of the SRTM-derived curve at spillway level | MCM | float | never |
-| `vol_ratio` | `srtm_max_vol_mcm / capacity_mcm`, evaluated on the bin-resolution fill (the cap stops the fill at the first 0.5 m bin reaching capacity, so capped dams sit slightly above 1) | - | float | never |
-| `z_range` | `z_max − z_min` | m | float | never |
-| `z_range_ratio` | `z_range / spillway_height_m` | - | float | NaN if spillway 0 |
-| `quality` | Per-dam quality grade | - | str | never |
-| `uncertainty_flags` | `;`-joined active reliability flags, or `-` if none | - | str | `-` when none |
-| `uncertainty_score` | Number of active uncertainty flags (0–7 by construction, 0–3 realized on this domain) | count | int | never |
+| `srtm_max_vol_mcm` | Maximum volume of the SRTM-derived curve at spillway level | MCM | float | blank without a fill |
+| `vol_ratio` | `srtm_max_vol_mcm / capacity_mcm`, evaluated on the bin-resolution fill (the cap stops the fill at the first 0.5 m bin reaching capacity, so capped dams sit slightly above 1) | - | float | blank without a fill |
+| `z_range` | `z_max − z_min` | m | float | blank without a fill |
+| `z_range_ratio` | `z_range / spillway_height_m` | - | float | NaN if spillway 0, blank without a fill |
+| `quality` | Per-dam quality grade | - | str | blank without a fill |
+| `uncertainty_flags` | `;`-joined active reliability flags, or `-` if none | - | str | `-` when none, blank without a fill |
+| `uncertainty_score` | Number of active uncertainty flags (0–7 by construction, 0–3 realized on this domain) | count | Int (nullable) | blank without a fill |
 | `sed_yield_t_ha_yr` | Delivered sediment yield at the reservoir inlet (Dash et al. 2025: RUSLE gross erosion × area-dependent delivery ratio, applied at the source) | t ha⁻¹ yr⁻¹ | float | may be blank |
-| `owe_mm_year` | Open-water evaporation (external input) | mm yr⁻¹ | float | blank for 65 dams |
+| `owe_mm_year` | Open-water evaporation (external input) | mm yr⁻¹ | float | blank for 70 dams |
 | `predicted_silt_fraction` | First-order predicted fraction of design capacity lost to sediment by the reference year 2026 (capped at 1.0, computed from the delivered yield with no additional delivery ratio) | fraction | float | blank when catchment-yield inputs are missing |
 | `sediment_risk` | Categorical sediment-loss risk derived from `predicted_silt_fraction` | - | str | `unknown` when inputs are missing |
 
@@ -188,8 +192,9 @@ Note the units are m² / m³ here, NOT MCM. `volume_m3 = 0` at the bottom row.
 | `mean_catchment_slope` | Mean catchment slope | m/m | float | may be NaN |
 
 `reason` controlled vocabulary: `placement_failed` (13), `bad_fill_auto` (10),
-`fit_failed` (3). These dams carry catalog and topographic attributes so the
-regionalization recipe can still reach them.
+`fit_failed` (3). These dams carry catalog and topographic attributes. Every
+dam of this file also has a row in `eaves_summary.csv`, and the regionalization
+reads its features from that row.
 
 ---
 
@@ -198,7 +203,7 @@ regionalization recipe can still reach them.
 | Column | Definition | Unit | dtype |
 | --- | --- | --- | --- |
 | `threshold_mcm` | Capacity cut-off | MCM | float |
-| `n_above` | Dams with capacity at or above the threshold, over the 503 processed dams (not the 526-dam catalog) | count | int |
+| `n_above` | Dams with capacity at or above the threshold, over the 503 dams with a flood fill (not the 526-dam catalog) | count | int |
 | `n_reliable` | Of those, dams meeting the trusted/grade criteria | count | int |
 | `frac_reliable` | `n_reliable / n_above` | - | float |
 
@@ -210,10 +215,12 @@ A two-column `statistic,value` table of population summaries (dam counts by
 source/era, capacity percentiles, the regional `b` distribution, LOO anchor
 skill, sediment-budget summaries, and the `b`-clustering diagnostic). Values
 are strings/numbers. The key names are self-describing. Volume statistics are
-in MCM (`*_mcm`). Dimensionless skill metrics are in log10 units.
+in MCM (`*_mcm`). Dimensionless skill metrics are in log10 units. The capacity,
+construction-year, dam-height and sediment statistics cover all 526 dams, and
+the statistics of the fill and of the fit cover the 503 dams with a flood fill.
 
-Selected keys: `n_dams_with_params=526`, `n_dams_summary=503`,
-`n_dams_failed_pipeline=26`, `n_params_source_srtm_derived=320`,
+Selected keys: `n_dams_with_params=526`, `n_dams_summary=503` (the dams with
+a flood fill), `n_dams_failed_pipeline=26`, `n_params_source_srtm_derived=320`,
 `n_params_source_regi_multi=206`, `n_training=199`, `b_median=1.4828` (trusted,
 descriptive), `b_sigma_training=0.281` (the band's b-spread, training set),
 `b_cluster_best_gain_pct=19.26`,
@@ -418,7 +425,7 @@ attributes so that each `dam_id` can be tied to a real reservoir and reused:
   **crest length** `dam_length_m`, in `eaves_summary.csv` and `failed_dams.csv`
   (meters, native catalog precision).
 - **Construction year** `construction_year`, in `eaves_summary.csv` and
-  `failed_dams.csv` (blank, not imputed, for dams without a catalog year, 20 of
+  `failed_dams.csv` (blank, not imputed, for dams without a catalog year, 21 of
   them in `eaves_summary.csv`).
 
 No other catalog fields are released. A reuser therefore receives the full

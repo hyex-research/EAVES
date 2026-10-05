@@ -60,7 +60,7 @@ import pandas as pd
 
 import eaves.config as _cfg
 from .reliability import training_mask
-from ..utils import round_released_columns
+from ..utils import dams_with_fill, round_released_columns
 from .regionalization import (
     _REGIONAL_FEATURES,
     acap_regression_diagnostics,
@@ -127,7 +127,7 @@ def loo_regionalization_eval(
 
     Returns the per-dam result DataFrame.
     """
-    df = pd.read_csv(summary_csv)
+    df = dams_with_fill(pd.read_csv(summary_csv))
     df["reliable"] = _reliable_mask(df)
     # The LOO runs on the training population (trusted and post-2000, with the small-population fallback), the dams the recipe is trained on
     df["training"] = training_mask(df)
@@ -278,7 +278,7 @@ def dem_vs_sat_area_check(
 
     Writes ``dem_vs_sat_area.csv`` and prints a summary.
     """
-    df = pd.read_csv(summary_csv)
+    df = dams_with_fill(pd.read_csv(summary_csv))
     df["reliable"] = _reliable_mask(df)
     trusted = df[df["reliable"]].copy().reset_index(drop=True)
 
@@ -367,7 +367,7 @@ def goodness_of_fit_check(
     Writes ``goodness_of_fit.csv`` and prints a distribution summary over the
     trusted set.
     """
-    summary = pd.read_csv(summary_csv)
+    summary = dams_with_fill(pd.read_csv(summary_csv))
     params = pd.read_csv(params_csv).set_index("dam_id")
     summary["trusted"] = _reliable_mask(summary)
     summary["in_training"] = training_mask(summary)
@@ -553,7 +553,7 @@ def main(argv=None) -> None:
         eav_tables_dir = os.path.join(_cfg.CSV_DIR, "eav_tables")
         goodness_of_fit_check(summary_csv, params_csv, eav_tables_dir, out_dir)
     if not args.skip_acap:
-        acap_regression_diagnostics(pd.read_csv(summary_csv), out_dir)
+        acap_regression_diagnostics(dams_with_fill(pd.read_csv(summary_csv)), out_dir)
 
     if args.sensitivity:
         from .sensitivity import sensitivity_sweep

@@ -28,7 +28,7 @@ import pandas as pd
 
 import eaves.config as _cfg
 from ..reliability import training_mask
-from ...utils import round_released_columns
+from ...utils import dams_with_fill, round_released_columns
 
 from ._shared import apply_style, mm_to_in, panel_label, save_panel
 
@@ -101,7 +101,7 @@ def _baseline_sigma(T: pd.DataFrame) -> float:
 
 def _compute(summary_csv: str, out_csv_dir: str) -> pd.DataFrame:
     """Compute the diagnostic and persist to ``b_clustering_diagnostic.csv``."""
-    T = _trusted(pd.read_csv(summary_csv))
+    T = _trusted(dams_with_fill(pd.read_csv(summary_csv)))
     if len(T) < 10:
         raise RuntimeError(
             f"trusted SRTM set too small (n={len(T)}). The silhouette "

@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
+from ...utils import dams_with_fill
 
 from ._example import example_dam_id, example_summary_row
 from ._shared import (
@@ -82,7 +83,7 @@ def _load_grdl_comparisons() -> list:
     if not grdl_dir:
         raise RuntimeError("GRDL_DIR not configured.")
     name_map = getattr(_cfg, "GRDL_NAME_MAP", {})
-    summary = pd.read_csv(Path(_cfg.CSV_DIR) / "eaves_summary.csv")
+    summary = dams_with_fill(pd.read_csv(Path(_cfg.CSV_DIR) / "eaves_summary.csv"))
     out = []
     for stem, dam_id in name_map.items():
         grdl_path = Path(grdl_dir) / f"{stem}.csv"
@@ -228,7 +229,7 @@ def _draw_grdl_da(ax, comp: dict, show_xlabel: bool = True,
 def _draw_panel_c(ax) -> None:
     """Distribution of (SRTM spillway volume / catalogue capacity), with IQR."""
     summary_csv = Path(_cfg.CSV_DIR) / "eaves_summary.csv"
-    df = pd.read_csv(summary_csv)
+    df = dams_with_fill(pd.read_csv(summary_csv))
     vr = df["vol_ratio"].dropna().to_numpy()
     vr = vr[vr > 0]
 

@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
+from ...utils import dams_with_fill
 
 from ._example import example_dam_id, example_paths, example_summary_row
 from ._shared import (
@@ -207,7 +208,7 @@ def _draw_panel_b(ax) -> None:
 def _draw_panel_c(ax) -> None:
     """Histogram of the power-law exponent b across the trusted-set reservoirs."""
     _, summary_csv = example_paths()
-    summary = pd.read_csv(summary_csv)
+    summary = dams_with_fill(pd.read_csv(summary_csv))
     ex_row = example_summary_row()
     b_example = float(ex_row["b"])
     example_name = (

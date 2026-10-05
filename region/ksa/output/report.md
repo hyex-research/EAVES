@@ -1,6 +1,6 @@
 # EAVES domain report: Saudi Arabia
 
-Generated: 2026-10-04 18:23 UTC
+Generated: 2026-10-05 05:49 UTC
 
 Source code: `eaves/` package. This report: `eaves.postprocess.report`.
 
@@ -12,7 +12,7 @@ This document characterizes the reservoir population in the configured region an
 - **DEM-derived curves**: 320 dams have curves fit directly from SRTM-clipped flood-fills (these are the trusted population).
 - **Regionalized curves**: 206 dams have curves assigned via a region-trained empirical recipe because the DEM fit failed quality gates, of which 26 are pipeline failures (placement, fill, or fit) regionalized with topographic features captured at failure time.
 - **Operational fill behavior**: the median ratio A_sat<sup>P95</sup> / A_DEM is **0.19**, meaning a typical reservoir's observed maximum extent reaches only ~19.4% of its DEM-derived design footprint. This is the central physical fact behind the regionalization method choice below.
-- **Sediment budget**: assuming delivered sediment yields (the RUSLE-by-SDR product of Dash et al. 2025, so no additional delivery ratio is applied) and a deposited bulk density of 1.30 t m⁻³, the median predicted capacity loss by 2026 is **44.7%** of the catalogue value (loss capped at 100% by trap saturation; 147 reservoirs reach full siltation).
+- **Sediment budget**: assuming delivered sediment yields (the RUSLE-by-SDR product of Dash et al. 2025, so no additional delivery ratio is applied) and a deposited bulk density of 1.30 t m⁻³, the median predicted capacity loss by 2026 is **44.4%** of the catalogue value (loss capped at 100% by trap saturation; 151 reservoirs reach full siltation).
 - **Regionalization accuracy (LOO on the training dams, multi-feature LR anchor)**: 93% of predictions within a factor of 2 of the SRTM-derived truth, median bias +6%.
 
 ## Pipeline overview
@@ -63,17 +63,17 @@ The placement pipeline produces a flood fill for n = 503 dams. Together with the
 | V_cap ≥ 5 MCM | 43 |
 | V_cap < 1 MCM | 368 |
 
-Construction years span 1955–2020 with the median dam built in 2008. Era breakdown:
+Construction years span 1950–2020 with the median dam built in 2008. Era breakdown:
 
 | Era | Count |
 | --- | --- |
-| Pre-1980 | 40 |
-| 1980–2000 | 138 |
-| 2000–2010 | 137 |
-| Post-2010 | 168 |
-| Year unknown | 20 |
+| Pre-1980 | 41 |
+| 1980–2000 | 150 |
+| 2000–2010 | 143 |
+| Post-2010 | 171 |
+| Year unknown | 21 |
 
-The 20 year-unknown dams carry no catalogue construction date. They are retained in the population and in every EAV product. Only the age-dependent statistics (era assignment above, sediment budget below) exclude them, since fabricating a year would bias those figures.
+The 21 year-unknown dams carry no catalogue construction date. They are retained in the population and in every EAV product. Only the age-dependent statistics (era assignment above, sediment budget below) exclude them, since fabricating a year would bias those figures.
 
 ### Operational fill behavior
 
@@ -89,7 +89,7 @@ This is the central physical fact that motivates the regionalization recipe in t
 
 A first-order sediment budget is computed from catchment-specific delivered-yield estimates (`sed_yield_t_ha_yr`) and upstream catchment areas, propagated to the reference year (2026) with deposited bulk density ρ_sed = 1.30 t m⁻³. The yield input is _delivered_ sediment yield at the reservoir inlet. Dash et al. (2025) compute it as RUSLE gross erosion times the Boyce (1974) area-dependent delivery ratio (their Eqs. 2–4), so no additional delivery ratio is applied here (a second SDR would double-discount delivery). The accumulated trap volume is V_sed = Y · A_cat · (t - t_built) / ρ_sed, and the predicted fractional capacity loss is capped at 100% by trap saturation (a reservoir cannot lose more storage than it holds).
 
-Across n = 483 dams with all required inputs, the predicted median capacity loss is **44.7%** of design capacity, with P16–P84 = [12.3%, 100.0%]. 230 reservoirs are predicted to have lost ≥ 50% of their capacity, and 147 reach full siltation (≥ 100% of design before capping, i.e. the integrated sediment trap volume meets or exceeds the original storage, typically very small headwater impoundments). The per-dam capped fraction and a categorical risk band are released as `predicted_silt_fraction` and `sediment_risk` in `eaves_summary.csv`.
+Across n = 505 dams with all required inputs, the predicted median capacity loss is **44.4%** of design capacity, with P16–P84 = [12.1%, 100.0%]. 240 reservoirs are predicted to have lost ≥ 50% of their capacity, and 151 reach full siltation (≥ 100% of design before capping, i.e. the integrated sediment trap volume meets or exceeds the original storage, typically very small headwater impoundments). The per-dam capped fraction and a categorical risk band are released as `predicted_silt_fraction` and `sediment_risk` in `eaves_summary.csv`.
 
 The single bathymetric ground-truth comparison available (Baish, id_120000) shows this first-order budget under-predicts the observed loss by a factor of ~1.5 at that site (predicted ~24% versus ~36% from the 2025 sonar over the same window), consistent with site-specific sediment yield somewhat above the regional first-order input. The national capacity loss implied by the budget matches the ~32% reported by Dash et al. (2025) from the same yield estimates. The per-dam numbers should nevertheless be read as first-order screening indicators, not site predictions. A region-specific calibration would benefit from comparative bathymetry on a small panel of reservoirs spanning the size range.
 
@@ -225,7 +225,7 @@ To deploy EAVES on a new region, configure a settings JSON pointing to the local
 
 | Path | Content |
 | --- | --- |
-| `1_results_csv/eaves_summary.csv` | Per-dam pipeline outputs: placement metadata, fit results, quality flags, external attributes. |
+| `1_results_csv/eaves_summary.csv` | One row per dam of `eaves_params.csv`. Per-dam pipeline outputs: placement metadata, fit results, quality flags, external attributes. A dam without a flood fill has empty fill and fit cells. |
 | `1_results_csv/eaves_params.csv` | Lean per-dam parameter table: (c, b) plus identification and the assignment source. Six columns. The 1σ uncertainty on b is a single region-level scalar stored in `validation/v_uncertainty.csv` and `domain_characterization.csv`, not duplicated per row. |
 | `1_results_csv/failed_dams.csv` | Dams failing wall placement, fill acceptance, or the power-law fit, with failure reason. |
 | `1_results_csv/threshold_analysis.csv` | Reliability threshold sweep used to set the trusted-set cut. |

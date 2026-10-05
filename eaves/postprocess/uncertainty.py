@@ -57,7 +57,7 @@ import pandas as pd
 
 import eaves.config as _cfg
 from .reliability import training_mask
-from ..utils import round_released_columns
+from ..utils import dams_with_fill, round_released_columns
 
 
 _FILL_LEVELS = {
@@ -219,7 +219,7 @@ def run(settings_path: str | None = None) -> pd.DataFrame:
             "regionalization step first."
         )
     params_df  = pd.read_csv(params_path)
-    summary_df = pd.read_csv(summary_path)
+    summary_df = dams_with_fill(pd.read_csv(summary_path))
 
     loo_path = Path(_cfg.CSV_DIR) / "validation" / "regionalization_loo.csv"
     loo_df = pd.read_csv(loo_path) if loo_path.exists() else None

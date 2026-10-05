@@ -17,7 +17,7 @@ import pandas as pd
 
 import eaves.config as _cfg
 from .reliability import training_mask
-from ..utils import round_released_columns
+from ..utils import dams_with_fill, round_released_columns
 # The panels step renders the diagnostic plots and this module writes CSVs only
 
 try:
@@ -301,8 +301,13 @@ def assign_quality(row):
     return "C"
 
 
-def run_regionalization(summary_df, failures, dam_data_list):
-    """Assign EAV parameters to every dam.
+def run_regionalization(summary_df):
+    """Assign EAV parameters to every dam of the summary.
+
+    ``summary_df`` holds every dam as it is written to ``eaves_summary.csv``.
+    A dam with a trusted fill keeps its SRTM-derived parameters. Every other
+    dam, with or without a flood fill, is regionalized from the features of
+    its summary row, so the parameters follow from the released table alone.
 
     Returns a ``pd.DataFrame`` with columns ``dam_id, dam_name, capacity_mcm, c, b, source``.
     Saves ``eaves_params.csv`` and ``threshold_analysis.csv``.
@@ -310,6 +315,12 @@ def run_regionalization(summary_df, failures, dam_data_list):
     print("\n" + "=" * 70)
     print("  REGIONALIZATION")
     print("=" * 70)
+
+    if "n_pixels" in summary_df.columns:
+        unfilled_df = summary_df[summary_df["n_pixels"].isna()]
+    else:
+        unfilled_df = summary_df.iloc[0:0]
+    summary_df = dams_with_fill(summary_df)
 
     if len(summary_df) == 0 or "b" not in summary_df.columns:
         print("  [WARN] No successful dams, skipping regionalization.")
@@ -469,33 +480,8 @@ def run_regionalization(summary_df, failures, dam_data_list):
             "source": "srtm_derived",
         })
 
-    # (b) Unreliable SRTM dams go to regionalization
-    need_region = summary_df[~summary_df["reliable"]].copy()
-
-    # (c) Failed dams with features join the regionalization set, except those already in summary_df
-    summary_ids = set(summary_df["dam_id"])
-    fail_feature_rows = []
-    for f in failures:
-        dam_id_f = f.get("dam_id", "")
-        if dam_id_f in summary_ids:
-            continue
-        dam_d = next((d for d in dam_data_list if d.get("dam_id") == dam_id_f), None)
-        if dam_d is None:
-            continue
-        fail_feature_rows.append({
-            "dam_id": dam_id_f,
-            "dam_name": f.get("dam_name", dam_d.get("dam_name_latin", "")),
-            "capacity_mcm": float(dam_d.get("storage_capacity_m3", 0)) / 1e6,
-            "dam_height_m": float(dam_d.get("dam_height_m", 0)),
-            "spillway_height_m": float(dam_d.get("spillway_height_m", 0)),
-            "dam_length_m": float(dam_d.get("dam_length_m") or np.nan),
-            "valley_ratio": f.get("valley_ratio", np.nan),
-            "channel_slope": f.get("channel_slope", np.nan),
-            "mean_catchment_slope": f.get("mean_catchment_slope", np.nan),
-            "upstream_area_km2": f.get("upstream_area_km2", np.nan),
-            "lat": dam_d.get("_lat", np.nan),
-            "lon": dam_d.get("_lon", np.nan),
-        })
+    # (b) Unreliable SRTM dams and dams without a flood fill go to regionalization
+    need_region = pd.concat([summary_df[~summary_df["reliable"]], unfilled_df], ignore_index=True)
 
     dams_to_regionalize = []
     for _, row in need_region.iterrows():
@@ -513,7 +499,6 @@ def run_regionalization(summary_df, failures, dam_data_list):
             "lat": row.get("lat", np.nan),
             "lon": row.get("lon", np.nan),
         })
-    dams_to_regionalize.extend(fail_feature_rows)
 
     region_df = pd.DataFrame(dams_to_regionalize)
 

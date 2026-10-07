@@ -26,6 +26,9 @@ from ..config import (
     PLACEMENT_GOOD_ENOUGH_VOL_ERR,
     PLACEMENT_UPSTREAM_MAX_VOL_ERR,
     FALLBACK_MIN_PIXELS,
+    DOWNSTREAM_POOL_RIVER_SHARE,
+    DOWNSTREAM_POOL_SLOPE_SHARE,
+    DOWNSTREAM_POOL_BUFFER_PX,
 )
 from .terrain import get_downstream_direction_from_dem
 from .drainage import drains_through_wall
@@ -475,6 +478,26 @@ def _pool_downstream_skewed(fp, dam_r, dam_c, downstream_px, *, min_pixels=30):
     return float(np.median(proj)) > 1.75
 
 
+def _pool_lies_downstream(fp, dem, dam_r, dam_c, river_up_px):
+    """True if the pool lies downstream of the dam cell, by the river reach and by the terrain slope.
+
+    Nearly all of the pool must lie down the river reach from the dam cell, and
+    most of it down the terrain slope too. Either direction alone can point the
+    wrong way at a dam, and a pool that both place downstream is not the
+    reservoir. A dam without a river reach is never rejected here.
+    """
+    if river_up_px is None:
+        return False
+    along_river = -np.asarray(river_up_px, dtype=float)
+    down_slope = get_downstream_direction_from_dem(dem, dam_r, dam_c)
+    return (
+        _flood_downstream_biased(fp, dam_r, dam_c, along_river,
+                                 buffer_px=DOWNSTREAM_POOL_BUFFER_PX, frac_thresh=DOWNSTREAM_POOL_RIVER_SHARE)
+        and _flood_downstream_biased(fp, dam_r, dam_c, down_slope,
+                                     buffer_px=DOWNSTREAM_POOL_BUFFER_PX, frac_thresh=DOWNSTREAM_POOL_SLOPE_SHARE)
+    )
+
+
 def _downstream_leak_ok(fp, dam_r, dam_c, downstream_vec_px, *,
                         buffer_px=6.0, max_frac=0.005):
     """Reject footprints that spill downstream of the wall."""
@@ -603,6 +626,10 @@ def _try_terrain_placement_once(
             if not drains_through_wall(
                 fp, dem_utm, dam_r, dam_c, eff_length, capacity_m3, pixel_area,
             ):
+                continue
+
+            # Rejects a pool that the river reach and the terrain slope both place downstream of the dam cell
+            if _pool_lies_downstream(fp, dem_utm, dam_r, dam_c, river_dir_px):
                 continue
 
             approx_vol = _approx_cone_volume_m3(n_px, pixel_area, spillway_height)
@@ -796,6 +823,8 @@ def fallback_multidirection_fill(
             if not drains_through_wall(
                 fp, dem_utm, dam_r, dam_c, dam_length_m, capacity_m3, pixel_area,
             ):
+                continue
+            if _pool_lies_downstream(fp, dem_utm, dam_r, dam_c, river_dir_px):
                 continue
 
             max_vol_approx = n_px * pixel_area * spillway_height / 3.0

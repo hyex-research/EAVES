@@ -178,8 +178,10 @@ def _process_dam_worker(dam_data, gdf_rivers):
             result["dam_id"] = dam_id
             result["dam_name_latin"] = dam_name_latin
 
+            # The depth counts from the bottom of the fill, the first row of the table
             eav_df = pd.DataFrame({
                 "elevation_m": result["elev_bins"],
+                "depth_m": result["elev_bins"] - result["elev_bins"][0],
                 "area_m2": result["area_m2"],
                 "volume_m3": result["vol_m3"],
             })

@@ -1,12 +1,12 @@
 feature_set,k,silhouette,loo_sigma_delta_b,loo_sigma_baseline,loo_relative_gain_pct,n_trusted
-raw morphometry,2,0.374,0.2504,0.2827,11.43,199
-raw morphometry,3,0.2557,0.2283,0.2827,19.26,199
-raw morphometry,4,0.2757,0.2311,0.2827,18.25,199
-raw morphometry,5,0.2345,0.2344,0.2827,17.08,199
-raw morphometry,6,0.2365,0.2388,0.2827,15.53,199
-raw morphometry,7,0.2272,0.241,0.2827,14.76,199
-raw morphometry,8,0.2243,0.2423,0.2827,14.3,199
-raw morphometry,9,0.2381,0.2468,0.2827,12.71,199
-raw morphometry,10,0.2328,0.2297,0.2827,18.76,199
-raw morphometry,11,0.2256,0.2415,0.2827,14.57,199
-raw morphometry,12,0.2294,0.2511,0.2827,11.19,199
+raw morphometry,2,0.3672,0.2524,0.2792,9.593,216
+raw morphometry,3,0.2492,0.2292,0.2792,17.92,216
+raw morphometry,4,0.2585,0.2335,0.2792,16.37,216
+raw morphometry,5,0.2678,0.2356,0.2792,15.62,216
+raw morphometry,6,0.2481,0.2468,0.2792,11.6,216
+raw morphometry,7,0.2201,0.2426,0.2792,13.1,216
+raw morphometry,8,0.2257,0.2386,0.2792,14.52,216
+raw morphometry,9,0.2343,0.2358,0.2792,15.54,216
+raw morphometry,10,0.2256,0.2459,0.2792,11.91,216
+raw morphometry,11,0.2331,0.2474,0.2792,11.37,216
+raw morphometry,12,0.2299,0.2487,0.2792,10.91,216

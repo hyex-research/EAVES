@@ -4,6 +4,51 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.2] - 2026-10-07
+
+### Added
+
+- **`depth_m` in every EAV table** (`eaves.pipeline.workers`). The column
+  stands beside `elevation_m` and gives the water depth above the bottom
+  of the fill, the elevation of the row minus that of the first row. Every
+  other column keeps its values.
+- **Rule against a pool downstream of the dam**
+  (`eaves.pipeline.placement`, `DOWNSTREAM_POOL_RIVER_SHARE`,
+  `DOWNSTREAM_POOL_SLOPE_SHARE` and `DOWNSTREAM_POOL_BUFFER_PX` in
+  `eaves.config`). Every placement stage rejects a pool when at least 90%
+  of it lies down the river reach from the dam cell and more than half of
+  it lies down the terrain slope. A pool on open ground can drain out
+  along its whole rim and pass the drainage rule, and this rule judges it
+  by its position. Either direction alone can point the wrong way at a
+  dam, so a pool is rejected only when both place it downstream. On the
+  Saudi Arabian catalog the flood fill of one dam changes (`id_030038`).
+  Its parameters become regionalized and its grade moves from A to C. The
+  failure of `id_030036` reads `placement_failed` in place of
+  `bad_fill_auto`. Every other flood fill, EAV table and check plot stays
+  as it is.
+
+### Changed
+
+- **Construction years of 20 dams of the Saudi Arabian catalog**
+  (`region/ksa/input/ksa_dams/ksa_dams_transliterated.csv`). The catalog
+  gains the year of 20 dams that had none, the year in which satellite
+  imagery shows the finished dam (2009 to 2025). All 20 postdate the SRTM
+  acquisition. One dam stays without a year (`id_030038`), a historical
+  dam older than the acquisition. The 20 dams lose the `unknown_year`
+  flag, and 17 of them are trusted and join the training set, which grows
+  from 199 to 216 dams. The sediment budget covers 525 dams in place of
+  505, and the era table lists 1 dam without a year in place of 21.
+- **Regionalized parameters follow from the larger training set.** The
+  regional exponent moves from 1.5345 to 1.5291, and `c` and `b` of the
+  207 regionalized dams change, `c` by −9.9% to +15.8% with a median of
+  +6.2%. The parameters of the 319 SRTM-derived dams stay as they are. The
+  leave-one-out validation covers 216 dams, with 93% of the predictions
+  within a factor of 2 and all of them within a factor of 3.
+- **Report** (`eaves.postprocess.report`). The paragraph on dams without a
+  construction year reads correctly for a single dam.
+- **Tests.** `test/test_drainage.py` gains five tests of the rule against
+  a pool downstream of the dam.
+
 ## [1.3.1] - 2026-10-05
 
 ### Changed
@@ -454,6 +499,7 @@ downstream simulation.
   sediment-loss budget beyond the first-order estimate currently
   reported.
 
+[1.3.2]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.2
 [1.3.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.1
 [1.3.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.0
 [1.2.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.2.1

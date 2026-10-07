@@ -19,7 +19,7 @@ Everything a run writes under `region/<country>/output/`. Column-level definitio
 | `validation/acap_regression_diagnostics.csv` | Collinearity (VIF, condition number) and incremental LOO skill of the seven anchor features (long-form table). |
 | `validation/sensitivity_sweep.csv` | Trusted-set size, grade counts, and median trusted `b` as each of the five swept constants (three placement constants and the two calibrated constants of the drainage rule) is perturbed by 20-30%. Written only by the opt-in `--sensitivity` step (see [usage.md](usage.md)). |
 | `validation/dem_error_montecarlo.csv` | Per-dam spread of recovered volume and `b` across SRTM vertical-error realizations. Written only by the opt-in `--dem-mc` step (see [usage.md](usage.md)). |
-| `eav_tables/{dam_id}_eav.csv` | Per-dam tabulated (z, A, V) on half-integer-snapped 0.5 m elevation bins. |
+| `eav_tables/{dam_id}_eav.csv` | Per-dam tabulated (z, A, V) on half-integer-snapped 0.5 m elevation bins, with the depth above the bottom of the fill beside the elevation. |
 | `DATA_DICTIONARY.md` | Definitions, units, and controlled vocabularies for every released column. |
 
 Every table is written at a fixed precision. A floating-point value keeps four significant digits and never fewer than two decimals, so an elevation reads `666.5`, an area in an EAV table `861.55` and a channel slope `0.0001338`. `capacity_mcm`, the exponent `b` and the columns named after it keep four decimals, and the coordinates and dam dimensions (`dam_height_m`, `spillway_height_m`, `dam_length_m`) are written as they come from the catalog.

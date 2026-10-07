@@ -28,7 +28,7 @@ For each dam the pipeline:
 
 The headline product, `eaves_params.csv`, provides the area-volume relationship for every dam in the study domain, enabling satellite-observed water extent to be converted into storage estimates for downstream hydrological modeling.
 
-> **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia** (526 dams: 320 SRTM-derived, 206 regionalized). The codebase is portable and can be applied to any region for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalog) are available.
+> **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia** (526 dams: 319 SRTM-derived, 207 regionalized). The codebase is portable and can be applied to any region for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalog) are available.
 
 ## 📂 The data
 

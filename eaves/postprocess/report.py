@@ -692,7 +692,14 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         A(f"| Post-2010 | {_fmt(stats.get('n_post_2010'))} |")
         A(f"| Year unknown | {_fmt(n_unknown)} |")
         A("")
-        if n_unknown:
+        if n_unknown == 1:
+            A("The one year-unknown dam carries no catalogue construction "
+              "date. It is retained in the population and in every EAV "
+              "product. Only the age-dependent statistics (era assignment "
+              "above, sediment budget below) exclude it, since fabricating a "
+              "year would bias those figures.")
+            A("")
+        elif n_unknown:
             A(f"The {_fmt(n_unknown)} year-unknown dams carry no catalogue "
               "construction date. They are retained in the population and in "
               "every EAV product. Only the age-dependent statistics (era "

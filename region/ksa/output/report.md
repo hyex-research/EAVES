@@ -1,6 +1,6 @@
 # EAVES domain report: Saudi Arabia
 
-Generated: 2026-10-05 05:49 UTC
+Generated: 2026-10-07 13:43 UTC
 
 Source code: `eaves/` package. This report: `eaves.postprocess.report`.
 
@@ -9,11 +9,11 @@ This document characterizes the reservoir population in the configured region an
 ## Executive summary
 
 - **Catalogue**: 526 dams with assigned EAV parameters.
-- **DEM-derived curves**: 320 dams have curves fit directly from SRTM-clipped flood-fills (these are the trusted population).
-- **Regionalized curves**: 206 dams have curves assigned via a region-trained empirical recipe because the DEM fit failed quality gates, of which 26 are pipeline failures (placement, fill, or fit) regionalized with topographic features captured at failure time.
+- **DEM-derived curves**: 319 dams have curves fit directly from SRTM-clipped flood-fills (these are the trusted population).
+- **Regionalized curves**: 207 dams have curves assigned via a region-trained empirical recipe because the DEM fit failed quality gates, of which 26 are pipeline failures (placement, fill, or fit) regionalized with topographic features captured at failure time.
 - **Operational fill behavior**: the median ratio A_sat<sup>P95</sup> / A_DEM is **0.19**, meaning a typical reservoir's observed maximum extent reaches only ~19.4% of its DEM-derived design footprint. This is the central physical fact behind the regionalization method choice below.
-- **Sediment budget**: assuming delivered sediment yields (the RUSLE-by-SDR product of Dash et al. 2025, so no additional delivery ratio is applied) and a deposited bulk density of 1.30 t m⁻³, the median predicted capacity loss by 2026 is **44.4%** of the catalogue value (loss capped at 100% by trap saturation; 151 reservoirs reach full siltation).
-- **Regionalization accuracy (LOO on the training dams, multi-feature LR anchor)**: 93% of predictions within a factor of 2 of the SRTM-derived truth, median bias +6%.
+- **Sediment budget**: assuming delivered sediment yields (the RUSLE-by-SDR product of Dash et al. 2025, so no additional delivery ratio is applied) and a deposited bulk density of 1.30 t m⁻³, the median predicted capacity loss by 2026 is **42.4%** of the catalogue value (loss capped at 100% by trap saturation; 152 reservoirs reach full siltation).
+- **Regionalization accuracy (LOO on the training dams, multi-feature LR anchor)**: 93% of predictions within a factor of 2 of the SRTM-derived truth, median bias +7%.
 
 ## Pipeline overview
 
@@ -46,7 +46,7 @@ Two geometric extremes bracket the exponent:
 
 Real reservoirs land between these. The bulk of trusted KSA dams cluster around b ~ 1.5, which corresponds to β = 2, a three-dimensional converging valley.
 
-In this region's trusted set (n = 320), b has median **1.48** with 1σ = 0.26, P05–P95 range [1.11, 2.06], and absolute range [0.88, 2.50]. The width of that distribution is the dominant geometric uncertainty in regionalized curves.
+In this region's trusted set (n = 319), b has median **1.48** with 1σ = 0.26, P05–P95 range [1.11, 2.06], and absolute range [0.88, 2.50]. The width of that distribution is the dominant geometric uncertainty in regionalized curves.
 
 The coefficient c sets the absolute scale of the curve. Once b is fixed, anchoring at a known point (A_cap, V_cap) pins c = V_cap / A_cap<sup>b</sup>. This back-solve is exact at the anchor, so any uncertainty in b shows up as V_pred / V_true = (A/A_cap)<sup>Δb</sup> at other water levels. A 1σ mismatch in b therefore produces ~20% volume error at 0.5 A_cap and ~84% at 0.1 A_cap. Users who need accuracy at very low water levels should treat the curve as a structural estimate, not a precise prediction.
 
@@ -54,7 +54,7 @@ The coefficient c sets the absolute scale of the curve. Once b is fixed, anchori
 
 ### Catalogue demographics
 
-The placement pipeline produces a flood fill for n = 503 dams. Together with the 23 dams without a fill, which carry enough catalog metadata to be regionalized, **526 dams** in total receive an EAV curve assignment (320 SRTM-derived, 206 regionalized). Aggregate design storage is **2,478 MCM**. The capacity distribution is strongly right-skewed: median 0.47 MCM, P05–P95 = [0.07, 10.0] MCM, maximum 325.0 MCM. By size class:
+The placement pipeline produces a flood fill for n = 503 dams. Together with the 23 dams without a fill, which carry enough catalog metadata to be regionalized, **526 dams** in total receive an EAV curve assignment (319 SRTM-derived, 207 regionalized). Aggregate design storage is **2,478 MCM**. The capacity distribution is strongly right-skewed: median 0.47 MCM, P05–P95 = [0.07, 10.0] MCM, maximum 325.0 MCM. By size class:
 
 | Class | Count |
 | --- | --- |
@@ -63,33 +63,33 @@ The placement pipeline produces a flood fill for n = 503 dams. Together with the
 | V_cap ≥ 5 MCM | 43 |
 | V_cap < 1 MCM | 368 |
 
-Construction years span 1950–2020 with the median dam built in 2008. Era breakdown:
+Construction years span 1950–2025 with the median dam built in 2008. Era breakdown:
 
 | Era | Count |
 | --- | --- |
 | Pre-1980 | 41 |
 | 1980–2000 | 150 |
-| 2000–2010 | 143 |
-| Post-2010 | 171 |
-| Year unknown | 21 |
+| 2000–2010 | 144 |
+| Post-2010 | 190 |
+| Year unknown | 1 |
 
-The 21 year-unknown dams carry no catalogue construction date. They are retained in the population and in every EAV product. Only the age-dependent statistics (era assignment above, sediment budget below) exclude them, since fabricating a year would bias those figures.
+The one year-unknown dam carries no catalogue construction date. It is retained in the population and in every EAV product. Only the age-dependent statistics (era assignment above, sediment budget below) exclude it, since fabricating a year would bias those figures.
 
 ### Operational fill behavior
 
-For the 282 trusted dams with a satellite water-extent time series, the 95th-percentile observed water area is compared against the DEM-derived spillway-level footprint. The ratio A_sat<sup>P95</sup> / A_DEM characterizes how fully a reservoir is operated relative to its design.
+For the 281 trusted dams with a satellite water-extent time series, the 95th-percentile observed water area is compared against the DEM-derived spillway-level footprint. The ratio A_sat<sup>P95</sup> / A_DEM characterizes how fully a reservoir is operated relative to its design.
 
-In this region, the median ratio is **0.19**, meaning a typical reservoir's largest observed extent reaches only ~19.4% of its design footprint. The P16–P84 band is [0.03, 0.52]. Only 50 out of 282 reservoirs (17.7%) ever reach ≥ 0.5 A_DEM in the observation window.
+In this region, the median ratio is **0.19**, meaning a typical reservoir's largest observed extent reaches only ~19.4% of its design footprint. The P16–P84 band is [0.03, 0.52]. Only 49 out of 281 reservoirs (17.4%) ever reach ≥ 0.5 A_DEM in the observation window.
 
 Physically this signal reflects a combination of (a) arid-zone hydrology with sparse, episodic inflows that rarely accumulate to design pool, (b) operational drawdown for irrigation and domestic supply, (c) seepage and evaporation losses, and (d) the design margin built into nominal capacities. The signal is _not_ caused by sedimentation (sediment fills the bottom of the reservoir without much reducing the spillway-level area) and _not_ caused by DEM oversizing (at the only available bathymetric ground-truth site, Baish, the SRTM footprint matches the design-table spillway area to within ~1%).
 
-This is the central physical fact that motivates the regionalization recipe in this report. An anchor based on the satellite-observed maximum extent does not match the design footprint the catalogue capacity refers to, so anchoring V_cap against A_sat<sup>P95</sup> inflates c by (A_DEM/A_sat)<sup>b</sup>, of order ~12.4× in this region. Anchoring against a DEM-derived A_cap instead keeps both endpoints in the design regime.
+This is the central physical fact that motivates the regionalization recipe in this report. An anchor based on the satellite-observed maximum extent does not match the design footprint the catalogue capacity refers to, so anchoring V_cap against A_sat<sup>P95</sup> inflates c by (A_DEM/A_sat)<sup>b</sup>, of order ~12.3× in this region. Anchoring against a DEM-derived A_cap instead keeps both endpoints in the design regime.
 
 ### Sediment budget
 
 A first-order sediment budget is computed from catchment-specific delivered-yield estimates (`sed_yield_t_ha_yr`) and upstream catchment areas, propagated to the reference year (2026) with deposited bulk density ρ_sed = 1.30 t m⁻³. The yield input is _delivered_ sediment yield at the reservoir inlet. Dash et al. (2025) compute it as RUSLE gross erosion times the Boyce (1974) area-dependent delivery ratio (their Eqs. 2–4), so no additional delivery ratio is applied here (a second SDR would double-discount delivery). The accumulated trap volume is V_sed = Y · A_cat · (t - t_built) / ρ_sed, and the predicted fractional capacity loss is capped at 100% by trap saturation (a reservoir cannot lose more storage than it holds).
 
-Across n = 505 dams with all required inputs, the predicted median capacity loss is **44.4%** of design capacity, with P16–P84 = [12.1%, 100.0%]. 240 reservoirs are predicted to have lost ≥ 50% of their capacity, and 151 reach full siltation (≥ 100% of design before capping, i.e. the integrated sediment trap volume meets or exceeds the original storage, typically very small headwater impoundments). The per-dam capped fraction and a categorical risk band are released as `predicted_silt_fraction` and `sediment_risk` in `eaves_summary.csv`.
+Across n = 525 dams with all required inputs, the predicted median capacity loss is **42.4%** of design capacity, with P16–P84 = [10.5%, 100.0%]. 241 reservoirs are predicted to have lost ≥ 50% of their capacity, and 152 reach full siltation (≥ 100% of design before capping, i.e. the integrated sediment trap volume meets or exceeds the original storage, typically very small headwater impoundments). The per-dam capped fraction and a categorical risk band are released as `predicted_silt_fraction` and `sediment_risk` in `eaves_summary.csv`.
 
 The single bathymetric ground-truth comparison available (Baish, id_120000) shows this first-order budget under-predicts the observed loss by a factor of ~1.5 at that site (predicted ~24% versus ~36% from the 2025 sonar over the same window), consistent with site-specific sediment yield somewhat above the regional first-order input. The national capacity loss implied by the budget matches the ~32% reported by Dash et al. (2025) from the same yield estimates. The per-dam numbers should nevertheless be read as first-order screening indicators, not site predictions. A region-specific calibration would benefit from comparative bathymetry on a small panel of reservoirs spanning the size range.
 
@@ -97,9 +97,9 @@ Crucially, sediment fills the bottom of the reservoir but does not change the sp
 
 ### Geometry distribution and regionalization features
 
-On the trusted subset (n = 320), the power-law exponent b has median **1.48** (1σ width 0.26). This sits in the classical valley-fill regime and is consistent with the wadi geometry that dominates the catalogue.
+On the trusted subset (n = 319), the power-law exponent b has median **1.48** (1σ width 0.26). This sits in the classical valley-fill regime and is consistent with the wadi geometry that dominates the catalogue.
 
-The empirical area–capacity relation, fit on the training dams as log A_cap [km²] = α + β log V_cap [MCM], yields α = -0.56, β = 0.69 with a residual RMS of a factor of 1.70 over n = 199 training dams. The exponent β is close to the geometric expectation 2/3 for cone-like valley fills, which is the structural basis for using this relation as the regionalization anchor.
+The empirical area–capacity relation, fit on the training dams as log A_cap [km²] = α + β log V_cap [MCM], yields α = -0.56, β = 0.69 with a residual RMS of a factor of 1.69 over n = 216 training dams. The exponent β is close to the geometric expectation 2/3 for cone-like valley fills, which is the structural basis for using this relation as the regionalization anchor.
 
 ## SRTM-derived curves
 
@@ -127,15 +127,15 @@ _Choice of b._ The shipped recipe assigns every regionalized dam the regional me
 
 _1. Multivariate regression (linear and random forest)._ A linear regression and a random forest of b on `valley_ratio`, `channel_slope`, `mean_catchment_slope`, and `dam_height_m` are evaluated on the training set by leave-one-out cross-validation. The selection gate requires R²_LOO ≥ 0.25 for a regression to replace the median. Both models fall below the gate. Each individual feature explains less than 10% of the variance in b (Spearman |ρ| ≤ 0.31, so R² ≤ 0.10 per feature), and the features are partly redundant, so combining them adds little. The regression branch is rejected and the median is used.
 
-_2. Morphological clustering with a per-cluster median._ Even when features cannot drive a smooth regression, they may carve the training set into morphologically homogeneous clusters whose internal b spread is tighter than the population spread. A k-means clustering in log-space, z-scored, on the raw-morphometry feature set (released in `validation/b_clustering_diagnostic.csv`) sweeps k = 2 … 12. Best LOO σ(Δb): **0.23 at k = 3**, versus **0.28** for the global median, a genuine but modest **~19 % tightening** (Fig. S1, panel b). The supporting silhouette analysis (Fig. S1, panel a) shows mean silhouette coefficients in the **0.22–0.37** range across every feature set and every k, i.e. below the 0.50 conventional threshold for _reasonable_ cluster structure, with no natural morphological partition to exploit. Two things drive the small remaining gain: (a) every morphological feature individually has Spearman |ρ| ≤ 0.31 with b, so cluster boundaries blur; (b) the within-cluster variance of b is comparable to the between-cluster differences, so the clusters do not separate the population into distinct b regimes.
+_2. Morphological clustering with a per-cluster median._ Even when features cannot drive a smooth regression, they may carve the training set into morphologically homogeneous clusters whose internal b spread is tighter than the population spread. A k-means clustering in log-space, z-scored, on the raw-morphometry feature set (released in `validation/b_clustering_diagnostic.csv`) sweeps k = 2 … 12. Best LOO σ(Δb): **0.23 at k = 3**, versus **0.28** for the global median, a genuine but modest **~18 % tightening** (Fig. S1, panel b). The supporting silhouette analysis (Fig. S1, panel a) shows mean silhouette coefficients in the **0.22–0.37** range across every feature set and every k, i.e. below the 0.50 conventional threshold for _reasonable_ cluster structure, with no natural morphological partition to exploit. Two things drive the small remaining gain: (a) every morphological feature individually has Spearman |ρ| ≤ 0.31 with b, so cluster boundaries blur; (b) the within-cluster variance of b is comparable to the between-cluster differences, so the clusters do not separate the population into distinct b regimes.
 
 ![Supplementary: K-means clustering diagnostic for b](2_results_plots/s1_b_clustering_silhouette.png)
 
-_Figure S1. K-means clustering diagnostic on the training-set dams in log-transformed morphometric feature space. (a) Mean silhouette coefficient versus number of clusters k for the raw-morphometry feature set. It remains below the conventional 0.50 _reasonable structure_ threshold for every k. The k = 2 peak at 0.37 reflects a single elongated population, not two morphological types. (b) Leave-one-out σ(Δb) for a per-cluster-median predictor of b versus the global-median baseline (dashed). The best configuration improves on the baseline by ~19 %, well within the intrinsic noise floor of fitting the power law to integrated SRTM curves. The diagnostic justifies the global-median choice for b in the production recipe._
+_Figure S1. K-means clustering diagnostic on the training-set dams in log-transformed morphometric feature space. (a) Mean silhouette coefficient versus number of clusters k for the raw-morphometry feature set. It remains below the conventional 0.50 _reasonable structure_ threshold for every k. The k = 2 peak at 0.37 reflects a single elongated population, not two morphological types. (b) Leave-one-out σ(Δb) for a per-cluster-median predictor of b versus the global-median baseline (dashed). The best configuration improves on the baseline by ~18 %, well within the intrinsic noise floor of fitting the power law to integrated SRTM curves. The diagnostic justifies the global-median choice for b in the production recipe._
 
 _3. The intrinsic noise floor._ Across the global median and every clustering configuration, the leave-one-out residual on b stays between σ(Δb) = 0.23 and 0.28, the noise floor of fitting a two-parameter power law to integrated SRTM curves. The value of b is sensitive to (i) the discrete pixel-bin assignment of the flood fill, (ii) void interpolation in the DEM, (iii) the catalogue-driven spillway-height overrides that rewrite obviously-mistyped catalogue rows (`eaves.pipeline.curves`), and (iv) where the capacity cap truncates the curve. Two dams with identical valley-ratio / slope / length / height signatures can fit different b purely from these integration-side artifacts. No feature-based predictor can resolve b below that floor.
 
-_Practical implication._ Adopting cluster-medians instead of the global median would buy ~ 19 % tighter σ_b at the cost of an additional moving part (cluster fit + per-dam assignment) that does not change the qualitative story. The shipped recipe keeps the **global median**, the simplest assignment consistent with the data, and the `b_sigma` column quantifies the residual uncertainty.
+_Practical implication._ Adopting cluster-medians instead of the global median would buy ~ 18 % tighter σ_b at the cost of an additional moving part (cluster fit + per-dam assignment) that does not change the qualitative story. The shipped recipe keeps the **global median**, the simplest assignment consistent with the data, and the `b_sigma` column quantifies the residual uncertainty.
 
 _Regression branch as a region-portable fallback._ Where a region's catchment features produce R²_LOO ≥ 0.25, the regression activates (`eaves.postprocess.regionalization.run_regionalization`) and the predicted b values are written under the `regr_derived` source label, which is reserved for that branch.
 
@@ -147,7 +147,7 @@ with X_i ∈ { `capacity_mcm`, `dam_height_m`, `spillway_height_m`, `valley_rati
 
 The validation module evaluates two alternative anchors for the comparison below: (i) the satellite 95th-percentile water area, and (ii) a single-feature log A_cap = α + β log V_cap regression. The multi-feature anchor is the one shipped.
 
-Because reservoirs in this region operate at only ~19.4% of design footprint, the satellite anchor captures an _operational_ area rather than the design area that the catalogue V_cap refers to. Mixing a design volume with an operational area inflates c by ~ (1/0.19)<sup>b</sup> ≈ 12.4× at the median. Both DEM-trained anchors stay in the design regime by construction.
+Because reservoirs in this region operate at only ~19.4% of design footprint, the satellite anchor captures an _operational_ area rather than the design area that the catalogue V_cap refers to. Mixing a design volume with an operational area inflates c by ~ (1/0.19)<sup>b</sup> ≈ 12.3× at the median. Both DEM-trained anchors stay in the design regime by construction.
 
 ## Validation
 
@@ -155,27 +155,27 @@ This is the formal validation of EAVES, a self-consistent test _within_ the EAVE
 
 | Metric | Satellite anchor | Log–log anchor | Multi-feature LR (shipped) |
 | --- | --- | --- | --- |
-| n | 199 | 199 | 199 |
-| median bias | 6.8× | +14% | **+6%** |
+| n | 216 | 216 | 216 |
+| median bias | 7.8× | +14% | **+7%** |
 | Median abs. % error | n/a | n/a | **28%** |
-| Relative RMSE | n/a | n/a | **45%** |
-| Within 2× | 15% | 65% | **93%** |
-| Within 3× | 27% | 88% | **100%** |
-| Within 10× | 61% | 100% | **100%** |
+| Relative RMSE | n/a | n/a | **47%** |
+| Within 2× | 15% | 66% | **93%** |
+| Within 3× | 26% | 89% | **100%** |
+| Within 10× | 57% | 100% | **100%** |
 
 'Within n×' means |log₁₀(V_pred / V_SRTM)| ≤ log₁₀(n), i.e. the predicted volume sits between V_SRTM / n and V_SRTM · n.
 
-The shipped multi-feature recipe has the tightest spread of the three, a 1σ of 49% against 97% for the single-feature log–log anchor and 5.9× for the satellite anchor. Both DEM-trained anchors stay in the design regime that the catalogue V_cap refers to, and the satellite anchor carries the operational bias.
+The shipped multi-feature recipe has the tightest spread of the three, a 1σ of 50% against 95% for the single-feature log–log anchor and 8.0× for the satellite anchor. Both DEM-trained anchors stay in the design regime that the catalogue V_cap refers to, and the satellite anchor carries the operational bias.
 
 ![Regionalization accuracy panel](2_results_plots/p5_regionalization_validation.png)
 
 _Figure 5. Leave-one-out validation of the regionalization recipe on the training dams. (a) Predicted vs SRTM-truth volume at the DEM full-pool area, with 1:1 line and ±factor-2 / ±factor-3 bands. The inset box lists the headline accuracy statistics. (b) Signed prediction error distribution, zero line, median, and P16–P84 band marked. (c) Error stability across catalogue capacity, where the binned median tracks zero across four decades of V_cap._
 
-Two caveats. First, the LOO test measures the recipe's ability to reproduce _the SRTM-derived curve_, not the absolute truth. The SRTM curves themselves have an unquantified residual error (≲ 20% on the one available bathymetric anchor). Second, the LOO test is run on trusted-like dams. The actual regionalized population is systematically smaller and steeper, so the realized accuracy on those dams may have a wider spread than panel p5 reports. The structural bias correction (6.8× on the satellite-anchor recipe) carries through regardless.
+Two caveats. First, the LOO test measures the recipe's ability to reproduce _the SRTM-derived curve_, not the absolute truth. The SRTM curves themselves have an unquantified residual error (≲ 20% on the one available bathymetric anchor). Second, the LOO test is run on trusted-like dams. The actual regionalized population is systematically smaller and steeper, so the realized accuracy on those dams may have a wider spread than panel p5 reports. The structural bias correction (7.8× on the satellite-anchor recipe) carries through regardless.
 
 ## Uncertainty on volume predictions
 
-The training-set spread of the exponent b (b_σ ≈ 0.28, the dimensionless P16–P84 half-width, identical for every dam) is the single number that propagates into the V confidence band. It is released per dam as the `b_sigma` column of `validation/v_uncertainty.csv` (the near-identical `b_cluster_baseline_sigma` in `domain_characterization.csv` is the separate clustering-baseline diagnostic). Because every curve is pinned through the catalogue anchor (A_cap, V_cap), the resulting V band widens away from full pool. Because the fill is capped at the catalog capacity, every curve also carries the area-independent catalog-capacity term, which floors the SRTM-derived band at about +41%/-29% even at the anchor. Regionalized curves add the predicted-area term and floor at about +89%/-47% (see `validation/v_uncertainty.csv`).
+The training-set spread of the exponent b (b_σ ≈ 0.28, the dimensionless P16–P84 half-width, identical for every dam) is the single number that propagates into the V confidence band. It is released per dam as the `b_sigma` column of `validation/v_uncertainty.csv` (the near-identical `b_cluster_baseline_sigma` in `domain_characterization.csv` is the separate clustering-baseline diagnostic). Because every curve is pinned through the catalogue anchor (A_cap, V_cap), the resulting V band widens away from full pool. Because the fill is capped at the catalog capacity, every curve also carries the area-independent catalog-capacity term, which floors the SRTM-derived band at about +39%/-28% even at the anchor. Regionalized curves add the predicted-area term and floor at about +84%/-46% (see `validation/v_uncertainty.csv`).
 
 The geometric term of the band is σ(log₁₀V) = b_σ · |log₁₀(A/A_cap)|.
 
@@ -189,13 +189,13 @@ The full per-dam table at three reference fill levels is written by `eaves.postp
 
 | Fill level | V uncertainty (median) |
 | --- | --- |
-| half pool (A/A_cap=0.50) | +48% / -32% |
-| quarter pool (A/A_cap=0.25) | +68% / -40% |
-| tenth pool (A/A_cap=0.10) | +2.1× / -52% |
+| half pool (A/A_cap=0.50) | +46% / -32% |
+| quarter pool (A/A_cap=0.25) | +66% / -40% |
+| tenth pool (A/A_cap=0.10) | +2.1× / -51% |
 
 ![Supplementary: V uncertainty band from b_sigma](2_results_plots/s3_uncertainty_band.png)
 
-_Figure S3. Propagation of the 1σ uncertainty on b into a V uncertainty band. (a) Worked example on the Baish reservoir: the ±b_σ band is forced through the catalogue full-pool anchor (red star) and fans out at lower water levels. The catalog-capacity floor (+41%/-29%) applies even at the anchor. (b) The two σ(log₁₀V) tiers versus normalized area. The SRTM-derived tier is floored by the catalog-capacity term at the anchor and widens with the geometric b_σ term away from full pool, while the regionalized tier adds the area-independent anchor terms and floors near +89%/-47%. The regional typical operational fill level is overlaid (vertical dashed line), so the V uncertainty at the fill level most reservoirs in this region actually operate at can be read off directly._
+_Figure S3. Propagation of the 1σ uncertainty on b into a V uncertainty band. (a) Worked example on the Baish reservoir: the ±b_σ band is forced through the catalogue full-pool anchor (red star) and fans out at lower water levels. The catalog-capacity floor (+39%/-28%) applies even at the anchor. (b) The two σ(log₁₀V) tiers versus normalized area. The SRTM-derived tier is floored by the catalog-capacity term at the anchor and widens with the geometric b_σ term away from full pool, while the regionalized tier adds the area-independent anchor terms and floors near +84%/-46%. The regional typical operational fill level is overlaid (vertical dashed line), so the V uncertainty at the fill level most reservoirs in this region actually operate at can be read off directly._
 
 ## Generalization to other regions
 

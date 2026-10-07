@@ -17,7 +17,7 @@ The algorithm searches for a terrain-derived dam wall across the valley at or ne
 | 5 | **Relaxed alignment** | Allow wall orientations that would normally be rejected by the flow-alignment filter |
 | 6 | **Fallback** | Multi-direction flood fill without a terrain-derived wall |
 
-Every stage accepts a fill only when it drains out through the wall. The DEM window is flooded from its edge inward in order of elevation, which gives each cell the cell it drains to, and at least half of the pool held at catalog capacity must leave that pool within the half wall plus 1 km. The outlets must also lie in the dam-side 65% of the pool's own length, which judges a pool shorter than that distance. A fill on the downstream side of the wall drains out at its far end and is rejected, whichever way the local slope at the dam points.
+Every stage accepts a fill only when it drains out through the wall. The DEM window is flooded from its edge inward in order of elevation, which gives each cell the cell it drains to, and at least half of the pool held at catalog capacity must leave that pool within the half wall plus 1 km. The outlets must also lie in the dam-side 65% of the pool's own length, which judges a pool shorter than that distance. A fill on the downstream side of the wall drains out at its far end and is rejected, whichever way the local slope at the dam points. A pool on open ground can pass this test where it drains out along its whole rim, so every stage also rejects a pool that the river reach and the terrain slope both place downstream of the dam. At least 90% of such a pool lies down the river reach from the dam cell and more than half of it down the terrain slope.
 
 ## EAV curve construction
 
@@ -25,7 +25,7 @@ Once the footprint is established, elevation bins (0.5 m intervals) are used to 
 
 ## Trusted set and training set
 
-Fits passing the reliability gates (quality grades A-B, R² ≥ 0.98, 0.3 ≤ V_SRTM/V_cap ≤ 5.0, n_pixels ≥ 50, b defined) form the **trusted set**. Of these, only dams built in or after 2000 (verifiably postdating the February 2000 SRTM acquisition) form the **training set** that the regionalization, the exponent spread b_σ, and the leave-one-out validation are computed on. Pre-2000 and unknown-year dams ship their own SRTM curves (flagged `pre_srtm` / `unknown_year`) but do not train the recipe, because their valley floors may already carry sediment. On the Saudi domain: 320 trusted, 199 training.
+Fits passing the reliability gates (quality grades A-B, R² ≥ 0.98, 0.3 ≤ V_SRTM/V_cap ≤ 5.0, n_pixels ≥ 50, b defined) form the **trusted set**. Of these, only dams built in or after 2000 (verifiably postdating the February 2000 SRTM acquisition) form the **training set** that the regionalization, the exponent spread b_σ, and the leave-one-out validation are computed on. Pre-2000 and unknown-year dams ship their own SRTM curves (flagged `pre_srtm` / `unknown_year`) but do not train the recipe, because their valley floors may already carry sediment. On the Saudi domain: 319 trusted, 216 training.
 
 ## Regionalization
 
@@ -34,7 +34,7 @@ Dams that fail the trusted gates receive parameters from a single closed-form re
 - **Exponent b**: regional median over the capacity-thresholded training subset (or a multivariate regression on `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `dam_height_m` if its leave-one-out R² ≥ 0.25, which rarely holds for arid catchments).
 - **Coefficient c**: back-solved as c = V_cap/A_cap<sup>b</sup> from catalog capacity and a multi-feature linear regression that predicts log A_cap from seven log-space features: `capacity_mcm`, `dam_height_m`, `spillway_height_m`, `valley_ratio`, `channel_slope`, `mean_catchment_slope`, `upstream_area_km2`. Any feature missing for a given dam is imputed with the training-set median so the regression always returns a finite value.
 
-Leave-one-out cross-validation on the training set quantifies the recipe's accuracy. For the Saudi Arabia deployment: 93% of full-pool predictions within a factor of 2 and 100% within a factor of 3 of the SRTM-derived reference, median bias +6%, relative RMSE 45%. `eaves.postprocess.validation` evaluates the recipe against two alternative anchors (a satellite-anchored recipe and a single-feature log-log regression) in `validation/regionalization_loo.csv`, and panel `p5` shows the leave-one-out accuracy of the shipped recipe.
+Leave-one-out cross-validation on the training set quantifies the recipe's accuracy. For the Saudi Arabia deployment: 93% of full-pool predictions within a factor of 2 and 100% within a factor of 3 of the SRTM-derived reference, median bias +7%, relative RMSE 47%. `eaves.postprocess.validation` evaluates the recipe against two alternative anchors (a satellite-anchored recipe and a single-feature log-log regression) in `validation/regionalization_loo.csv`, and panel `p5` shows the leave-one-out accuracy of the shipped recipe.
 
 ## Post-placement QC
 

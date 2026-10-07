@@ -6,7 +6,7 @@ id_010085,Al-Sadarih,fit_failed,Power-law fit returned NaN (n_pixels=9),0.3,4.0,
 id_020058,Wadi Fatimah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",20.0,18.0,15.0,1428.0,3104.38,1984,21.725044,39.828568,624.88,41.66,0.01482,0.2247
 id_020066,Hawajiz Al-Dab'ah,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",0.04,4.0,4.0,127.0,61.45,2013,20.530856,41.144189,59.76,14.94,0.005237,0.2646
 id_030013,Al-Is,fit_failed,Power-law fit returned NaN (n_pixels=582),1.0,15.0,12.0,600.0,871.29,1981,25.047778,38.098333,441.36,36.78,0.04123,0.1669
-id_030036,Hadhawadha,bad_fill_auto,"bad_fill_auto: Volume fraction 0.04 < 0.20 (~1.7 vs 40.0 MCM), fill too small",40.0,7.0,4.5,595.0,35545.97,1999,24.420556,39.980556,176.94,39.32,0.002641,0.1053
+id_030036,Hadhawadha,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",40.0,7.0,4.5,595.0,35545.97,1999,24.420556,39.980556,176.94,39.32,0.002641,0.1053
 id_030039,Al-Aqul Al-Hajari,bad_fill_auto,"bad_fill_auto: Volume fraction 0.00 < 0.20 (~0.1 vs 17.0 MCM), fill too small",17.0,4.5,3.0,200.0,16.7,1950,24.31816,39.448696,265.48,88.49,0.03086,0.1389
 id_040015,Al-Rummah,fit_failed,Power-law fit returned NaN (n_pixels=1117),1.5,7.0,4.0,700.0,84011.6,1977,26.199722,44.021667,439.5,109.87,0.0006475,0.04592
 id_060010,Fihan,bad_fill_auto,"bad_fill_auto: Volume fraction 0.00 < 0.20 (~0.0 vs 38.1 MCM), fill too small",38.1,3.5,1.0,296.0,25261.2,2013,29.551756,43.398465,260.26,260.26,0.001293,0.03123
@@ -23,5 +23,5 @@ id_090004,Al-Ratiq,placement_failed,"placement_failed: no valid flood fill after
 id_090008,Al-Mudih,bad_fill_auto,"bad_fill_auto: Flood centroid ratio 2.80 > 2.5 (cdist=24 px, n_px=76), fill displaced",0.1077,5.0,3.0,340.0,7.034,2008,26.883889,42.041111,146.26,48.75,0.006064,0.1077
 id_090031,Al-Shaqiq,bad_fill_auto,"bad_fill_auto: Volume fraction 0.03 < 0.20 (~0.1 vs 2.0 MCM), fill too small",2.0,6.5,4.0,310.0,530.8,2009,27.1525,40.948333,292.03,73.01,0.01128,0.1849
 id_120005,Qasi,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",15.1,25.0,22.5,1044.0,267.34,2018,17.19179,42.878304,2472.99,109.91,0.006362,0.04504
-id_120014,Shahdan,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",2.5,40.0,35.0,689.0,100.15,,17.454776,42.736093,12056.33,344.47,0.006041,0.05814
+id_120014,Shahdan,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",2.5,40.0,35.0,689.0,100.15,2017,17.454776,42.736093,12056.33,344.47,0.006041,0.05814
 id_130016,(Surum) Halal,placement_failed,"placement_failed: no valid flood fill after extension, upstream search (0–100 px along walk), and fallback",0.5856,12.0,12.0,222.0,311.5,2008,17.64983,43.866401,240.88,20.07,0.02517,0.3592

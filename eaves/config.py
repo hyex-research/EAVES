@@ -72,6 +72,12 @@ DRAIN_WALL_TOLERANCE_M = 1000.0
 DRAIN_MAX_OUTLET_POSITION = 0.65
 # Capacity-level pools smaller than this many pixels are too small to judge and pass
 DRAIN_MIN_PIXELS = 30
+# Share of a pool that must lie down the river reach from the dam cell for the pool to count as downstream of the wall
+DOWNSTREAM_POOL_RIVER_SHARE = 0.9
+# Share of the same pool that must also lie down the terrain slope from the dam cell
+DOWNSTREAM_POOL_SLOPE_SHARE = 0.5
+# Distance past the dam cell (pixels) beyond which a pool cell counts as downstream
+DOWNSTREAM_POOL_BUFFER_PX = 4.0
 
 _PLACEMENT_BUDGET_S = 300.0
 

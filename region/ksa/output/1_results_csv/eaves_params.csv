@@ -1,14 +1,14 @@
 dam_id,dam_name,capacity_mcm,c,b,source
-id_010000,Al-Hariqah,0.08,0.003893,1.5345,regi_multi
+id_010000,Al-Hariqah,0.08,0.004244,1.5291,regi_multi
 id_010001,Tamir,0.0615,0.1677,1.1603,srtm_derived
-id_010002,Shi'b Al-Qasr Al-Asfal,0.0912,0.003735,1.5345,regi_multi
-id_010003,Al-Manih,0.1,0.003684,1.5345,regi_multi
-id_010004,Qabiban,0.1284,0.00482,1.5345,regi_multi
-id_010005,Al-Ashr,0.1014,0.003623,1.5345,regi_multi
-id_010006,Al-Dahinah,0.1166,0.007588,1.5345,regi_multi
-id_010007,Al-Anbari,0.11,0.002849,1.5345,regi_multi
+id_010002,Shi'b Al-Qasr Al-Asfal,0.0912,0.004222,1.5291,regi_multi
+id_010003,Al-Manih,0.1,0.003913,1.5291,regi_multi
+id_010004,Qabiban,0.1284,0.004921,1.5291,regi_multi
+id_010005,Al-Ashr,0.1014,0.003748,1.5291,regi_multi
+id_010006,Al-Dahinah,0.1166,0.008164,1.5291,regi_multi
+id_010007,Al-Anbari,0.11,0.003139,1.5291,regi_multi
 id_010008,Al-Ghadir,0.119,0.4532,1.1146,srtm_derived
-id_010010,Al-Khalif,0.1474,0.004328,1.5345,regi_multi
+id_010010,Al-Khalif,0.1474,0.004555,1.5291,regi_multi
 id_010011,Al-Mahdiyah,0.15,0.001851,1.6691,srtm_derived
 id_010012,Al-Fawarah,0.164,0.6331,1.1,srtm_derived
 id_010014,Al-Hafirah,0.17,0.4648,1.1,srtm_derived
@@ -18,15 +18,15 @@ id_010018,Mahiraqah,0.2028,0.3462,1.1395,srtm_derived
 id_010019,Marqan,0.2195,0.0003226,1.7352,srtm_derived
 id_010020,Al-Shahmah,0.2196,0.0145,1.3923,srtm_derived
 id_010021,Al-Ruwaydah,0.1486,0.3828,1.1,srtm_derived
-id_010022,Athitiyah,0.25,0.002874,1.5345,regi_multi
-id_010023,Al-Qaltah,0.1355,0.005591,1.5345,regi_multi
+id_010022,Athitiyah,0.25,0.00295,1.5291,regi_multi
+id_010023,Al-Qaltah,0.1355,0.006117,1.5291,regi_multi
 id_010024,Marat,0.4,0.06204,1.3136,srtm_derived
 id_010025,Sudus,0.4,0.5492,1.1,srtm_derived
 id_010026,Al-Raziwah,0.4417,0.5127,1.1028,srtm_derived
 id_010027,Al-Bair,0.4419,2.033e-05,2.0,srtm_derived
 id_010028,Haradah,0.4478,0.000101,1.7617,srtm_derived
-id_010029,Al-Jazar,0.0404,0.003406,1.5345,regi_multi
-id_010030,Bawdah,0.13,0.005483,1.5345,regi_multi
+id_010029,Al-Jazar,0.0404,0.003657,1.5291,regi_multi
+id_010030,Bawdah,0.13,0.005745,1.5291,regi_multi
 id_010031,Tamrah,0.4735,0.06683,1.271,srtm_derived
 id_010033,Al-Artawiyah,0.6071,0.01642,1.3998,srtm_derived
 id_010034,Al-Khaniqiyah,0.6782,0.01823,1.4208,srtm_derived
@@ -45,13 +45,13 @@ id_010046,Al-Wasi'ah,0.1,0.01048,1.47,srtm_derived
 id_010049,Al-Maliyah,0.061,0.3568,1.1,srtm_derived
 id_010050,Al-Ha'ir Bin Al-Majma'ah,1.0,0.006193,1.496,srtm_derived
 id_010051,Al-Hariq Bin Al-Washam,0.5,0.03388,1.3126,srtm_derived
-id_010052,Namar,1.5,0.003071,1.5345,regi_multi
-id_010053,Hanifah,1.4,0.003568,1.5345,regi_multi
+id_010052,Namar,1.5,0.003185,1.5291,regi_multi
+id_010053,Hanifah,1.4,0.003666,1.5291,regi_multi
 id_010054,Al-Shamam,1.5,0.01465,1.4787,srtm_derived
 id_010055,Al-Nasaq,1.5,3.267e-05,2.0,srtm_derived
 id_010056,Dharmah,1.5,0.001863,1.5125,srtm_derived
 id_010057,Al-Qawi'ah,1.5,0.1033,1.2422,srtm_derived
-id_010058,Hadijah,1.2,0.003116,1.5345,regi_multi
+id_010058,Hadijah,1.2,0.003255,1.5291,regi_multi
 id_010059,Al-Muzayri'ah,0.39,0.008087,1.4769,srtm_derived
 id_010060,Lasad,1.5,0.003993,1.5638,srtm_derived
 id_010061,Jalajil,1.75,0.1805,1.2099,srtm_derived
@@ -62,23 +62,23 @@ id_010065,Al-Ahmar,2.3944,0.1914,1.173,srtm_derived
 id_010066,Harimilah,1.5,0.6343,1.1,srtm_derived
 id_010067,Al-Matirafi'ah,0.14,0.4452,1.1,srtm_derived
 id_010068,Al-Rawdah,3.0,0.09087,1.2497,srtm_derived
-id_010069,Al-Hanabij,1.5,0.00228,1.5345,regi_multi
+id_010069,Al-Hanabij,1.5,0.002422,1.5291,regi_multi
 id_010070,Hawtat Bani Tamim,9.0566,0.01996,1.3467,srtm_derived
 id_010071,Al-Ha'ir,3.8,0.01107,1.4351,srtm_derived
 id_010072,Al-Hariq,6.0,0.06553,1.2552,srtm_derived
 id_010073,Al-Halwah,10.0,3.044e-05,1.8409,srtm_derived
-id_010074,Ghubaira,0.09,0.003128,1.5345,regi_multi
+id_010074,Ghubaira,0.09,0.003509,1.5291,regi_multi
 id_010075,Al-Jafnah,0.1,0.0001052,1.8167,srtm_derived
 id_010076,Isam,0.126,3.729e-05,2.0,srtm_derived
 id_010077,Al-Ma'idhar,0.1877,0.01874,1.3933,srtm_derived
 id_010078,Al-Rimah,0.2,0.01217,1.424,srtm_derived
 id_010079,Al-Buq,0.2215,3.774e-05,2.0,srtm_derived
 id_010080,Al-Tamriyah,0.2419,0.000935,1.6968,srtm_derived
-id_010081,Hajilah,0.197,0.006065,1.5345,regi_multi
-id_010082,Safar,0.3,0.002863,1.5345,regi_multi
+id_010081,Hajilah,0.197,0.006158,1.5291,regi_multi
+id_010082,Safar,0.3,0.003088,1.5291,regi_multi
 id_010083,Ashirah,0.3,0.003579,1.5089,srtm_derived
-id_010084,Al-Halifah,0.4,0.002308,1.5345,regi_multi
-id_010085,Al-Sadarih,0.3,0.005064,1.5345,regi_multi
+id_010084,Al-Halifah,0.4,0.002547,1.5291,regi_multi
+id_010085,Al-Sadarih,0.3,0.005217,1.5291,regi_multi
 id_010086,Al-Sadirah Am Nakhlah,0.216,6.443e-05,2.0,srtm_derived
 id_010087,Al-Haysiyah,0.4365,0.002028,1.5722,srtm_derived
 id_010088,Sh'ib Al-Isar,0.7195,0.001875,1.5901,srtm_derived
@@ -89,21 +89,21 @@ id_010093,Samnan,1.5,0.1355,1.2674,srtm_derived
 id_010094,Al-Ghil,2.5,2.029e-05,1.8811,srtm_derived
 id_010095,Al-Alab,3.0,0.6998,1.1334,srtm_derived
 id_010096,Al-Mushaqar,5.5792,0.07783,1.2652,srtm_derived
-id_010097,Ari'ah Al-Janubi,0.0506,0.008588,1.5345,regi_multi
-id_010098,Abaraqih,0.1338,0.001876,1.5345,regi_multi
+id_010097,Ari'ah Al-Janubi,0.0506,0.008514,1.5291,regi_multi
+id_010098,Abaraqih,0.1338,0.001985,1.5291,regi_multi
 id_010102,Al-Kalbi,0.5956,0.002597,1.4917,srtm_derived
-id_010103,Khaim,0.5695,0.006155,1.5345,regi_multi
-id_010104,Ba'ij,0.14,0.005674,1.5345,regi_multi
-id_010105,Ari'ah Al-Shamali,0.0377,0.01001,1.5345,regi_multi
+id_010103,Khaim,0.5695,0.006031,1.5291,regi_multi
+id_010104,Ba'ij,0.14,0.006046,1.5291,regi_multi
+id_010105,Ari'ah Al-Shamali,0.0377,0.009822,1.5291,regi_multi
 id_010106,Ruwaighib,0.14,0.0001132,1.9432,srtm_derived
 id_010107,Malih,0.226,0.06723,1.371,srtm_derived
 id_010108,Aba Al-Lasf,0.7003,1.741e-05,1.9831,srtm_derived
 id_010110,Wadi Asimar,0.7265,0.001713,1.6061,srtm_derived
-id_010112,Al-Khadar,0.2651,0.004872,1.5345,regi_multi
-id_010113,Turif,0.08,0.007124,1.5345,regi_multi
+id_010112,Al-Khadar,0.2651,0.0053,1.5291,regi_multi
+id_010113,Turif,0.08,0.007694,1.5291,regi_multi
 id_010114,Samanan Al-Tad'imi,0.28,0.1253,1.2343,srtm_derived
-id_010115,Ari'ah Al-Sharqi 1,0.064,0.00574,1.5345,regi_multi
-id_010116,Ari'ah Al-Sharqi 2,0.076,0.003641,1.5345,regi_multi
+id_010115,Ari'ah Al-Sharqi 1,0.064,0.00582,1.5291,regi_multi
+id_010116,Ari'ah Al-Sharqi 2,0.076,0.003853,1.5291,regi_multi
 id_020000,Marikh,3.65,0.03442,1.362,srtm_derived
 id_020001,Ghaya,7.13,0.01087,1.4477,srtm_derived
 id_020002,Am Hablayn,4.97,8.628e-06,1.9416,srtm_derived
@@ -117,40 +117,40 @@ id_020019,Hali,254.0,0.009151,1.4504,srtm_derived
 id_020020,Al-Naqabiyah,10.0,0.00865,1.4763,srtm_derived
 id_020021,Al-Lith,88.0,0.001203,1.5992,srtm_derived
 id_020023,Qanuna,79.2,0.002418,1.5503,srtm_derived
-id_020024,Al-Manadhah,0.107,0.01587,1.5345,regi_multi
-id_020025,Katnah,0.1147,0.01491,1.5345,regi_multi
-id_020026,Atam,0.041,0.01419,1.5345,regi_multi
-id_020027,Damah,0.083,0.009843,1.5345,regi_multi
-id_020028,Ghurif Jidarah,0.04,0.01653,1.5345,regi_multi
+id_020024,Al-Manadhah,0.107,0.01633,1.5291,regi_multi
+id_020025,Katnah,0.1147,0.01584,1.5291,regi_multi
+id_020026,Atam,0.041,0.01513,1.5291,regi_multi
+id_020027,Damah,0.083,0.01033,1.5291,regi_multi
+id_020028,Ghurif Jidarah,0.04,0.01758,1.5291,regi_multi
 id_020029,Dhari,0.1719,0.002712,1.5627,srtm_derived
-id_020030,Al-Raghiyah Riman,0.1716,0.002936,1.5345,regi_multi
-id_020031,Al-Shawahitah,0.21,0.01271,1.5345,regi_multi
-id_020032,Nawafilah,0.222,0.01437,1.5345,regi_multi
-id_020033,Al-Atah,0.21,0.01424,1.5345,regi_multi
+id_020030,Al-Raghiyah Riman,0.1716,0.003109,1.5291,regi_multi
+id_020031,Al-Shawahitah,0.21,0.0133,1.5291,regi_multi
+id_020032,Nawafilah,0.222,0.01466,1.5291,regi_multi
+id_020033,Al-Atah,0.21,0.01509,1.5291,regi_multi
 id_020034,Al-Marifiq,0.25,0.1774,1.2967,srtm_derived
 id_020035,Al-Ramah,0.3029,0.003712,1.5893,srtm_derived
-id_020036,Al-Shu'irah,0.171,0.01606,1.5345,regi_multi
+id_020036,Al-Shu'irah,0.171,0.01697,1.5291,regi_multi
 id_020037,Yasib,0.2,0.0006514,1.7739,srtm_derived
 id_020038,Al-Bajidi,0.4996,0.03449,1.3524,srtm_derived
 id_020040,Sa'b,0.5,0.03975,1.3538,srtm_derived
-id_020041,Misan,0.0925,0.01775,1.5345,regi_multi
+id_020041,Misan,0.0925,0.01861,1.5291,regi_multi
 id_020042,Ikrimah,0.5,0.03853,1.4068,srtm_derived
 id_020043,Dharah,0.5099,0.00389,1.6614,srtm_derived
 id_020044,Al-Ayab,0.5271,0.0001539,2.0,srtm_derived
 id_020045,Al-Sab'an,0.62,9.258e-05,2.0,srtm_derived
-id_020046,Thumalah,0.608,0.006807,1.5345,regi_multi
+id_020046,Thumalah,0.608,0.007088,1.5291,regi_multi
 id_020047,Shawan,1.0,0.0004915,1.8448,srtm_derived
 id_020048,Hajar,0.7625,0.009222,1.4735,srtm_derived
 id_020049,Bathan,0.7732,0.03244,1.4147,srtm_derived
 id_020050,Malkan,0.8,0.0249,1.4211,srtm_derived
 id_020051,Nu'man,1.0,0.0009652,1.7701,srtm_derived
 id_020052,Al-Qu'ur,1.0604,0.001289,1.6796,srtm_derived
-id_020053,Awathal,0.213,0.007754,1.5345,regi_multi
-id_020054,Basal,1.5,0.00661,1.5345,regi_multi
+id_020053,Awathal,0.213,0.008084,1.5291,regi_multi
+id_020054,Basal,1.5,0.006956,1.5291,regi_multi
 id_020055,Lasab,0.21,0.02543,1.4826,srtm_derived
 id_020056,Kara Al-Qawamah,1.5122,0.001143,1.6318,srtm_derived
 id_020057,Faydat Al-Musallah,3.0,0.002721,1.5148,srtm_derived
-id_020058,Wadi Fatimah,20.0,0.00305,1.5345,regi_multi
+id_020058,Wadi Fatimah,20.0,0.003291,1.5291,regi_multi
 id_020059,Am Al-Doum,0.1347,0.0008368,1.6869,srtm_derived
 id_020060,Thariban,0.7017,6.709e-05,2.0,srtm_derived
 id_020061,Wabah,0.704,0.05269,1.3685,srtm_derived
@@ -158,15 +158,15 @@ id_020062,Shawqab,0.3455,0.000107,2.0,srtm_derived
 id_020063,Qarn,0.7098,0.03514,1.4458,srtm_derived
 id_020064,Al-Janah,0.9052,0.003733,1.6049,srtm_derived
 id_020065,Al-Mahanad,2.2689,0.02936,1.3269,srtm_derived
-id_020066,Hawajiz Al-Dab'ah,0.04,0.009483,1.5345,regi_multi
+id_020066,Hawajiz Al-Dab'ah,0.04,0.01006,1.5291,regi_multi
 id_020067,Amat,0.5,0.01249,1.4665,srtm_derived
 id_020068,Al-Makhadah,0.5735,3.315e-05,1.9369,srtm_derived
 id_020069,Al-Dhiyah,0.5776,0.008066,1.4927,srtm_derived
 id_020070,Al-Laqitah,0.6,0.0006359,1.708,srtm_derived
 id_020071,Kalakh,2.3,0.0006456,1.6118,srtm_derived
-id_020072,Liyah,10.0,0.00558,1.5345,regi_multi
+id_020072,Liyah,10.0,0.005635,1.5291,regi_multi
 id_020073,Sisad,0.5,0.02872,1.3971,srtm_derived
-id_020074,Aqawam Rabigh,0.5,0.0009651,1.5345,regi_multi
+id_020074,Aqawam Rabigh,0.5,0.00108,1.5291,regi_multi
 id_020075,Al-Ghalah,4.4,0.008823,1.4596,srtm_derived
 id_020076,Al-Shaqqah,5.66,0.09558,1.3143,srtm_derived
 id_020077,Buwah,6.0528,0.01358,1.4881,srtm_derived
@@ -183,7 +183,7 @@ id_030009,Nakhala,0.4289,0.08802,1.3631,srtm_derived
 id_030010,Al-Shara'ih,0.88,0.01057,1.435,srtm_derived
 id_030011,Al-Farah,1.0,0.01402,1.421,srtm_derived
 id_030012,Al-Ghab,1.0,0.02919,1.4047,srtm_derived
-id_030013,Al-Is,1.0,0.003893,1.5345,regi_multi
+id_030013,Al-Is,1.0,0.004388,1.5291,regi_multi
 id_030014,Talal,1.2044,0.06914,1.2599,srtm_derived
 id_030015,Tasha,2.0,0.0007475,1.637,srtm_derived
 id_030016,Al-Aqiq Al-A'lah,2.0,0.0006379,1.7066,srtm_derived
@@ -195,51 +195,51 @@ id_030021,Wasat Al-Jazl,10.0,0.004319,1.4857,srtm_derived
 id_030022,Al-Aqul,1.0,0.06477,1.3493,srtm_derived
 id_030023,Am Talhah,0.7071,0.007335,1.4798,srtm_derived
 id_030024,Al-Hanaw,0.1414,0.000287,1.8281,srtm_derived
-id_030025,Ashar,0.2844,0.007288,1.5345,regi_multi
-id_030026,Khalis,0.3487,0.004247,1.5345,regi_multi
-id_030027,Al-Sadr,0.3736,0.007227,1.5345,regi_multi
+id_030025,Ashar,0.2844,0.007688,1.5291,regi_multi
+id_030026,Khalis,0.3487,0.004917,1.5291,regi_multi
+id_030027,Al-Sadr,0.3736,0.007952,1.5291,regi_multi
 id_030028,Ajathaliyah,0.4408,0.5106,1.1,srtm_derived
 id_030029,Dhalamah,1.0,0.009132,1.4476,srtm_derived
 id_030030,Bathan,0.5,0.01508,1.4384,srtm_derived
-id_030031,Al-Muqarran,0.8543,0.004486,1.5345,regi_multi
+id_030031,Al-Muqarran,0.8543,0.004956,1.5291,regi_multi
 id_030032,Qasibah,0.3,0.02345,1.3915,srtm_derived
 id_030033,Ahamir,0.8487,0.0183,1.3654,srtm_derived
 id_030034,Al-Tar'ah,2.0,0.07613,1.3062,srtm_derived
 id_030035,Al-Far'ah,20.0,0.178,1.1963,srtm_derived
-id_030036,Hadhawadha,40.0,0.001405,1.5345,regi_multi
+id_030036,Hadhawadha,40.0,0.001486,1.5291,regi_multi
 id_030037,Qusayba' Al-Tad'imi,0.2241,0.01465,1.4326,srtm_derived
-id_030038,Al-Hasid,0.4,0.01978,1.3714,srtm_derived
-id_030039,Al-Aqul Al-Hajari,17.0,0.002156,1.5345,regi_multi
-id_040000,Aba Al-Hiyas,0.0795,0.009517,1.5345,regi_multi
-id_040001,Al-Rubiqah,0.1122,0.001616,1.5345,regi_multi
-id_040002,Al-Matla' Al-Aysar,0.1227,0.005156,1.5345,regi_multi
-id_040003,Aba Al-Hadar,0.141,0.005066,1.5345,regi_multi
-id_040004,Aba Al-Rimah,0.1018,0.006772,1.5345,regi_multi
+id_030038,Al-Hasid,0.4,0.003186,1.5291,regi_multi
+id_030039,Al-Aqul Al-Hajari,17.0,0.00223,1.5291,regi_multi
+id_040000,Aba Al-Hiyas,0.0795,0.01037,1.5291,regi_multi
+id_040001,Al-Rubiqah,0.1122,0.00174,1.5291,regi_multi
+id_040002,Al-Matla' Al-Aysar,0.1227,0.005693,1.5291,regi_multi
+id_040003,Aba Al-Hadar,0.141,0.005753,1.5291,regi_multi
+id_040004,Aba Al-Rimah,0.1018,0.007415,1.5291,regi_multi
 id_040005,Al-Matla' Al-Ayman,0.25,0.000223,1.7774,srtm_derived
 id_040006,Qatan,0.2803,0.2005,1.1702,srtm_derived
-id_040008,Wadi Al-Nakhil,0.1075,0.003433,1.5345,regi_multi
-id_040009,Abu Jurayfah,0.5385,0.001641,1.5345,regi_multi
+id_040008,Wadi Al-Nakhil,0.1075,0.003667,1.5291,regi_multi
+id_040009,Abu Jurayfah,0.5385,0.001744,1.5291,regi_multi
 id_040010,Al-Rubiq,0.5,0.0369,1.2995,srtm_derived
-id_040011,Nasifat Aban Al-Ahmar,0.548,0.004526,1.5345,regi_multi
-id_040012,Dar'ah,0.06,0.002351,1.5345,regi_multi
+id_040011,Nasifat Aban Al-Ahmar,0.548,0.004981,1.5291,regi_multi
+id_040012,Dar'ah,0.06,0.002619,1.5291,regi_multi
 id_040013,Uqlat Al-Suqur,0.712,0.01538,1.2947,srtm_derived
 id_040014,Al-Fawarah,1.093,0.0523,1.2571,srtm_derived
-id_040015,Al-Rummah,1.5,0.001103,1.5345,regi_multi
+id_040015,Al-Rummah,1.5,0.001212,1.5291,regi_multi
 id_040016,Marid,1.3,0.1732,1.1501,srtm_derived
-id_040017,Bada'ih Al-Hamamin,0.3186,0.001941,1.5345,regi_multi
-id_050000,Al-Dhibiyah,5.718,0.000896,1.5345,regi_multi
+id_040017,Bada'ih Al-Hamamin,0.3186,0.002071,1.5291,regi_multi
+id_050000,Al-Dhibiyah,5.718,0.0009631,1.5291,regi_multi
 id_050001,Hafar Al-Batin,5.5039,0.0008464,1.606,srtm_derived
-id_060000,Al-Marah,0.7441,0.00132,1.5345,regi_multi
-id_060001,Al-Hilali,0.9912,0.001886,1.5345,regi_multi
+id_060000,Al-Marah,0.7441,0.001447,1.5291,regi_multi
+id_060001,Al-Hilali,0.9912,0.00196,1.5291,regi_multi
 id_060002,Al-Lawiziyah,0.6232,0.0707,1.2739,srtm_derived
-id_060003,Uwayj Al-Tal'ah,0.2517,0.001533,1.5345,regi_multi
+id_060003,Uwayj Al-Tal'ah,0.2517,0.001693,1.5291,regi_multi
 id_060004,Turif,0.7256,0.03787,1.3127,srtm_derived
 id_060005,Al-Awashaqi,0.7132,0.06957,1.3103,srtm_derived
 id_060006,Gharabah,4.1248,0.00154,1.5346,srtm_derived
 id_060007,Aba Al-Qur,3.52,0.01667,1.3339,srtm_derived
 id_060008,Badanah,4.6787,0.0004008,1.6189,srtm_derived
 id_060009,Ar'ar,10.366,0.01766,1.325,srtm_derived
-id_060010,Fihan,38.1,0.0004369,1.5345,regi_multi
+id_060010,Fihan,38.1,0.0004583,1.5291,regi_multi
 id_070000,Ayash,1.0,0.01066,1.5207,srtm_derived
 id_070001,Ara'ir,0.963,0.02507,1.5004,srtm_derived
 id_070002,Al-Gharabah,1.5,0.0001509,1.937,srtm_derived
@@ -247,7 +247,7 @@ id_070003,Badwah,2.0,0.4349,1.2612,srtm_derived
 id_070004,Abha,2.13,0.003025,1.632,srtm_derived
 id_070005,Al-Fawhah,3.0,0.0122,1.4873,srtm_derived
 id_070006,Tandahah,4.2,6.972e-06,2.0,srtm_derived
-id_070007,Atud Al-Khamis,6.24,0.002667,1.5345,regi_multi
+id_070007,Atud Al-Khamis,6.24,0.002868,1.5291,regi_multi
 id_070008,Tarjis,9.7138,0.1072,1.2789,srtm_derived
 id_070009,Marbah,10.0,0.0008119,1.7114,srtm_derived
 id_070010,Atud,10.0,7.018e-05,1.9115,srtm_derived
@@ -256,73 +256,73 @@ id_070013,Shihanah,0.2711,0.01426,1.4765,srtm_derived
 id_070014,King Fahad,325.0,0.001828,1.5722,srtm_derived
 id_070016,Yabah,80.9133,0.009075,1.4459,srtm_derived
 id_070017,Shi'b Al-Harajah,0.1031,4.736e-05,2.0,srtm_derived
-id_070018,Al-Qurihah,0.0261,0.006753,1.5345,regi_multi
-id_070019,Al-'Aws,0.035,0.0225,1.5345,regi_multi
-id_070020,Rim,0.05,0.01771,1.5345,regi_multi
-id_070021,Al-'Asim,0.06,0.01619,1.5345,regi_multi
-id_070022,Al-Sawdah,0.34,0.00994,1.5345,regi_multi
-id_070023,Khath'am,0.252,0.008276,1.5345,regi_multi
+id_070018,Al-Qurihah,0.0261,0.007227,1.5291,regi_multi
+id_070019,Al-'Aws,0.035,0.02349,1.5291,regi_multi
+id_070020,Rim,0.05,0.01906,1.5291,regi_multi
+id_070021,Al-'Asim,0.06,0.01678,1.5291,regi_multi
+id_070022,Al-Sawdah,0.34,0.01047,1.5291,regi_multi
+id_070023,Khath'am,0.252,0.009135,1.5291,regi_multi
 id_070024,Marah,0.325,0.005136,1.5878,srtm_derived
-id_070025,Al-Ramid,0.09,0.00785,1.5345,regi_multi
-id_070026,Zahrah Bani Bashar,0.1,0.008383,1.5345,regi_multi
-id_070027,Khidar,0.108,0.0105,1.5345,regi_multi
-id_070028,Al-'Amal (Zahir),0.11,0.0123,1.5345,regi_multi
-id_070029,Al Basam,0.0477,0.008215,1.5345,regi_multi
-id_070030,Bani Qays,0.117,0.01589,1.5345,regi_multi
-id_070031,Al-Mashrab,0.1112,0.004313,1.5345,regi_multi
-id_070033,Al-Wuqirah,0.1,0.008172,1.5345,regi_multi
-id_070034,Tha'abah,0.23,0.01439,1.5345,regi_multi
-id_070035,Mahlah 'Ar'arah,0.0792,0.01656,1.5345,regi_multi
-id_070036,Al-Dirham,0.0867,0.01498,1.5345,regi_multi
+id_070025,Al-Ramid,0.09,0.00843,1.5291,regi_multi
+id_070026,Zahrah Bani Bashar,0.1,0.009133,1.5291,regi_multi
+id_070027,Khidar,0.108,0.01143,1.5291,regi_multi
+id_070028,Al-'Amal (Zahir),0.11,0.01275,1.5291,regi_multi
+id_070029,Al Basam,0.0477,0.008356,1.5291,regi_multi
+id_070030,Bani Qays,0.117,0.01703,1.5291,regi_multi
+id_070031,Al-Mashrab,0.1112,0.004803,1.5291,regi_multi
+id_070033,Al-Wuqirah,0.1,0.008241,1.5291,regi_multi
+id_070034,Tha'abah,0.23,0.01505,1.5291,regi_multi
+id_070035,Mahlah 'Ar'arah,0.0792,0.01683,1.5291,regi_multi
+id_070036,Al-Dirham,0.0867,0.0158,1.5291,regi_multi
 id_070037,Al-Batnah,0.1518,0.2181,1.2038,srtm_derived
-id_070038,Ru'am,1.5,0.005972,1.5345,regi_multi
-id_070039,Al-Ghilan,0.15,0.009121,1.5345,regi_multi
-id_070040,Rimah,0.23,0.01179,1.5345,regi_multi
-id_070041,Tulihah Al-Sharaf,0.3557,0.002768,1.5345,regi_multi
-id_070042,Al-Hadilah,0.16,0.007384,1.5345,regi_multi
-id_070043,Wasanib,0.182,0.01745,1.5345,regi_multi
-id_070044,Radah,0.192,0.02447,1.5345,regi_multi
+id_070038,Ru'am,1.5,0.006446,1.5291,regi_multi
+id_070039,Al-Ghilan,0.15,0.008985,1.5291,regi_multi
+id_070040,Rimah,0.23,0.01232,1.5291,regi_multi
+id_070041,Tulihah Al-Sharaf,0.3557,0.003013,1.5291,regi_multi
+id_070042,Al-Hadilah,0.16,0.007894,1.5291,regi_multi
+id_070043,Wasanib,0.182,0.01868,1.5291,regi_multi
+id_070044,Radah,0.192,0.024,1.5291,regi_multi
 id_070045,Bashut,0.2,9.632e-05,2.0,srtm_derived
-id_070046,Al-Faqa'is,0.1027,0.01177,1.5345,regi_multi
-id_070047,Al 'Ifah,0.0747,0.01415,1.5345,regi_multi
-id_070048,Al-Khulsah,0.138,0.01263,1.5345,regi_multi
-id_070049,Al-Qabdah,0.26,0.007943,1.5345,regi_multi
+id_070046,Al-Faqa'is,0.1027,0.01266,1.5291,regi_multi
+id_070047,Al 'Ifah,0.0747,0.01469,1.5291,regi_multi
+id_070048,Al-Khulsah,0.138,0.01335,1.5291,regi_multi
+id_070049,Al-Qabdah,0.26,0.008473,1.5291,regi_multi
 id_070050,Shari,0.2752,0.003223,1.5409,srtm_derived
-id_070051,Al-Harajah,0.28,0.009991,1.5345,regi_multi
+id_070051,Al-Harajah,0.28,0.0103,1.5291,regi_multi
 id_070052,Ghadar,0.3,0.07856,1.3021,srtm_derived
-id_070053,Al-'Ayinah,0.3,0.006131,1.5345,regi_multi
+id_070053,Al-'Ayinah,0.3,0.006581,1.5291,regi_multi
 id_070054,Sadwan,0.264,0.03895,1.4314,srtm_derived
-id_070055,As-Samkhiyah,0.0904,0.006852,1.5345,regi_multi
+id_070055,As-Samkhiyah,0.0904,0.007371,1.5291,regi_multi
 id_070056,Al-Maraghah,0.3,0.6637,1.1083,srtm_derived
-id_070057,Al-Akhdar Al-Musfir,0.3326,0.008459,1.5345,regi_multi
+id_070057,Al-Akhdar Al-Musfir,0.3326,0.009035,1.5291,regi_multi
 id_070058,Hijrat Zahir,0.35,5.177e-05,2.0,srtm_derived
-id_070059,Al-Nahrah,0.35,0.0096,1.5345,regi_multi
-id_070060,Rawdan,0.3572,0.004834,1.5345,regi_multi
-id_070061,Surum,0.39,0.01481,1.5345,regi_multi
-id_070063,Al-'Adiyah,0.48,0.007929,1.5345,regi_multi
-id_070064,Al-Hufah,0.5,0.0111,1.5345,regi_multi
+id_070059,Al-Nahrah,0.35,0.01024,1.5291,regi_multi
+id_070060,Rawdan,0.3572,0.005152,1.5291,regi_multi
+id_070061,Surum,0.39,0.01334,1.5291,regi_multi
+id_070063,Al-'Adiyah,0.48,0.008444,1.5291,regi_multi
+id_070064,Al-Hufah,0.5,0.01127,1.5291,regi_multi
 id_070065,Ar-Rashid,0.5,0.007983,1.5419,srtm_derived
-id_070066,Al Thabit (Al-Khir),0.5,0.006392,1.5345,regi_multi
+id_070066,Al Thabit (Al-Khir),0.5,0.006634,1.5291,regi_multi
 id_070067,Al-Hajlah,0.3429,0.007621,1.5225,srtm_derived
-id_070068,Jabal Khat,0.5,0.008547,1.5345,regi_multi
+id_070068,Jabal Khat,0.5,0.009298,1.5291,regi_multi
 id_070069,Jariyah Al-Majardah,0.6,0.007139,1.5681,srtm_derived
 id_070070,Afyadh Al-Talhah,0.748,0.001169,1.652,srtm_derived
-id_070071,Sharaqib,0.79,0.007963,1.5345,regi_multi
-id_070072,Shi'b Shadad,0.074,0.01051,1.5345,regi_multi
+id_070071,Sharaqib,0.79,0.008271,1.5291,regi_multi
+id_070072,Shi'b Shadad,0.074,0.01083,1.5291,regi_multi
 id_070074,Surum Al-Harajah,0.1216,0.1615,1.2207,srtm_derived
-id_070075,Sarabah,1.0,0.007384,1.5345,regi_multi
+id_070075,Sarabah,1.0,0.00777,1.5291,regi_multi
 id_070076,Bahwan,0.1216,0.0003392,1.775,srtm_derived
-id_070077,Tabab,0.09,0.01357,1.5345,regi_multi
-id_070078,Anam,2.0,0.01152,1.5345,regi_multi
+id_070077,Tabab,0.09,0.01387,1.5291,regi_multi
+id_070078,Anam,2.0,0.01166,1.5291,regi_multi
 id_070079,Al-Musayriq,0.433,0.0169,1.4121,srtm_derived
 id_070080,Al-Ghurah,0.135,0.003515,1.6022,srtm_derived
 id_070081,Maskah,0.4112,0.009283,1.4662,srtm_derived
 id_070082,Al-Madhah,4.25,0.01829,1.374,srtm_derived
-id_070083,Haswah,0.02,0.02093,1.5345,regi_multi
-id_070084,Subh,0.2297,0.0105,1.5345,regi_multi
+id_070083,Haswah,0.02,0.02198,1.5291,regi_multi
+id_070084,Subh,0.2297,0.01026,1.5291,regi_multi
 id_070085,Tamniyah,0.3,0.0007185,1.778,srtm_derived
-id_070086,Al-Gha'il,0.2114,0.01425,1.5345,regi_multi
-id_070087,Al-Da'fah,0.0719,0.01706,1.5345,regi_multi
+id_070086,Al-Gha'il,0.2114,0.01535,1.5291,regi_multi
+id_070087,Al-Da'fah,0.0719,0.0171,1.5291,regi_multi
 id_070088,Halba,0.973,0.002794,1.7426,srtm_derived
 id_070089,Al-Mawin,0.4,0.005003,1.6266,srtm_derived
 id_070090,Turayf,0.4553,0.0001306,2.0,srtm_derived
@@ -330,32 +330,32 @@ id_070091,Ashran,1.5,0.002274,1.6558,srtm_derived
 id_070092,Amiq Bal-Lahmar,1.062,0.1646,1.3547,srtm_derived
 id_070093,Khurs,0.4467,0.009083,1.5468,srtm_derived
 id_070094,Athab,1.064,0.0005619,1.6634,srtm_derived
-id_070095,Al-Dahnah,0.12,0.01193,1.5345,regi_multi
+id_070095,Al-Dahnah,0.12,0.01278,1.5291,regi_multi
 id_070096,Al-Qabah,2.0,0.00051,1.781,srtm_derived
 id_070097,Ghalabah,0.2177,0.0001138,2.0,srtm_derived
 id_070098,Dhahban,2.29,0.01038,1.4292,srtm_derived
 id_070099,Al-Fid,2.5,8.626e-06,2.0,srtm_derived
 id_070100,Qurdan,0.78,0.01028,1.4589,srtm_derived
 id_070101,Harjab,4.65,0.0009736,1.6703,srtm_derived
-id_070102,Al-Sarwa,0.055,0.004651,1.5345,regi_multi
-id_070103,Al-'Asran,0.06,0.00846,1.5345,regi_multi
-id_070104,Abu Khuda'ah,0.1,0.002411,1.5345,regi_multi
+id_070102,Al-Sarwa,0.055,0.004846,1.5291,regi_multi
+id_070103,Al-'Asran,0.06,0.008893,1.5291,regi_multi
+id_070104,Abu Khuda'ah,0.1,0.002537,1.5291,regi_multi
 id_070105,Kutam,0.5195,0.0013,1.7146,srtm_derived
-id_070106,Al-'Ayzah,0.15,0.008528,1.5345,regi_multi
-id_070107,Al-Farwan,0.107,0.01285,1.5345,regi_multi
+id_070106,Al-'Ayzah,0.15,0.00902,1.5291,regi_multi
+id_070107,Al-Farwan,0.107,0.01341,1.5291,regi_multi
 id_070108,Wadi Daf,0.25,0.0003767,1.7733,srtm_derived
 id_070109,Thama,0.325,0.007369,1.5549,srtm_derived
-id_070110,Al-Jawah,0.5,0.01002,1.5345,regi_multi
+id_070110,Al-Jawah,0.5,0.01073,1.5291,regi_multi
 id_070111,Awis,0.593,8.368e-05,2.0,srtm_derived
-id_070112,Yafif,0.69,0.00494,1.5345,regi_multi
-id_070113,Nabah,0.75,0.01568,1.5345,regi_multi
+id_070112,Yafif,0.69,0.005248,1.5291,regi_multi
+id_070113,Nabah,0.75,0.01507,1.5291,regi_multi
 id_070114,Khadar Al-Haymah,1.1287,0.04047,1.3165,srtm_derived
-id_070115,Tahallul,1.4,0.006554,1.5345,regi_multi
+id_070115,Tahallul,1.4,0.00706,1.5291,regi_multi
 id_070116,Al-Mahzamah,1.5,0.2434,1.1951,srtm_derived
-id_070117,Aqdah,3.0,0.003254,1.5345,regi_multi
+id_070117,Aqdah,3.0,0.003337,1.5291,regi_multi
 id_070118,AL-Thafn,0.6391,0.1586,1.2273,srtm_derived
-id_070119,Al-Farhah,0.0592,0.01446,1.5345,regi_multi
-id_070120,Hadhir,0.2118,0.01542,1.5345,regi_multi
+id_070119,Al-Farhah,0.0592,0.01524,1.5291,regi_multi
+id_070120,Hadhir,0.2118,0.01642,1.5291,regi_multi
 id_080002,Daqah,1.4,1.72e-05,1.9573,srtm_derived
 id_080003,Alib,0.9721,0.00411,1.4911,srtm_derived
 id_080005,Al-Ahsabah,11.0,0.0003755,1.7081,srtm_derived
@@ -363,91 +363,91 @@ id_080007,Thurad,14.136,0.001985,1.5777,srtm_derived
 id_080009,Al-Janabin,17.0,1.002e-05,1.9854,srtm_derived
 id_080010,Al-Aqiq,19.1261,2.381e-05,1.8571,srtm_derived
 id_080012,Ardah,68.0,0.009968,1.5051,srtm_derived
-id_080015,Matuwah,0.024,0.009448,1.5345,regi_multi
-id_080016,Al-Arishayn,0.037,0.015,1.5345,regi_multi
-id_080017,Al-Ritaq,0.058,0.01216,1.5345,regi_multi
-id_080018,Zaqat,0.07,0.005293,1.5345,regi_multi
-id_080019,Al-Qamah,0.08,0.00755,1.5345,regi_multi
-id_080020,Al-Azizah,0.0928,0.01216,1.5345,regi_multi
-id_080021,Dharawah,0.098,0.0135,1.5345,regi_multi
-id_080022,Al-Hijah,0.1,0.008716,1.5345,regi_multi
-id_080023,Ajlan,0.1,0.01095,1.5345,regi_multi
-id_080024,Al-Malad,0.1,0.009824,1.5345,regi_multi
-id_080025,Shahbah,0.1,0.0113,1.5345,regi_multi
-id_080026,Al-Aja'idah,0.1519,0.008807,1.5345,regi_multi
+id_080015,Matuwah,0.024,0.01044,1.5291,regi_multi
+id_080016,Al-Arishayn,0.037,0.01589,1.5291,regi_multi
+id_080017,Al-Ritaq,0.058,0.01181,1.5291,regi_multi
+id_080018,Zaqat,0.07,0.005828,1.5291,regi_multi
+id_080019,Al-Qamah,0.08,0.007913,1.5291,regi_multi
+id_080020,Al-Azizah,0.0928,0.01301,1.5291,regi_multi
+id_080021,Dharawah,0.098,0.014,1.5291,regi_multi
+id_080022,Al-Hijah,0.1,0.009479,1.5291,regi_multi
+id_080023,Ajlan,0.1,0.01186,1.5291,regi_multi
+id_080024,Al-Malad,0.1,0.01018,1.5291,regi_multi
+id_080025,Shahbah,0.1,0.01209,1.5291,regi_multi
+id_080026,Al-Aja'idah,0.1519,0.009571,1.5291,regi_multi
 id_080027,Dhark,0.1114,0.006228,1.5591,srtm_derived
-id_080028,Am Rijlan,0.118,0.01242,1.5345,regi_multi
-id_080029,Al-Marbah,0.12,0.01192,1.5345,regi_multi
+id_080028,Am Rijlan,0.118,0.01341,1.5291,regi_multi
+id_080029,Al-Marbah,0.12,0.01258,1.5291,regi_multi
 id_080030,Al-Kharar,0.15,0.001272,1.729,srtm_derived
-id_080031,Al-Lahijah,0.1302,0.006985,1.5345,regi_multi
-id_080032,Al-Khalah,0.2,0.01187,1.5345,regi_multi
-id_080033,Al-Talqiyah,0.2,0.008592,1.5345,regi_multi
-id_080034,Al-Jahafin,0.2,0.007724,1.5345,regi_multi
-id_080035,Al-Haliyah,0.23,0.007698,1.5345,regi_multi
+id_080031,Al-Lahijah,0.1302,0.007624,1.5291,regi_multi
+id_080032,Al-Khalah,0.2,0.01212,1.5291,regi_multi
+id_080033,Al-Talqiyah,0.2,0.008875,1.5291,regi_multi
+id_080034,Al-Jahafin,0.2,0.008402,1.5291,regi_multi
+id_080035,Al-Haliyah,0.23,0.008379,1.5291,regi_multi
 id_080036,Subihah,0.3,0.003112,1.6807,srtm_derived
 id_080037,Al-Dhahin,0.32,0.01657,1.5159,srtm_derived
 id_080038,Al-Muzlimat,0.4,7.403e-05,1.9565,srtm_derived
 id_080039,Al-Sadr,0.5,0.01237,1.4757,srtm_derived
-id_080040,Al-Mashiraf,0.6,0.004194,1.5345,regi_multi
+id_080040,Al-Mashiraf,0.6,0.004491,1.5291,regi_multi
 id_080041,Ma'shuqah,0.9057,0.009117,1.4855,srtm_derived
 id_080042,Al-Marazawaq,0.75,0.005307,1.5928,srtm_derived
 id_080043,Jarab,0.3441,0.002508,1.5632,srtm_derived
 id_080044,Madhas,1.5,0.1726,1.26,srtm_derived
 id_080045,Bidah,2.0,0.01173,1.5289,srtm_derived
-id_080046,Al-Habis,0.01,0.01319,1.5345,regi_multi
-id_080047,Dabdab,0.03,0.01387,1.5345,regi_multi
-id_080048,Al-Milh,0.1,0.01169,1.5345,regi_multi
-id_080049,Al-Afarah,0.15,0.0112,1.5345,regi_multi
-id_080050,Athal,0.113,0.01634,1.5345,regi_multi
+id_080046,Al-Habis,0.01,0.01457,1.5291,regi_multi
+id_080047,Dabdab,0.03,0.01496,1.5291,regi_multi
+id_080048,Al-Milh,0.1,0.01231,1.5291,regi_multi
+id_080049,Al-Afarah,0.15,0.01181,1.5291,regi_multi
+id_080050,Athal,0.113,0.01718,1.5291,regi_multi
 id_080051,Al-Hadim,0.31,0.0001315,1.9083,srtm_derived
-id_080052,Al Sarawar,0.0722,0.01246,1.5345,regi_multi
+id_080052,Al Sarawar,0.0722,0.01362,1.5291,regi_multi
 id_080053,Shada Nira,0.8844,0.0004574,1.7538,srtm_derived
-id_080054,Al-Madarah,0.1575,0.01557,1.5345,regi_multi
-id_080055,Al-Hamirah (Al-Salasil),0.5312,0.00733,1.5345,regi_multi
-id_080056,Al-Nusabah,0.0803,0.01161,1.5345,regi_multi
-id_090000,Al-Juwi'diyah,0.109,0.004634,1.5345,regi_multi
-id_090001,Aqadah,0.1,0.00961,1.5345,regi_multi
+id_080054,Al-Madarah,0.1575,0.01653,1.5291,regi_multi
+id_080055,Al-Hamirah (Al-Salasil),0.5312,0.007938,1.5291,regi_multi
+id_080056,Al-Nusabah,0.0803,0.01238,1.5291,regi_multi
+id_090000,Al-Juwi'diyah,0.109,0.005212,1.5291,regi_multi
+id_090001,Aqadah,0.1,0.01013,1.5291,regi_multi
 id_090002,Al-Sahwah,0.1413,0.00149,1.634,srtm_derived
-id_090003,Al-Sada'iyah,0.1057,0.004097,1.5345,regi_multi
-id_090004,Al-Ratiq,0.106,0.01227,1.5345,regi_multi
+id_090003,Al-Sada'iyah,0.1057,0.004371,1.5291,regi_multi
+id_090004,Al-Ratiq,0.106,0.01262,1.5291,regi_multi
 id_090005,Taba,0.1544,0.007917,1.483,srtm_derived
-id_090006,Tawarin,0.12,0.008182,1.5345,regi_multi
-id_090007,Al-Jahifah,0.4932,0.005928,1.5345,regi_multi
-id_090008,Al-Mudih,0.1077,0.005356,1.5345,regi_multi
-id_090009,Fayd,0.1675,0.003224,1.5345,regi_multi
+id_090006,Tawarin,0.12,0.008624,1.5291,regi_multi
+id_090007,Al-Jahifah,0.4932,0.006335,1.5291,regi_multi
+id_090008,Al-Mudih,0.1077,0.005524,1.5291,regi_multi
+id_090009,Fayd,0.1675,0.003499,1.5291,regi_multi
 id_090010,Aqalat Bin Jabrin,0.7146,0.007805,1.4208,srtm_derived
-id_090011,Al-Salaf,0.15,0.007537,1.5345,regi_multi
-id_090012,Al-Raqab,0.1598,0.002921,1.5345,regi_multi
+id_090011,Al-Salaf,0.15,0.007413,1.5291,regi_multi
+id_090012,Al-Raqab,0.1598,0.003132,1.5291,regi_multi
 id_090013,Saqiyat Fayd,0.18,0.3415,1.1,srtm_derived
 id_090015,Nuqbayn,0.23,0.3085,1.1828,srtm_derived
 id_090016,Al-Sir,0.25,0.2924,1.2655,srtm_derived
 id_090017,Ghamrah,0.25,3.308e-05,2.0,srtm_derived
 id_090018,Samirahh,0.7872,0.06839,1.2413,srtm_derived
-id_090019,Al-Radafin,0.3,0.005834,1.5345,regi_multi
+id_090019,Al-Radafin,0.3,0.006273,1.5291,regi_multi
 id_090020,Al-Hawidah,0.36,0.009782,1.4115,srtm_derived
 id_090021,Al-Shinan,0.4466,0.0001867,1.7385,srtm_derived
 id_090022,Al-Bar,0.5,0.009632,1.446,srtm_derived
-id_090023,Al-Halifah,2.7687,0.001009,1.5345,regi_multi
+id_090023,Al-Halifah,2.7687,0.001107,1.5291,regi_multi
 id_090024,Al-Sab'an,0.6304,0.1377,1.2148,srtm_derived
 id_090025,Saqf,0.6,0.02342,1.3819,srtm_derived
 id_090026,Watadah,0.6499,0.02157,1.3343,srtm_derived
 id_090027,Al-Salimah,1.0,0.001744,1.5605,srtm_derived
 id_090028,Dalihan,1.0,3.155e-05,1.905,srtm_derived
 id_090029,Bazakhah,0.3494,0.08532,1.2445,srtm_derived
-id_090031,Al-Shaqiq,2.0,0.002846,1.5345,regi_multi
+id_090031,Al-Shaqiq,2.0,0.003061,1.5291,regi_multi
 id_090032,Al-Wasitah,2.5,0.1499,1.2085,srtm_derived
 id_090033,Al-Ha'it,3.0,0.005415,1.5471,srtm_derived
 id_090034,Al-Dabiyah,1.1917,0.1011,1.2205,srtm_derived
-id_090035,Wasmiya,0.1,0.008591,1.5345,regi_multi
-id_090036,Al-Na'ih,0.16,0.007864,1.5345,regi_multi
+id_090035,Wasmiya,0.1,0.009038,1.5291,regi_multi
+id_090036,Al-Na'ih,0.16,0.008188,1.5291,regi_multi
 id_090037,Al-Adirah,0.5509,0.03424,1.2824,srtm_derived
 id_090038,Al-Rawdah,1.5,0.006361,1.4872,srtm_derived
-id_090039,Al-Ghazalah,0.12,0.003826,1.5345,regi_multi
-id_090040,Al-Rawd Bin Hadi,2.0,0.001244,1.5345,regi_multi
-id_090041,Aqadh Al-Tad'imi,0.0812,0.01407,1.5345,regi_multi
-id_090042,Mashar,0.1161,0.008991,1.5345,regi_multi
-id_090043,Aba Adi,0.0984,0.01208,1.5345,regi_multi
-id_090044,Qarih,0.2164,0.01599,1.5345,regi_multi
+id_090039,Al-Ghazalah,0.12,0.004065,1.5291,regi_multi
+id_090040,Al-Rawd Bin Hadi,2.0,0.0014,1.5291,regi_multi
+id_090041,Aqadh Al-Tad'imi,0.0812,0.01384,1.5291,regi_multi
+id_090042,Mashar,0.1161,0.009617,1.5291,regi_multi
+id_090043,Aba Adi,0.0984,0.01275,1.5291,regi_multi
+id_090044,Qarih,0.2164,0.01648,1.5291,regi_multi
 id_090045,Al-Sir Al-Tad'imi,0.7465,0.03648,1.353,srtm_derived
 id_100000,Al-Kharar,0.1676,0.001526,1.6855,srtm_derived
 id_100001,Rahib,0.1023,0.0361,1.3981,srtm_derived
@@ -456,7 +456,7 @@ id_100003,Al-Zarib,0.5,0.0667,1.2687,srtm_derived
 id_100004,Shawaq,0.8,1.527e-05,2.0,srtm_derived
 id_100005,Aynawanah,0.7,0.001033,1.6676,srtm_derived
 id_100006,Damah,0.935,0.0004409,1.7467,srtm_derived
-id_100008,Samin,0.177,0.004123,1.5345,regi_multi
+id_100008,Samin,0.177,0.004387,1.5291,regi_multi
 id_100009,Al-Nabi',1.0,7.093e-05,1.9214,srtm_derived
 id_100010,Al-Kar,1.0034,0.0003061,1.6856,srtm_derived
 id_100011,'Afal,2.0,0.01357,1.4481,srtm_derived
@@ -473,55 +473,55 @@ id_100021,Tila' Al-Janawabi,0.4225,0.2196,1.1871,srtm_derived
 id_100022,Al-Baqar,1.8,0.0001974,1.7681,srtm_derived
 id_100024,Na'am,1.5,0.004376,1.5159,srtm_derived
 id_100025,Al-Mawilah (Al-Sir),1.593,0.0002108,1.8284,srtm_derived
-id_110000,Al-Ma'tadal (Al-Tamariyah),0.574,0.001551,1.5345,regi_multi
+id_110000,Al-Ma'tadal (Al-Tamariyah),0.574,0.001711,1.5291,regi_multi
 id_110001,Zalawam,1.2,0.002934,1.4937,srtm_derived
 id_110002,Al-Ay'ali,1.2,0.00299,1.4779,srtm_derived
-id_110004,Al-Shawihitiyah,2.3,0.001213,1.5345,regi_multi
+id_110004,Al-Shawihitiyah,2.3,0.001302,1.5291,regi_multi
 id_110005,Al-Nakhalah,0.6,0.05505,1.2585,srtm_derived
 id_110006,Bair,1.25,0.03007,1.311,srtm_derived
 id_110007,Hasidah Al-Gharbiyah,1.3,1.025e-05,2.0,srtm_derived
-id_110008,Sarmadah,2.2846,0.001466,1.5345,regi_multi
+id_110008,Sarmadah,2.2846,0.001525,1.5291,regi_multi
 id_110009,Hasidah Al-Sharqiyah,2.6,0.004001,1.4535,srtm_derived
 id_110010,Al-Marir,1.1943,0.005382,1.5333,srtm_derived
 id_120000,Baish,193.644,0.007666,1.5062,srtm_derived
 id_120002,Jazan,54.2,7.956e-05,1.6784,srtm_derived
 id_120003,Damad,55.5,0.1518,1.2632,srtm_derived
-id_120005,Qasi,15.1,0.001775,1.5345,regi_multi
-id_120006,Shab Maghawarah,0.098,0.01574,1.5345,regi_multi
-id_120007,Lajab (Bashimah),0.0234,0.009248,1.5345,regi_multi
+id_120005,Qasi,15.1,0.001885,1.5291,regi_multi
+id_120006,Shab Maghawarah,0.098,0.01618,1.5291,regi_multi
+id_120007,Lajab (Bashimah),0.0234,0.01032,1.5291,regi_multi
 id_120008,Al-Madirah,0.157,0.01813,1.4857,srtm_derived
-id_120009,Amud,0.085,0.008969,1.5345,regi_multi
-id_120010,Al-Raith,0.18,0.0115,1.5345,regi_multi
+id_120009,Amud,0.085,0.01015,1.5291,regi_multi
+id_120010,Al-Raith,0.18,0.01245,1.5291,regi_multi
 id_120011,Qurah,0.986,0.2048,1.2621,srtm_derived
 id_120012,Wasah,1.5,0.001764,1.6794,srtm_derived
 id_120013,Wa'al,1.0168,0.025,1.4092,srtm_derived
-id_120014,Shahdan,2.5,0.002258,1.5345,regi_multi
-id_120015,Am Khabarah,0.15,0.002991,1.5345,regi_multi
+id_120014,Shahdan,2.5,0.002452,1.5291,regi_multi
+id_120015,Am Khabarah,0.15,0.003427,1.5291,regi_multi
 id_130000,Najran,86.0,0.008418,1.4671,srtm_derived
-id_130002,Aratad,0.0797,0.008341,1.5345,regi_multi
-id_130003,Yasan,0.2334,0.009408,1.5345,regi_multi
+id_130002,Aratad,0.0797,0.008999,1.5291,regi_multi
+id_130003,Yasan,0.2334,0.01044,1.5291,regi_multi
 id_130004,Al-Salamah,0.5,0.002756,1.704,srtm_derived
 id_130005,Al-Bayadh,0.243,7.798e-05,1.9156,srtm_derived
-id_130006,Al-Maghawi,0.2083,0.01189,1.5345,regi_multi
-id_130007,Makish,0.288,0.006159,1.5345,regi_multi
+id_130006,Al-Maghawi,0.2083,0.01188,1.5291,regi_multi
+id_130007,Makish,0.288,0.006518,1.5291,regi_multi
 id_130008,Khadiran,1.0,0.02421,1.449,srtm_derived
 id_130009,Al-Mahjar,1.0,0.0006013,1.695,srtm_derived
-id_130010,Al-Yatim,0.3,0.008519,1.5345,regi_multi
-id_130011,Makhdab,0.3437,0.005501,1.5345,regi_multi
+id_130010,Al-Yatim,0.3,0.008355,1.5291,regi_multi
+id_130011,Makhdab,0.3437,0.005924,1.5291,regi_multi
 id_130012,Thar,0.36,0.002982,1.6092,srtm_derived
 id_130013,Humayran,0.4918,0.03156,1.4636,srtm_derived
 id_130014,Al-Ashah,0.27,0.01359,1.483,srtm_derived
 id_130015,Qatan,0.7585,0.0001328,1.8325,srtm_derived
-id_130016,(Surum) Halal,0.5856,0.007476,1.5345,regi_multi
-id_130017,Al-Khadarah,0.6,0.004304,1.5345,regi_multi
+id_130016,(Surum) Halal,0.5856,0.008178,1.5291,regi_multi
+id_130017,Al-Khadarah,0.6,0.00453,1.5291,regi_multi
 id_130018,Na'wan,0.532,0.9781,1.1,srtm_derived
-id_130019,Al-Safah,0.3663,0.005671,1.5345,regi_multi
+id_130019,Al-Safah,0.3663,0.005684,1.5291,regi_multi
 id_130020,Tarimah,2.0735,0.0003587,1.7972,srtm_derived
 id_130021,Al-Malihah,0.471,0.01845,1.4548,srtm_derived
-id_130022,Akadhaba,0.25,0.009529,1.5345,regi_multi
+id_130022,Akadhaba,0.25,0.009212,1.5291,regi_multi
 id_130023,Al-Athibah,0.4374,0.002423,1.6751,srtm_derived
-id_130024,Hadadah,0.5,0.005589,1.5345,regi_multi
-id_130025,Al-Haj,0.578,0.004819,1.5345,regi_multi
+id_130024,Hadadah,0.5,0.006201,1.5291,regi_multi
+id_130025,Al-Haj,0.578,0.005119,1.5291,regi_multi
 id_130026,Al-Sharam,0.1631,0.8656,1.1302,srtm_derived
 id_130027,Qurdah,0.2429,0.02112,1.4204,srtm_derived
 id_130028,Matarah Al-Qaran,2.0544,0.02008,1.4935,srtm_derived

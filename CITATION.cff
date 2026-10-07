@@ -13,8 +13,8 @@ abstract: >
   region with a DEM and dam catalog. This release accompanies the
   Scientific Data Data Descriptor and generates the EAVES dataset
   (https://doi.org/10.5281/zenodo.20728129).
-version: "1.3.1"
-date-released: 2026-10-05
+version: "1.3.2"
+date-released: 2026-10-07
 license: Apache-2.0
 repository-code: "https://github.com/hyex-research/EAVES"
 url: "https://github.com/hyex-research/EAVES"

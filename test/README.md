@@ -10,7 +10,7 @@ Three layers, in order of cost.
 | `test_regionalization.py` | (none) | under 1 s | Unit tests for the multi-feature LR helpers in `eaves/postprocess/regionalization.py`. |
 | `test_panels_helpers.py` | (none) | under 1 s | Unit tests for the s1 / s2 supplementary-panel helpers (`_silhouette_curve`, `_loo_cluster_sigma`, `_baseline_sigma`, `_chosen_threshold`). |
 | `test_preprocess.py` | (none) | under 1 s | Unit tests for the domain preprocessing in `eaves/preprocess.py`: segment split, upstream closure, removal of zero-length reaches. |
-| `test_drainage.py` | (none) | under 1 s | Unit tests for the drainage of a DEM window and the drain-through-the-wall rule in `eaves/pipeline/drainage.py`. |
+| `test_drainage.py` | (none) | under 1 s | Unit tests for the drainage of a DEM window and the drain-through-the-wall rule in `eaves/pipeline/drainage.py`, and for the rule against a pool downstream of the dam in `eaves/pipeline/placement.py`. |
 | `test_curves_helpers.py` | (none) | under 1 s | Unit tests for the construction-year parsing in `eaves/pipeline/curves.py` and for the precision of the released tables (`round_released_columns` in `eaves/utils.py`). |
 | `test_uncertainty.py` | (none) | under 1 s | Unit tests for the V uncertainty band in `eaves/postprocess/uncertainty.py`: `b_sigma` estimator, anchor back-solve, band algebra. |
 | `test_summary_rows.py` | (none) | under 2 s | Unit tests for the summary rows of dams without a flood fill: the row a failed dam gains (`_append_dams_without_fill` and `_finalize_summary` in `eaves/cli.py`) the selection of the dams with a fill (`dams_with_fill` in `eaves/utils.py`), and the column order of the external attributes on a second pass. |

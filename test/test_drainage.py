@@ -1,4 +1,4 @@
-"""Unit tests for the drainage of a DEM window and the drain-through-the-wall test.
+"""Unit tests for the drainage of a DEM window and the two tests of the side of a dam on which a pool lies.
 
 All checks run on a synthetic V-shaped valley that falls toward higher row
 numbers, with its channel along one column, so the direction of flow and the
@@ -17,6 +17,7 @@ from eaves.pipeline.drainage import (
     outlet_position,
     share_draining_near,
 )
+from eaves.pipeline.placement import _pool_lies_downstream
 
 NROWS, NCOLS = 200, 61
 CHANNEL = 30
@@ -24,6 +25,8 @@ DAM_ROW = 80
 PIXEL_AREA = 900.0
 WATER_DEPTH = 6.0
 WALL_LENGTH_M = 300.0
+# Unit vector up the channel in (row, column) steps, as the river reach gives it
+UP_THE_CHANNEL = np.array([-1.0, 0.0])
 
 
 @pytest.fixture
@@ -120,3 +123,27 @@ def test_short_pool_below_the_dam_is_rejected(valley):
     assert share_draining_near(short, valley, DAM_ROW, CHANNEL, reach_px=38.0) == 1.0
     assert outlet_position(short, valley, DAM_ROW, CHANNEL) > 0.65
     assert not drains_through_wall(short, valley, DAM_ROW, CHANNEL, WALL_LENGTH_M, 1e12, PIXEL_AREA)
+
+
+def test_pool_down_the_reach_and_down_the_slope_lies_downstream(valley):
+    assert _pool_lies_downstream(_pool(valley, False), valley, DAM_ROW, CHANNEL, UP_THE_CHANNEL)
+
+
+def test_pool_up_the_reach_does_not_lie_downstream(valley):
+    assert not _pool_lies_downstream(_pool(valley, True), valley, DAM_ROW, CHANNEL, UP_THE_CHANNEL)
+
+
+def test_dam_without_a_river_reach_is_never_judged(valley):
+    assert not _pool_lies_downstream(_pool(valley, False), valley, DAM_ROW, CHANNEL, None)
+
+
+def test_slope_alone_does_not_place_a_pool_downstream(valley):
+    # A reach drawn the wrong way round places the pool up the channel, so the slope stands alone and the pool is kept
+    assert not _pool_lies_downstream(_pool(valley, False), valley, DAM_ROW, CHANNEL, -UP_THE_CHANNEL)
+
+
+def test_reach_alone_does_not_place_a_pool_downstream(valley):
+    # On a valley that falls the other way the reach still places the pool downstream, and the slope does not
+    rising = valley[::-1].copy()
+    pool = _pool(valley, False)
+    assert not _pool_lies_downstream(pool, rising, DAM_ROW, CHANNEL, UP_THE_CHANNEL)

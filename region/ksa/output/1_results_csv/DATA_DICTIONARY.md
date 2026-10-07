@@ -32,8 +32,8 @@ files.
 - **Source provenance.** Each dam is either `srtm_derived` (curve fitted to
   flooded SRTM topography) or `regi_multi` (regionalized: `b` set to the
   regional median, taken over the training dams at or above the reliability
-  threshold of `threshold_analysis.csv` (70 dams of 1 MCM and more, median
-  1.5345), `c` back-solved from catalog capacity via the multi-feature
+  threshold of `threshold_analysis.csv` (84 dams of 1 MCM and more, median
+  1.5291), `c` back-solved from catalog capacity via the multi-feature
   anchor). See `source` below.
 - **Error reporting.** Volume errors are multiplicative. They are computed in
   base-10 log-ratio space and stored as `*_log10` columns (and as signed decimal
@@ -57,7 +57,7 @@ full statement.
 | `dam_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Meters, full catalog precision (up to 2 decimals). |
 | `spillway_height_m` | `eaves_summary.csv`, `failed_dams.csv` | Meters, full catalog precision (up to 3 decimals). |
 | `dam_length_m` | `eaves_summary.csv`, `failed_dams.csv` | Meters, full catalog precision (up to 2 decimals). |
-| `construction_year` | `eaves_summary.csv`, `failed_dams.csv` | Year, written as an integer (parse as nullable Int64). Blank when the catalog has no year (21 dams in `eaves_summary.csv`, 1 in `failed_dams.csv`). |
+| `construction_year` | `eaves_summary.csv`, `failed_dams.csv` | Year, written as an integer (parse as nullable Int64). Blank when the catalog has no year (1 dam in `eaves_summary.csv`, none in `failed_dams.csv`). |
 
 Note: for Baish (`id_120000`), the one dam with full design documentation, the capacity is sourced directly from the design table: 193.644 MCM at the spillway crest, 327.0 m a.s.l. (`baish_bathymetry/baish_area_elev_vol.csv`). See the paper's Input data section.
 
@@ -75,7 +75,7 @@ Note: for Baish (`id_120000`), the one dam with full design documentation, the c
 | `c` (clamped dams) | For the 35 dams whose `b` was clamped, `c` is re-solved through the recovered SRTM full-pool anchor (V_srtm_max at the footprint area), so it differs from the raw `c` in `eaves_summary.csv` | - | float | never |
 | `source` | Provenance | - | str | never |
 
-`source` controlled vocabulary: `srtm_derived` (320), `regi_multi` (206).
+`source` controlled vocabulary: `srtm_derived` (319), `regi_multi` (207).
 
 ---
 
@@ -93,7 +93,7 @@ dams with a fill whose power-law fit failed.
 | --- | --- | --- | --- | --- |
 | `dam_id` | Persistent dam identifier | - | str | never |
 | `dam_name` | Latin-transliterated dam name | - | str | may be empty |
-| `construction_year` | Catalog construction year | year | Int (nullable) | blank for 21 dams |
+| `construction_year` | Catalog construction year | year | Int (nullable) | blank for 1 dam |
 | `dam_height_m` | Catalog dam height | m | float | catalog-derived |
 | `spillway_height_m` | Catalog spillway height (fill depth used) | m | float | catalog-derived |
 | `dam_length_m` | Catalog crest length | m | float | catalog-derived |
@@ -157,16 +157,18 @@ Controlled vocabularies:
 
 ## `eav_tables/<dam_id>_eav.csv`: hypsometry tables (503 files)
 
-One file per dam in `eaves_summary.csv`. Cumulative area and volume as a
-function of elevation, in 0.5 m steps from `z_min` to spillway level.
+One file per dam with a flood fill. Cumulative area and volume as a
+function of elevation, in 0.5 m steps from `z_min` to spillway level, with
+the depth above the bottom of the fill beside the elevation.
 
 | Column | Definition | Unit | dtype | Missing |
 | --- | --- | --- | --- | --- |
-| `elevation_m` | Water-surface elevation | m | float | never |
+| `elevation_m` | Water-surface elevation | m a.s.l. | float | never |
+| `depth_m` | Water depth above the bottom of the fill, `elevation_m` minus the elevation of the first row | m | float | never |
 | `area_m2` | Flooded surface area at this elevation | **m²** | float | never |
 | `volume_m3` | Cumulative impounded volume below this elevation | **m³** | float | never |
 
-Note the units are m² / m³ here, NOT MCM. `volume_m3 = 0` at the bottom row.
+Note the units are m² / m³ here, NOT MCM. `depth_m = 0` and `volume_m3 = 0` at the bottom row.
 
 ---
 
@@ -191,7 +193,7 @@ Note the units are m² / m³ here, NOT MCM. `volume_m3 = 0` at the bottom row.
 | `channel_slope` | Local channel slope | m/m | float | may be NaN |
 | `mean_catchment_slope` | Mean catchment slope | m/m | float | may be NaN |
 
-`reason` controlled vocabulary: `placement_failed` (13), `bad_fill_auto` (10),
+`reason` controlled vocabulary: `placement_failed` (14), `bad_fill_auto` (9),
 `fit_failed` (3). These dams carry catalog and topographic attributes. Every
 dam of this file also has a row in `eaves_summary.csv`, and the regionalization
 reads its features from that row.
@@ -220,12 +222,12 @@ construction-year, dam-height and sediment statistics cover all 526 dams, and
 the statistics of the fill and of the fit cover the 503 dams with a flood fill.
 
 Selected keys: `n_dams_with_params=526`, `n_dams_summary=503` (the dams with
-a flood fill), `n_dams_failed_pipeline=26`, `n_params_source_srtm_derived=320`,
-`n_params_source_regi_multi=206`, `n_training=199`, `b_median=1.4828` (trusted,
-descriptive), `b_sigma_training=0.281` (the band's b-spread, training set),
-`b_cluster_best_gain_pct=19.26`,
-`loo_multi_anchor_within_2x_frac=0.9296` / `_within_3x_frac=1.0`
-(stored as decimal fractions). The LOO rows cover the 199 training dams.
+a flood fill), `n_dams_failed_pipeline=26`, `n_params_source_srtm_derived=319`,
+`n_params_source_regi_multi=207`, `n_training=216`, `b_median=1.483` (trusted,
+descriptive), `b_sigma_training=0.2791` (the band's b-spread, training set),
+`b_cluster_best_gain_pct=17.92`,
+`loo_multi_anchor_within_2x_frac=0.9306` / `_within_3x_frac=1.0`
+(stored as decimal fractions). The LOO rows cover the 216 training dams.
 
 ---
 
@@ -261,7 +263,7 @@ K-means clustering diagnostic on `b` (Supp panel S1).
 | `flag` | Comparison flag | - | str | empty when no flag applies |
 
 `flag` controlled vocabulary: `sat_much_smaller` (191), `sat_much_larger` (1),
-`no_sat` (38), empty (90).
+`no_sat` (38), empty (89).
 `no_sat` means zero or no observed water area. Of the 38, 31 have satellite
 observations but a zero 95th-percentile extent (`A_sat_P95_km2 = 0.0`), and the
 other 7 have no usable record (blank columns).
@@ -287,8 +289,8 @@ log–log primary, multi-feature LR) against the SRTM-derived reference, at
 | `*_log10_V_ratio_at_{100,050,010}pct` | log10 volume ratio vs the SRTM reference | log10 units |
 | `V_srtm_at_{100,050,010}pct_m3` | SRTM-reference volume at that pool fraction | **m³** |
 
-Source vocabularies: `current_source ∈ {current_sat_p95 (177),
-current_sat_fallback (22)}` (over the 199 training-dam rows), `alt_source = alt_loglog_primary`,
+Source vocabularies: `current_source ∈ {current_sat_p95 (191),
+current_sat_fallback (25)}` (over the 216 training-dam rows), `alt_source = alt_loglog_primary`,
 `multi_source = multi_lr_primary`. Volumes in this file are in m³.
 
 ---
@@ -313,7 +315,7 @@ Propagated `b_sigma` band at half / quarter / tenth pool (Supp panel S3).
 | `V_sigma_log10_{half,quarter,tenth}_pool` | 1σ band width in log10 | log10 units | float | never |
 | `V_frac_up_{...}_pool` / `V_frac_down_{...}_pool` | +1σ / −1σ as decimal fractions (0.29 = +29%, 1.32 = +132%), reported in the paper above 100% as the multiplicative factor 1 + value (1.32 → a factor of 2.3) | fraction | float | never |
 
-`source` vocabulary: `srtm_derived` (320), `regi_multi` (206).
+`source` vocabulary: `srtm_derived` (319), `regi_multi` (207).
 
 ---
 
@@ -372,7 +374,7 @@ Per-dam Monte-Carlo of how SRTM vertical noise (LE90 ≈ 6 m, σ ≈ 3.6 m, corr
 
 ## `validation/sensitivity_sweep.csv`: placement/acceptance constant sensitivity (26 rows)
 
-One row per (constant, perturbation) cell. Each of the five swept constants is perturbed by ±20% and ±30% over a sample of 54 trusted dams, and each row gives the trusted set and the median exponent of that cell. The 26 rows are the shared baseline row and five rows per constant, the four perturbations and a copy of the baseline at perturbation 0. Written by the opt-in `--sensitivity` validation step.
+One row per (constant, perturbation) cell. Each of the five swept constants is perturbed by ±20% and ±30% over a sample of 53 trusted dams, and each row gives the trusted set and the median exponent of that cell. The 26 rows are the shared baseline row and five rows per constant, the four perturbations and a copy of the baseline at perturbation 0. Written by the opt-in `--sensitivity` validation step.
 
 | Column | Definition | Unit | dtype | Missing |
 | --- | --- | --- | --- | --- |
@@ -425,8 +427,10 @@ attributes so that each `dam_id` can be tied to a real reservoir and reused:
   **crest length** `dam_length_m`, in `eaves_summary.csv` and `failed_dams.csv`
   (meters, native catalog precision).
 - **Construction year** `construction_year`, in `eaves_summary.csv` and
-  `failed_dams.csv` (blank, not imputed, for dams without a catalog year, 21 of
-  them in `eaves_summary.csv`).
+  `failed_dams.csv`. For 20 dams the year is the one in which satellite
+  imagery shows the finished dam. The year is blank, not imputed, for one dam
+  of `eaves_summary.csv` (`id_030038`), a historical dam older than the SRTM
+  acquisition.
 
 No other catalog fields are released. A reuser therefore receives the full
 per-dam geolocation and core morphometry needed to map `dam_id` to a physical

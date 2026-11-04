@@ -2,9 +2,10 @@
 
 A reservoir is the water that leaves through its dam. The window is flooded
 from its edge inward in order of elevation, which gives every cell the neighbor
-it drains to. A flood fill counts as the reservoir of a dam when most of the
-pool it holds at catalog capacity leaves that pool next to the wall, and not
-toward the far end of the pool. A fill on the downstream side of the wall
+it drains to. A flood fill counts as the reservoir of a dam when at least half
+of the pool it holds at catalog capacity leaves that pool within reach of the
+wall, and its outlets lie on average in the dam-side part of the pool rather
+than toward its far end. A fill on the downstream side of the wall
 drains out at its far end and is rejected, whichever way the local slope at
 the dam points.
 """
@@ -25,7 +26,7 @@ from ..config import (
 
 _EIGHT_CONNECTED = np.ones((3, 3), dtype=bool)
 _NEIGHBORS = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
-# Rise given to a cell that lies no higher than the cell that reached it, so flats and pits drain toward their outlet
+# Rise given to a cell that lies no higher than the cell that reached it, which drains flats and pits toward their outlet
 _FLAT_RISE_M = 1e-3
 
 _last = {"dem": None, "downstream": None}
@@ -157,7 +158,7 @@ def outlet_position(pool, dem, dam_r, dam_c):
 def drains_through_wall(footprint, dem, dam_r, dam_c, wall_length_m, capacity_m3, pixel_area):
     """Whether the capacity-level pool of ``footprint`` drains out next to the wall centered on the dam cell.
 
-    The pool must leave most of its water within reach of the wall, which judges
+    The pool must leave at least half of its water within reach of the wall, which judges
     a long pool, and must not drain out toward its far end, which judges a pool
     shorter than that reach.
     """

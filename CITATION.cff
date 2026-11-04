@@ -4,21 +4,29 @@ type: software
 title: "EAVES: Elevation-Area-Volume Estimation from SRTM"
 abstract: >
   EAVES reconstructs reservoir elevation-area-volume (EAV) curves for
-  ungaged arid-basin dams from pre-impoundment SRTM topography. It
-  searches for a terrain-derived dam wall, flood-fills the pre-dam
-  valley to the spillway height, integrates area over depth, and fits
-  a power-law model V = c·A^b. Dams whose SRTM-derived curves are
-  unreliable are handled by regionalization against topographic
-  features. The open-source Python pipeline is reconfigurable for any
-  region with a DEM and dam catalog. This release accompanies the
-  Scientific Data Data Descriptor and generates the EAVES dataset
-  (https://doi.org/10.5281/zenodo.20728129).
-version: "1.3.2"
-date-released: 2026-10-07
+  ungauged dams in arid regions from SRTM topography acquired in
+  February 2000, before most of the dams were built. An automated wall
+  placement of up to six stages, starting at the catalog coordinate,
+  seeds a flood fill to the spillway elevation or to the level at which
+  volume reaches catalog capacity, and a power law V = c·A^b is fitted
+  to the area-volume pairs of the fill. Dams without a reliable
+  SRTM-derived fit receive regionally calibrated curves anchored to
+  design capacity, which pair a regional exponent with a full-pool area
+  predicted from catalog and terrain features. The open-source Python
+  pipeline transfers to other regions with a DEM that predates most of
+  their dams, a river network and a dam catalog. It re-fits the
+  regional parameters on the reliable curves of local dams built after
+  the DEM acquisition, whereas the placement and acceptance constants
+  and the quality thresholds, set on SRTM and the Saudi catalog, need
+  re-evaluation for each new region. This release generates the EAVES
+  dataset (https://doi.org/10.5281/zenodo.20728128) and accompanies the
+  paper that describes it.
+version: "1.4.0"
+date-released: 2026-11-04
 license: Apache-2.0
 repository-code: "https://github.com/hyex-research/EAVES"
 url: "https://github.com/hyex-research/EAVES"
-doi: 10.5281/zenodo.20731020
+doi: 10.5281/zenodo.20731019
 authors:
   - given-names: Nikola
     family-names: Ivanović
@@ -27,7 +35,7 @@ authors:
     orcid: "https://orcid.org/0009-0009-4655-7262"
   - given-names: Sonam S.
     family-names: Dash
-    email: ssdash@yahoo.com
+    email: ssdash@ouat.ac.in
     affiliation: "Odisha University of Agriculture and Technology, Bhubaneswar, India"
     orcid: "https://orcid.org/0000-0003-1306-6925"
   - given-names: Julian D.
@@ -49,10 +57,8 @@ keywords:
   - reservoir bathymetry
   - elevation-area-volume curves
   - SRTM
-  - ungaged basins
+  - ungauged basins
   - arid hydrology
   - regionalization
   - reservoir storage
   - Saudi Arabia
-
-# When the EAVES methods paper is published, add a `preferred-citation:` block here so that citation exports (BibTeX, APA) point at the paper by default.

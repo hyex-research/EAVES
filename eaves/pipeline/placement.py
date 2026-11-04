@@ -1,9 +1,11 @@
 """Dam wall placement and flood fill (stages 1-6).
 
-Snaps the wall to the cross-channel barrier, scores wall orientations
-against the local terrain, rasterizes the accepted wall, and floods the
-basin from an upstream seed. Later stages retry with river-direction
-walls, an extended upstream walk, and a multi-direction fallback fill.
+Scores candidate walls by the mismatch between valley width and catalog
+dam length and by their alignment across the river and the downslope
+direction, rasterizes the accepted wall, and floods the basin from an
+upstream seed. Later stages walk upstream along the valley, shift the
+wall along the river, retry with relaxed flow alignment and, as the final
+fallback, try a synthetic wall at the starting point in several directions.
 """
 
 from __future__ import annotations
@@ -14,77 +16,28 @@ import numpy as np
 from scipy.ndimage import label
 
 from ..config import (
-    WALL_BUFFER_PX,
-    FLAT_STD_THRESH,
-    FLAT_MIN_PIXELS,
-    UPSTREAM_WALK_STEP_M,
-    EXTENSION_STEP_M,
-    EXT_SEARCH_MAX_SAMPLES,
-    MAX_CREST_FLOW_DOT,
-    TERRAIN_WALL_TOP_K,
     ALIGN_WEIGHT,
-    PLACEMENT_GOOD_ENOUGH_VOL_ERR,
-    PLACEMENT_UPSTREAM_MAX_VOL_ERR,
-    FALLBACK_MIN_PIXELS,
+    DOWNSTREAM_POOL_BUFFER_PX,
     DOWNSTREAM_POOL_RIVER_SHARE,
     DOWNSTREAM_POOL_SLOPE_SHARE,
-    DOWNSTREAM_POOL_BUFFER_PX,
+    EXT_SEARCH_MAX_SAMPLES,
+    EXTENSION_STEP_M,
+    FALLBACK_MIN_PIXELS,
+    FLAT_MIN_PIXELS,
+    FLAT_STD_THRESH,
+    MAX_CREST_FLOW_DOT,
+    PLACEMENT_GOOD_ENOUGH_VOL_ERR,
+    PLACEMENT_UPSTREAM_MAX_VOL_ERR,
+    TERRAIN_WALL_TOP_K,
+    UPSTREAM_MAX_SHIFT_PX,
+    UPSTREAM_STEP_PX,
+    UPSTREAM_WALK_STEP_M,
+    WALL_BUFFER_PX,
 )
-from .terrain import get_downstream_direction_from_dem
 from .drainage import drains_through_wall
-from ..utils import (
-    _upstream_sample_distances_m,
-    _approx_cone_volume_m3,
-    _bresenham,
-)
+from .terrain import get_downstream_direction_from_dem
 
 _EIGHT_CONNECTED = np.ones((3, 3), dtype=bool)
-
-
-# ---- Cross-channel barrier snapping ----
-
-def _snap_cross_channel_barrier_px(
-    dem, r0, c0, pixel_size_m, half_width_m=120.0, step_m=15.0,
-):
-    """Slide along cross-channel axis to embankment ridge pixel."""
-    r0i = int(np.clip(int(r0), 0, dem.shape[0] - 1))
-    c0i = int(np.clip(int(c0), 0, dem.shape[1] - 1))
-    ds = get_downstream_direction_from_dem(dem, r0i, c0i)
-    perp = np.array([-float(ds[1]), float(ds[0])], dtype=float)
-    pn = float(np.hypot(perp[0], perp[1]))
-    if pn < 1e-9:
-        return r0i, c0i
-    perp = perp / pn
-    h, w = dem.shape
-    step_px = max(1.0, float(step_m) / float(pixel_size_m))
-    hw = max(3, int(round(float(half_width_m) / float(pixel_size_m))))
-    su = max(3, int(round(22.0 / float(pixel_size_m))))
-    best_r, best_c = r0i, c0i
-    best_sc = -1e18
-    s = float(-hw)
-    while s <= float(hw) + 1e-6:
-        rr = int(np.clip(int(round(r0i + perp[0] * s)), 0, h - 1))
-        cc = int(np.clip(int(round(c0i + perp[1] * s)), 0, w - 1))
-        zc = dem[rr, cc]
-        if np.isnan(zc):
-            s += step_px
-            continue
-        ur = int(np.clip(int(round(rr - ds[0] * su)), 0, h - 1))
-        uc = int(np.clip(int(round(cc - ds[1] * su)), 0, w - 1))
-        dr = int(np.clip(int(round(rr + ds[0] * su)), 0, h - 1))
-        dc = int(np.clip(int(round(cc + ds[1] * su)), 0, w - 1))
-        zu, zd = dem[ur, uc], dem[dr, dc]
-        if np.isnan(zu) or np.isnan(zd):
-            s += step_px
-            continue
-        sc = float(zc) - 0.5 * (float(zu) + float(zd))
-        if sc > best_sc:
-            best_sc = sc
-            best_r, best_c = rr, cc
-        s += step_px
-    if best_sc < 1.5:
-        return r0i, c0i
-    return best_r, best_c
 
 
 # ---- Wall orientation scoring and iteration ----
@@ -103,7 +56,7 @@ def _wall_pair_from_crest(wr, wc, ds_dem):
 
 
 def _crest_gap_m_at_angle(dem, dam_r, dam_c, wr, wc, z_spillway, pixel_size, max_search):
-    """Valley half-widths in px if both sides hit z_spillway banks."""
+    """Valley width in meters between the first banks at or above ``z_spillway`` on either side, None if a side has none."""
     nrows, ncols = dem.shape
     d_pos = None
     for d in range(1, max_search + 1):
@@ -306,6 +259,25 @@ def iter_wall_placements_from_terrain(
 
 # ---- Wall rasterization and flood fill ----
 
+def _bresenham(r0, c0, r1, c1):
+    dr = abs(r1 - r0)
+    dc = abs(c1 - c0)
+    sr = 1 if r0 < r1 else -1
+    sc = 1 if c0 < c1 else -1
+    err = dr - dc
+    while True:
+        yield (r0, c0)
+        if r0 == r1 and c0 == c1:
+            break
+        e2 = 2 * err
+        if e2 > -dc:
+            err -= dc
+            r0 += sr
+        if e2 < dr:
+            err += dr
+            c0 += sc
+
+
 def place_wall(dem, dam_row, dam_col, perp_vec_px,
                wall_elev, spillway_elev, thickness=2):
     nrows, ncols = dem.shape
@@ -330,11 +302,11 @@ def place_wall(dem, dam_row, dam_col, perp_vec_px,
                     break
         endpoints.append((end_r, end_c))
 
-    centre_pixels = list(_bresenham(endpoints[0][0], endpoints[0][1],
+    center_pixels = list(_bresenham(endpoints[0][0], endpoints[0][1],
                                      endpoints[1][0], endpoints[1][1]))
 
     wall_set = set()
-    for r, c in centre_pixels:
+    for r, c in center_pixels:
         for dr in range(-thickness, thickness + 1):
             for dc in range(-thickness, thickness + 1):
                 rr, cc = r + dr, c + dc
@@ -394,6 +366,11 @@ def detect_flat_water(dem_footprint, min_pixels=FLAT_MIN_PIXELS,
 
 # ---- Fill seed finder and validation helpers ----
 
+def _approx_cone_volume_m3(n_px, pixel_area, spillway_height_m):
+    """Cone estimate A * H_spillway / 3 of the fill volume, for comparing fills without full EAV integration."""
+    return float(n_px) * float(pixel_area) * float(spillway_height_m) / 3.0
+
+
 def _find_seed_upstream(dem_walled, dam_r, dam_c, upstream_vec, seed_dist, z_spillway):
     seed_r = int(round(dam_r + upstream_vec[0] * seed_dist))
     seed_c = int(round(dam_c + upstream_vec[1] * seed_dist))
@@ -417,7 +394,7 @@ def _find_seed_upstream(dem_walled, dam_r, dam_c, upstream_vec, seed_dist, z_spi
 
 def _accept_terrain_fill(fp, dem_utm, dam_elev, dam_height, spillway_height,
                          capacity_m3, pixel_area, n_px):
-    """Stricter volume gate for terrain-primary path."""
+    """Whether a fill of placement stages 1 to 5 passes the basin-floor and vertical-range checks and reaches a cone-estimate volume of at least 10% of catalog capacity."""
     fp_zmin = float(np.nanmin(dem_utm[fp]))
     fp_zmax = float(np.nanmax(dem_utm[fp]))
     z_min_tolerance = max(15.0, dam_height * 0.75)
@@ -531,22 +508,34 @@ def _snap_dam_elev(dem_utm, dam_r, dam_c):
 
 # ---- Upstream valley walk ----
 
-def _iter_upstream_positions_walked(dem_utm, dam_r0, dam_c0, upstream_offsets,
-                                    pixel_size, walk_step_m=None, downstream_walk=False):
+def _upstream_sample_distances_m(pixel_size_m):
+    """Distances (m) along the valley walk at which a wall is tried."""
+    if pixel_size_m <= 0 or not np.isfinite(pixel_size_m):
+        return np.array([0.0], dtype=float)
+    max_m = float(UPSTREAM_MAX_SHIFT_PX) * pixel_size_m
+    step_m = float(UPSTREAM_STEP_PX) * pixel_size_m
+    arr = np.arange(0.0, max_m + 1e-9, step_m)
+    out = list(arr)
+    if len(out) == 0:
+        return np.array([0.0], dtype=float)
+    if abs(out[-1] - max_m) > 0.5 * pixel_size_m:
+        out.append(max_m)
+    return np.array(out, dtype=float)
+
+
+def _iter_upstream_positions_walked(dem_utm, dam_r0, dam_c0, upstream_offsets, pixel_size):
     """Walk along valley, yielding (offset_m, row, col) at each target distance."""
-    if walk_step_m is None:
-        walk_step_m = UPSTREAM_WALK_STEP_M
     h, w = dem_utm.shape
     targets = sorted({float(x) for x in upstream_offsets})
     r, c = float(dam_r0), float(dam_c0)
     traveled = 0.0
     for target in targets:
         while traveled + 1e-9 < target:
-            step = min(walk_step_m, target - traveled)
+            step = min(UPSTREAM_WALK_STEP_M, target - traveled)
             ri = int(np.clip(round(r), 0, h - 1))
             ci = int(np.clip(round(c), 0, w - 1))
             ds = get_downstream_direction_from_dem(dem_utm, ri, ci)
-            along = ds if downstream_walk else (-ds)
+            along = -ds
             r += along[0] * (step / pixel_size)
             c += along[1] * (step / pixel_size)
             if not (-0.5 <= r < h - 0.5 and -0.5 <= c < w - 0.5):
@@ -567,6 +556,7 @@ def _try_terrain_placement_once(
     deadline=None,
 ):
     """One terrain wall + flood-fill + acceptance check.
+
     Returns (fp, n_px, area_km2, dam_r, dam_c, dam_elev, wall_vec, eff_length) or None.
     """
     if eff_length <= 0:
@@ -666,15 +656,15 @@ def search_terrain_wall_extended_upstream(
     dam_height, spillway_height, capacity_m3, pixel_area, river_dir_px,
     wall_thickness, seed_dist,
     skip_duplicate_nominal=False,
-    max_shift_px=None,
     prepend_angles_deg=None, prepend_bypass_flow_align=False,
     deadline=None,
 ):
     """Try crest lengths at walked upstream positions.
-    Returns (footprint, n_pixels, area_km2, dam_r, dam_c, dam_elev, upstream_m).
+
+    Returns (footprint, n_pixels, area_km2, dam_r, dam_c, dam_elev, upstream_m, wall_vec, eff_length).
     """
     pixel_size = np.sqrt(pixel_area)
-    upstream_offsets = _upstream_sample_distances_m(pixel_size, max_shift_px=max_shift_px)
+    upstream_offsets = _upstream_sample_distances_m(pixel_size)
 
     n_desired = max(1, int(np.ceil(dam_length_base_m / EXTENSION_STEP_M)) + 1)
     if n_desired > EXT_SEARCH_MAX_SAMPLES:

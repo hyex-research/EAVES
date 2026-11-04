@@ -1,37 +1,48 @@
-"""Command-line interface, exposed as ``python -m eaves``.
+"""Command-line interface, exposed as ``eaves`` and ``python -m eaves``.
 
-Drives the full pipeline from a settings JSON: preprocessing (river clip +
-dam snap), the per-dam worker pool, the summary/params/failure CSVs,
-regionalization, and optionally the publication panels. ``--plot-only``
-and ``--panels-only`` re-enter from existing outputs.
+* ``eaves --settings <settings.json>`` -- run the pipeline: preprocessing (river clip + dam snap), the per-dam worker pool, the summary/params/failure CSVs and regionalization
+* ``eaves info <settings.json>``       -- print the resolved configuration and output layout as JSON (read-only)
+* ``eaves mcp``                        -- serve read-only tools over the Model Context Protocol
+
+``--only`` narrows the run to listed dams, ``--panels`` adds the publication
+panels, ``--plot-only`` and ``--panels-only`` re-enter from existing outputs,
+and ``--rebuild-domain`` rebuilds the preprocessing cache. The validation,
+uncertainty, panels and report steps run after the pipeline as
+``python -m eaves.postprocess.<step> --settings <settings.json>``, in the
+order of ``run_all.sh``.
 """
 
 from __future__ import annotations
 
 import argparse
-import os
-import time
+import json
 import multiprocessing as mp
+import os
+import sys
+import time
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 from tqdm import tqdm
 
 import eaves.config as _cfg
+
+from .agent import info as agent_info
+from .agent import mcp_server as agent_mcp
 from .config import configure
+from .pipeline.workers import _init_worker, _worker_indexed
+from .postprocess.external_data import add_sedimentation_columns
+from .postprocess.panels import make_panels
+from .postprocess.regionalization import assign_quality, run_regionalization
+from .postprocess.reliability import add_uncertainty_flags, print_flag_tally
 from .preprocess import ensure_inputs
 from .settings import load_settings
 from .utils import dams_with_fill, round_released_columns
-from .pipeline.workers import _init_worker, _worker_indexed
-from .postprocess.regionalization import assign_quality, run_regionalization
-from .postprocess.reliability import add_uncertainty_flags, print_flag_tally
-from .postprocess.external_data import add_sedimentation_columns
-from .postprocess.panels import make_panels
 
 
 def _load_translit_map():
-    """Build dam_id (lowercase) -> dam_name (Latin) from the dam catalogue CSV."""
+    """Build dam_id (lowercase) -> dam_name (Latin) from the dam catalog CSV."""
     mapping = {}
     if os.path.isfile(_cfg.DAMS_CSV):
         df = pd.read_csv(_cfg.DAMS_CSV)
@@ -43,9 +54,9 @@ def _load_translit_map():
 
 
 def _load_upstream_area_lookup() -> dict:
-    """Build a ``{dam_id: upstream_area_km2}`` map from the sedimentation
-    inputs once, so every worker can attach the column to its failure
-    record without re-reading the CSV.
+    """Build a ``{dam_id: upstream_area_km2}`` map from the catchment table
+    (``sedimentation_yield.csv``) once, so every worker can attach the
+    column to its failure record without re-reading the CSV.
     """
     sed_dir = getattr(_cfg, "SEDIMENTATION_DIR", None)
     if not sed_dir:
@@ -144,13 +155,12 @@ def _run_plots_and_regionalization(summary_df):
 
 _SOURCE_SUFFIX = {
     "srtm_derived": "srtm",
-    "regr_derived": "regr",
     "regi_multi":   "regi",
 }
 
 
 def _rename_flood_plots_by_source():
-    """Rename ``{dam_id}_flood.png`` -> ``{dam_id}_{srtm|regr|regi}.png``
+    """Rename ``{dam_id}_flood.png`` -> ``{dam_id}_{srtm|regi}.png``
     based on the ``source`` column of ``eaves_params.csv``.
     """
     params_path = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
@@ -166,32 +176,31 @@ def _rename_flood_plots_by_source():
         dst = os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_{suffix}.png")
         if os.path.isfile(src):
             os.replace(src, dst)
+            # Removes the plot of the dam under any other source suffix
+            for other in set(_SOURCE_SUFFIX.values()) - {suffix}:
+                stale = os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_{other}.png")
+                if os.path.isfile(stale):
+                    os.remove(stale)
 
 
-def main():
-    t0 = time.time()
-
-    try:
-        mp.set_start_method("fork", force=True)
-    except RuntimeError:
-        pass
-
+def build_parser() -> argparse.ArgumentParser:
+    """Build the parser of the pipeline flags and the read-only commands, exposed for testing."""
     parser = argparse.ArgumentParser(
-        description="E\u2013A\u2013V curves and flood maps from SRTM (parallel over dams).",
+        description="Elevation-area-volume curves and flood maps from SRTM, in parallel over dams.",
     )
     parser.add_argument(
         "--only",
         nargs="+",
         metavar="DAM_ID",
-        help="Process only these dam_id values (e.g. --only id_20017 id_120000). "
-        "Comma-separated also works: --only \"id_20017,id_120000\". "
+        help="Process only these dam_id values (e.g. --only id_020017 id_120000). "
+        "Comma-separated also works: --only \"id_020017,id_120000\". "
         "Merges into eaves_summary.csv / failed_dams.csv instead of replacing the full set.",
     )
     parser.add_argument(
         "--plot-only",
         action="store_true",
-        help="Skip EAV curve calculation, load existing results from CSV and "
-        "regenerate all analysis plots and regionalization only.",
+        help="Skip the per-dam computation, reload the existing tables, rerun the "
+        "regionalization and rename the check maps by source.",
     )
     parser.add_argument(
         "--rerun",
@@ -211,7 +220,7 @@ def main():
     parser.add_argument(
         "--rebuild-domain",
         action="store_true",
-        help="Force re-run of the preprocessing step (MERIT clip + segment split + dam snap).",
+        help="Force re-run of the preprocessing step (MERIT-Basins clip + reach subdivision + dam snap).",
     )
     parser.add_argument(
         "--settings",
@@ -222,9 +231,9 @@ def main():
     parser.add_argument(
         "--panels",
         action="store_true",
-        help="After the run completes, render the EAVES Data Descriptor "
-        "panel figures (1-3) into <OUTPUT_DIR>/2_results_plots. Compatible "
-        "with --plot-only.",
+        help="After the run completes, render the main panels p1 to p6 and the "
+        "supplementary panels s1 to s5 into <OUTPUT_DIR>/2_results_plots. "
+        "Compatible with --plot-only.",
     )
     parser.add_argument(
         "--panels-only",
@@ -233,7 +242,66 @@ def main():
         "figures from the existing EAVES outputs. Implies a settings file "
         "(or prior --output-dir) so the CSV paths are known.",
     )
-    args = parser.parse_args()
+
+    sub = parser.add_subparsers(
+        dest="command",
+        metavar="COMMAND",
+        help="Read-only command, info or mcp. Without one the pipeline runs with the flags above.",
+    )
+    p_info = sub.add_parser(
+        "info",
+        help="Print the resolved configuration and output layout of a settings file as JSON.",
+        description="Load and validate a settings file, then print as JSON the settings file, "
+        "the resolved settings, the layout of the output tree and the defaults of eaves.config "
+        "for the keys the file leaves out. Read-only, runs nothing.",
+    )
+    p_info.add_argument("settings", help="Path to the settings JSON file.")
+    sub.add_parser(
+        "mcp",
+        help="Serve read-only EAVES tools over the Model Context Protocol (stdio).",
+        description="Start the read-only MCP server over stdio, so LLM agent clients can query "
+        "configurations, runs and results as tools (agents_brief, pipeline_steps, "
+        "resolved_config, run_status, run_outputs, domain_characterization, dam_results). "
+        "Runs nothing, execution stays with the CLI. Requires the optional 'mcp' package "
+        "(pip install -e \".[mcp]\").",
+    )
+    return parser
+
+
+def cmd_info(args: argparse.Namespace) -> int:
+    """Print the resolved configuration and output layout of a settings file as JSON, and return 1 when the file is missing or invalid."""
+    settings_path = os.path.abspath(args.settings)
+    if not os.path.isfile(settings_path):
+        print(f"Error: settings file not found: {settings_path}", file=sys.stderr)
+        return 1
+    try:
+        payload = agent_info.resolved_config(settings_path)
+    except (json.JSONDecodeError, ValueError) as exc:
+        print(f"Error: invalid settings in {settings_path}: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(payload, indent=2, default=str))
+    return 0
+
+
+def cmd_mcp() -> int:
+    """Serve the read-only MCP tool set over stdio."""
+    return agent_mcp.main()
+
+
+def main(argv: list[str] | None = None):
+    """Run the pipeline from the command line, or a read-only command and return its exit code."""
+    args = build_parser().parse_args(argv)
+    if args.command == "info":
+        return cmd_info(args)
+    if args.command == "mcp":
+        return cmd_mcp()
+
+    t0 = time.time()
+
+    try:
+        mp.set_start_method("fork", force=True)
+    except RuntimeError:
+        pass
 
     if args.settings:
         load_settings(args.settings)
@@ -266,7 +334,7 @@ def main():
     os.makedirs(_cfg.FLOOD_DIR, exist_ok=True)
     # PLOT_DIR is created lazily by the panels step and is absent without --panels
 
-    # ---- --panels-only: renders panels from existing outputs and exits ----
+    # ---- Panels-only run: renders panels from existing outputs and exits ----
     if args.panels_only:
         print("--panels-only: rendering panel figures from existing outputs.")
         make_panels()
@@ -280,8 +348,10 @@ def main():
 
     rivers_path, dams_path = ensure_inputs(rebuild=args.rebuild_domain)
     gdf_dams = gpd.read_file(dams_path)
+    if "closest_segment_id" not in gdf_dams.columns:
+        raise SystemExit("The cached dam snap lacks the nearest reach part. Run again with --rebuild-domain.")
 
-    # ---- --plot-only: reloads existing CSVs, skips to plots/regionalization ----
+    # ---- Plot-only run: reloads the existing tables and reruns the regionalization ----
     summary_path = os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")
     fail_path = os.path.join(_cfg.CSV_DIR, "failed_dams.csv")
 
@@ -381,7 +451,7 @@ def main():
     n_workers = max(1, mp.cpu_count())
     print(f"Processing {n_dams} dams using {n_workers} workers...")
 
-    # The largest reservoirs take the longest, so they start first and the pool does not wait on them at the end
+    # Orders the dams by storage capacity, largest first
     indexed_tasks = sorted(
         enumerate(dam_data_list),
         key=lambda task: np.nan_to_num(pd.to_numeric(task[1].get("storage_capacity_m3"), errors="coerce")),
@@ -409,8 +479,9 @@ def main():
             failures.append(failure)
             if dam_id:
                 eav_path = os.path.join(_cfg.EAV_DIR, f"{dam_id}_eav.csv")
-                flood_path = os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_flood.png")
-                for p in (eav_path, flood_path):
+                # The raw plot of this run and any plot of an earlier run under a source suffix
+                plot_paths = [os.path.join(_cfg.FLOOD_DIR, f"{dam_id}_{sfx}.png") for sfx in ("flood", *_SOURCE_SUFFIX.values())]
+                for p in (eav_path, *plot_paths):
                     try:
                         os.remove(p)
                     except FileNotFoundError:
@@ -466,7 +537,7 @@ def main():
         )
         summary_df["quality"] = summary_df.apply(assign_quality, axis=1)
         add_uncertainty_flags(summary_df)
-    # A dam without a flood fill gains a row of its own, so the summary holds every dam of eaves_params.csv
+    # A dam without a flood fill gains a row of its own, and the summary holds every dam of eaves_params.csv
     summary_df = _append_dams_without_fill(summary_df, failures)
     if len(summary_df) > 0:
         summary_df = add_sedimentation_columns(summary_df, getattr(_cfg, "SEDIMENTATION_DIR", None))
@@ -495,7 +566,7 @@ def main():
             print(f"  Capacity-capped: {n_capped} dams")
         print_flag_tally(summary_df)
 
-    # Records a fit_failed row for every NaN fit and attaches the summary features, which keeps the row self-contained
+    # Records a fit_failed row for every NaN fit, with the summary features attached
     _FEATURE_KEYS = (
         "capacity_mcm", "dam_height_m", "spillway_height_m", "dam_length_m",
         "valley_width_m", "valley_ratio", "channel_slope",

@@ -2,9 +2,10 @@
 
 Clips the DEM around the dam, runs the staged wall placement, floods the
 basin to the spillway elevation, integrates the hypsometry into (z, A, V)
-bins with the volume capped at catalogue capacity, and fits the power law
-V = c*A^b with a quality grade. Pre-2000 and unknown-year dams get a
-flat-water check and, where it triggers, a partial curve.
+levels with the last level at the spillway or where the volume reaches the
+catalog capacity, and fits the power law V = c*A^b. Pre-2000 and
+unknown-year dams get a flat-water check and, where it triggers, a partial
+curve.
 """
 
 from __future__ import annotations
@@ -13,49 +14,45 @@ import time
 
 import numpy as np
 import pandas as pd
+from pyproj import Transformer
 from rasterio.transform import rowcol
 from scipy.integrate import cumulative_trapezoid
+from scipy.ndimage import distance_transform_edt
 
 from ..config import (
+    _PLACEMENT_BUDGET_S,
     BIN_Z,
+    LEVEL_MERGE_M,
+    UPSTREAM_MAX_SHIFT_PX,
     VOID_THRESHOLD,
     WALL_THICKNESS,
-    UPSTREAM_MAX_SHIFT_PX,
-    _PLACEMENT_BUDGET_S,
 )
 from ..utils import (
-    _get_placement_override,
-    _ov_float,
-    _ov_bool,
-    _ov_int,
-    _ov_preferred_crest_angles_deg,
-    utm_epsg_from_lon,
     buffer_deg_for_dam,
     fit_power_law,
-    interpolate_nans,
-    _approx_cone_volume_m3,
-)
-from .terrain import (
-    clip_and_reproject_dem,
-    get_river_direction_from_segment,
-    _flood_river_overlay_from_segment,
-    get_downstream_direction_from_dem,
+    utm_epsg_from_lon,
 )
 from .placement import (
-    _snap_cross_channel_barrier_px,
+    _approx_cone_volume_m3,
+    _pool_downstream_skewed,
     _snap_dam_elev,
     _try_terrain_placement_once,
-    search_terrain_wall_extended_upstream,
-    fallback_multidirection_fill,
-    _pool_downstream_skewed,
     detect_flat_water,
+    fallback_multidirection_fill,
+    search_terrain_wall_extended_upstream,
+)
+from .terrain import (
+    _flood_river_overlay_from_segment,
+    clip_and_reproject_dem,
+    get_downstream_direction_from_dem,
+    get_river_direction_from_segment,
 )
 
 
 def _parse_construction_year(cy_raw):
-    """Parse a catalogue construction year, or ``None`` if missing/non-numeric.
+    """Parse a catalog construction year, or ``None`` if missing/non-numeric.
 
-    A genuinely unknown year is left as ``None`` rather than fabricated. The
+    An unknown year is left as ``None``. The
     flat-water check in :func:`process_dam` runs for unknown-year dams so the
     SRTM surface itself decides whether the reservoir was already impounded
     (partial curve) or captured as a bare valley (full curve).
@@ -66,12 +63,33 @@ def _parse_construction_year(cy_raw):
         return None
 
 
+def interpolate_nans(data):
+    mask = np.isnan(data)
+    if not mask.any():
+        return data
+    _, idx = distance_transform_edt(mask, return_indices=True)
+    out = data.copy()
+    out[mask] = data[tuple(idx[:, mask])]
+    return out
+
+
+class DamRow:
+    """Lightweight stand-in for a GeoDataFrame row, the dam dict and its geometry in the form :func:`process_dam` reads."""
+
+    def __init__(self, data, geom):
+        self._data = data
+        self.geometry = geom
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def get(self, key, default=None):
+        return self._data.get(key, default)
+
+
 def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 override_lat=None, override_lon=None):
-    from pyproj import Transformer
-
     dam_id = dam_row_data["dam_id"]
-    ov = _get_placement_override(dam_id)
     if override_lat is not None and override_lon is not None:
         dam_lat, dam_lon = override_lat, override_lon
     else:
@@ -86,15 +104,6 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     if spillway_height <= 0:
         spillway_height = dam_height * 0.75
     capacity_m3 = float(dam_row_data["storage_capacity_m3"])
-    if (
-        spillway_height <= 1.25
-        and dam_height >= 3.0
-        and capacity_m3 >= 5e6
-    ):
-        spillway_height = float(np.clip(dam_height * 0.78, dam_height * 0.55, dam_height - 0.5))
-    sh_ov = _ov_float(ov, "spillway_height_m")
-    if sh_ov is not None and sh_ov > 0:
-        spillway_height = sh_ov
     construction_year = _parse_construction_year(
         dam_row_data.get("construction_year"))
 
@@ -118,38 +127,6 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     if not np.isfinite(dam_elev):
         raise ValueError("Dam location has NaN elevation and no nearby valid pixels")
 
-    if _ov_bool(ov, "snap_cross_channel_ridge"):
-        ps_bar = float(np.sqrt(pixel_area))
-        hw_m = _ov_float(ov, "snap_barrier_half_width_m", 120.0)
-        if hw_m is None or hw_m < 5.0:
-            hw_m = 120.0
-        st_m = _ov_float(ov, "snap_barrier_step_m", 15.0)
-        if st_m is None or st_m < 5.0:
-            st_m = 15.0
-        br, bc = _snap_cross_channel_barrier_px(
-            dem_utm, dam_r, dam_c, ps_bar,
-            half_width_m=float(hw_m), step_m=float(st_m),
-        )
-        if (br, bc) != (int(dam_r), int(dam_c)):
-            dam_r, dam_c = br, bc
-            dam_r, dam_c, dam_elev = _snap_dam_elev(dem_utm, dam_r, dam_c)
-            if not np.isfinite(dam_elev):
-                raise ValueError(
-                    "Dam location after snap_cross_channel_ridge has NaN elevation"
-                )
-
-    ar_off = _ov_int(ov, "anchor_row_offset_px", 0) or 0
-    ac_off = _ov_int(ov, "anchor_col_offset_px", 0) or 0
-    if ar_off != 0 or ac_off != 0:
-        h0, w0 = dem_utm.shape
-        dam_r = int(np.clip(dam_r + ar_off, 0, h0 - 1))
-        dam_c = int(np.clip(dam_c + ac_off, 0, w0 - 1))
-        dam_r, dam_c, dam_elev = _snap_dam_elev(dem_utm, dam_r, dam_c)
-        if not np.isfinite(dam_elev):
-            raise ValueError(
-                "Dam location after anchor_row/col offset has NaN elevation"
-            )
-
     dam_r0, dam_c0 = dam_r, dam_c
 
     capacity_mcm = capacity_m3 / 1e6
@@ -168,7 +145,8 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     seed_dist = wall_thickness + 4
 
     river_dir_px = None
-    seg_id = dam_row_data.get("snapped_segment_id")
+    # The river direction is read on the reach part nearest the dam, recorded by the preprocessing with the snap
+    seg_id = dam_row_data.get("closest_segment_id")
     if gdf_rivers is not None and seg_id is not None and str(seg_id) != "nan":
         dir_geo = get_river_direction_from_segment(
             gdf_rivers, str(seg_id), dam_lon, dam_lat
@@ -187,25 +165,14 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
             if norm_px > 1e-6:
                 river_dir_px = np.array([dr_px, dc_px]) / norm_px
 
-    z_spillway = dam_elev + spillway_height
-    z_wall = dam_elev + dam_height
-
-    pre_angles = _ov_preferred_crest_angles_deg(ov)
-    pre_bypass = _ov_bool(ov, "relax_preferred_crest_align")
-    crest_kw = {}
-    if pre_angles:
-        crest_kw["prepend_angles_deg"] = pre_angles
-        crest_kw["prepend_bypass_flow_align"] = pre_bypass
-
     _deadline = time.time() + _PLACEMENT_BUDGET_S
 
-    # ---- Stage 1: fast path ----
+    # ---- Stage 1: direct placement ----
     nominal = _try_terrain_placement_once(
         dem_utm, dam_r0, dam_c0, dam_elev,
         dam_length_m, dam_height, spillway_height, capacity_m3, pixel_area,
         river_dir_px, wall_thickness, seed_dist,
         deadline=_deadline,
-        **crest_kw,
     )
     if nominal is not None:
         footprint, n_pixels, footprint_area_km2, dam_r, dam_c, dam_elev_out, wall_vec, eff_length_m = nominal
@@ -219,7 +186,6 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
             wall_thickness, seed_dist,
             skip_duplicate_nominal=True,
             deadline=_deadline,
-            **crest_kw,
         )
         (footprint, n_pixels, footprint_area_km2, dam_r, dam_c,
          dam_elev_out, placement_upstream_shift_m, wall_vec, eff_length_m) = out
@@ -249,14 +215,13 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                 wall_thickness, seed_dist,
                 skip_duplicate_nominal=True,
                 deadline=_deadline,
-                **crest_kw,
             )
             fp2, n2, a2, dr2, dc2, de2, up_m2, wv2, el2 = out2
             if fp2 is not None:
                 ds2 = get_downstream_direction_from_dem(dem_utm, dr2, dc2)
                 bad2 = _pool_downstream_skewed(fp2, dr2, dc2, ds2)
                 approx_v2 = _approx_cone_volume_m3(n2, pixel_area, spillway_height)
-                # Applies the stage-3 acceptance ratios, hand-tuned as a set on the KSA catalogue
+                # Applies the stage-3 acceptance ratios
                 take = False
                 if geom_bad and (not bad2) and approx_v2 >= approx_v0 * 0.82:
                     take = True
@@ -311,7 +276,6 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
                             dam_length_m, dam_height, spillway_height, capacity_m3,
                             pixel_area, river_dir_px, wall_thickness, seed_dist,
                             deadline=_deadline,
-                            **crest_kw,
                         )
                         if _res is not None:
                             _rfp, _rn_px, _ra, _rdr, _rdc, _rde, _rwv, _rel = _res
@@ -416,29 +380,54 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     if z_max <= z_min:
         raise ValueError(f"z_max ({z_max:.1f}) <= z_min ({z_min:.1f})")
 
-    # Snaps z_min to the bin grid. The shift of at most 0.25 m is well below the SRTM sigma of about 3.6 m
+    # Snaps z_min to the level grid, a shift of at most 0.25 m
     z_min = round(float(z_min) * 2.0) / 2.0
-    elev_bins = np.arange(z_min, z_max + BIN_Z, BIN_Z)
-    area_m2 = np.array([
-        np.nansum(dem_fp <= z) * pixel_area for z in elev_bins
-    ])
+    # Levels BIN_Z apart from the floor, and the spillway elevation itself as the last level. A regular level within LEVEL_MERGE_M of the spillway gives way to it, and no two rows of the released table share an elevation
+    elev_bins = np.arange(z_min, z_max, BIN_Z)
+    if elev_bins.size > 1 and z_max - elev_bins[-1] < LEVEL_MERGE_M:
+        elev_bins[-1] = z_max
+    else:
+        elev_bins = np.append(elev_bins, z_max)
+
+    def _area_at(z):
+        return float(np.nansum(dem_fp <= z)) * pixel_area
+
+    area_m2 = np.array([_area_at(z) for z in elev_bins])
     vol_m3 = cumulative_trapezoid(area_m2, elev_bins, initial=0)
 
-    CAP_FACTOR = 1.0
-    vol_cap = CAP_FACTOR * capacity_m3
+    vol_cap = capacity_m3
     capped = False
-    if len(vol_m3) > 0 and vol_m3[-1] > vol_cap:
-        cap_idx = np.searchsorted(vol_m3, vol_cap)
-        if cap_idx < len(vol_m3) - 1:
-            cap_idx = min(cap_idx + 1, len(vol_m3))
-            elev_bins = elev_bins[:cap_idx]
-            area_m2 = area_m2[:cap_idx]
-            vol_m3 = vol_m3[:cap_idx]
-            z_max = float(elev_bins[-1])
-            footprint_area_km2 = float(area_m2[-1]) / 1e6
-            footprint = footprint & (dem_filled <= z_max)
-            n_pixels = int(footprint.sum())
-            capped = True
+    if vol_m3[-1] > vol_cap:
+        # The volume reaches the catalog capacity below the spillway. The last level moves to the elevation where the trapezoid volume equals the capacity. Inside the step that crosses it the area runs linearly between the two bounding levels, as the trapezoid rule assumes. The volume is then continuous in the level and the solution exact
+        k = int(np.searchsorted(vol_m3, vol_cap))
+        z0, a0, v0 = float(elev_bins[k - 1]), float(area_m2[k - 1]), float(vol_m3[k - 1])
+        z1, a1 = float(elev_bins[k]), float(area_m2[k])
+
+        def _area_between(z):
+            return a0 + (a1 - a0) * (z - z0) / (z1 - z0)
+
+        def _vol_at(z):
+            return v0 + 0.5 * (a0 + _area_between(z)) * (z - z0)
+
+        z_lo, z_hi = z0, z1
+        for _ in range(60):
+            z_mid = 0.5 * (z_lo + z_hi)
+            if _vol_at(z_mid) < vol_cap:
+                z_lo = z_mid
+            else:
+                z_hi = z_mid
+        z_cap = z_hi
+        a_cap = _area_between(z_cap)
+        # A capped level within LEVEL_MERGE_M of the level below it replaces that level
+        keep = k if z_cap - z0 >= LEVEL_MERGE_M else max(k - 1, 1)
+        elev_bins = np.append(elev_bins[:keep], z_cap)
+        area_m2 = np.append(area_m2[:keep], a_cap)
+        vol_m3 = np.append(vol_m3[:keep], vol_cap)
+        z_max = z_cap
+        footprint_area_km2 = a_cap / 1e6
+        footprint = footprint & (dem_filled <= z_max)
+        n_pixels = int(footprint.sum())
+        capped = True
 
     year_unknown = construction_year is None
     is_pre2000 = (not year_unknown) and construction_year < 2000
@@ -467,7 +456,6 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         gdf_rivers,
         dam_row_data.get("snapped_segment_id"),
         dem_tf,
-        dem_utm.shape,
         target_epsg,
     )
 

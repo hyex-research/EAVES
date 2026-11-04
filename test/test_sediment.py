@@ -37,7 +37,7 @@ def _synthetic_summary(tmp_path, capacity_mcm=10.0, yield_t_ha_yr=5.0,
 class TestDeliveredYieldBudget:
 
     def test_no_sdr_applied_by_default(self, tmp_path):
-        # The yield input is delivered yield (Boyce SDR applied at source, Dash et al. 2025 Eq. 3), so the default budget does not discount delivery a second time
+        # The yield input is delivered yield (the delivery ratio is applied at the source, Dash et al. 2025 Eq. 3, https://doi.org/10.1016/j.jenvman.2025.127199), and the default budget does not discount delivery a second time
         df, path = _synthetic_summary(tmp_path)
         augment_summary_with_sediment_risk(
             df, path, ref_year=2020, sediment_sdr=None,
@@ -68,7 +68,7 @@ class TestDeliveredYieldBudget:
         assert out["sediment_risk"].iloc[0] == "fully_silted"
 
     def test_rerun_keeps_the_other_columns_as_written(self, tmp_path):
-        # An integer year beside a blank one reads back as a float, so a rewrite through pandas would turn 2000 into 2000.0
+        # An integer year beside a blank one reads back as a float, and the rewrite keeps 2000 as written
         path = tmp_path / "eaves_summary.csv"
         path.write_text(
             "dam_id,sed_yield_t_ha_yr,upstream_area_km2,capacity_mcm,construction_year\n"

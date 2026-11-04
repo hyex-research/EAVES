@@ -1,41 +1,36 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "eaves"
 dynamic = ["version"]
-description = "Elevation–Area–Volume estimation for ungaged arid-basin reservoirs from pre-impoundment SRTM topography"
+description = "EAVES: Elevation-Area-Volume Estimation from SRTM"
 readme = "README.md"
-requires-python = ">=3.13"
-license = { text = "Apache-2.0" }
+requires-python = ">=3.14"
+license = "Apache-2.0 AND CC-BY-4.0"
+license-files = ["LICENSE", "LICENSE-DATA"]
 authors = [
     { name = "Nikola Ivanović", email = "nikola.ivanovic@kaust.edu.sa" },
 ]
-keywords = [
-    "hydrology",
-    "reservoir",
-    "bathymetry",
-    "SRTM",
-    "elevation-area-volume",
-    "remote sensing",
-]
-dependencies = [
-    "numpy",
-    "scipy",
-    "pandas",
-    "geopandas",
-    "shapely",
-    "pyproj",
-    "rasterio",
-    "matplotlib",
-    "scikit-learn",
-    "tqdm",
+keywords = ["hydrology", "reservoir", "bathymetry", "SRTM", "elevation-area-volume", "remote sensing", "mcp", "agent-ready"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Hydrology",
+    "Topic :: Scientific/Engineering :: GIS",
 ]
 
+# Runtime dependencies come from environment.yml, and `pip install -e . --no-deps` installs only the `eaves` package and its console script on top of that environment
+dependencies = []
+
 [project.optional-dependencies]
-test = ["pytest"]
-figures = ["forge3d>=1.23.1"]
+test = ["pytest>=7"]
+dev  = ["pytest>=7", "ruff>=0.12"]
+mcp  = ["mcp>=1.3"]
 
 [project.scripts]
 eaves = "eaves.cli:main"
@@ -44,8 +39,71 @@ eaves = "eaves.cli:main"
 Homepage = "https://github.com/hyex-research/EAVES"
 Issues   = "https://github.com/hyex-research/EAVES/issues"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
+where = ["."]
 include = ["eaves*"]
+exclude = [
+    "test*",
+    "region*",
+]
 
 [tool.setuptools.dynamic]
 version = { attr = "eaves.__version__" }
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+addopts = [
+    "-ra",                # short summary of every outcome other than a pass
+    "--strict-markers",   # an unregistered marker fails the run
+    "--strict-config",    # an unknown configuration key fails the run
+]
+
+markers = [
+    'slow: regression test that reruns the 15-dam fixture, deselect with -m "not slow"',
+]
+
+# ---- Ruff linter and formatter ----
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+extend-exclude = [
+    "region/*/output",
+    "test/fixture/output",
+    "eaves.egg-info",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+# Rule set of pycodestyle (E, W), Pyflakes (F), isort (I), pyupgrade (UP) and bugbear (B)
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = [
+    "E501",   # line too long, left to the formatter
+    "E741",   # ambiguous variable name such as `l`, common in numerical code
+    "B008",   # function call in an argument default
+]
+
+[tool.ruff.lint.per-file-ignores]
+# These modules pair sequences of equal length in zip() without `strict=` (B905). Preprocessing fills parallel lists as `a; b` one-liners (E702)
+"eaves/cli.py" = ["B905"]
+"eaves/preprocess.py" = ["B905", "E702"]
+"eaves/postprocess/regionalization.py" = ["B905"]
+"eaves/postprocess/report.py" = ["B905"]
+"eaves/postprocess/panels/p1.py" = ["B905"]
+"eaves/postprocess/panels/p2.py" = ["B905"]
+"eaves/postprocess/panels/p4.py" = ["B905"]
+"eaves/postprocess/panels/s1.py" = ["B905"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+indent-style = "space"
+line-ending = "lf"

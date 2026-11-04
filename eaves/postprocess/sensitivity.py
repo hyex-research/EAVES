@@ -1,18 +1,23 @@
 """Placement/acceptance constant sensitivity sweep (an *opt-in* validation step).
 
 This module quantifies how robust the released EAVES parameters are to the
-exact values of five placement/acceptance constants, the three most influential
-hand-tuned ones and the two calibrated constants of the drainage rule. Each
+exact values of five placement and acceptance constants (the two
+placement-scoring constants, the internal void-fraction threshold of the
+flood-fill acceptance and the two constants of the drainage rule). Each
 constant is perturbed one at a time by a small set of fractional offsets
 (``+/-20%`` and ``+/-30%`` by default), the *real* EAVES flood-fill is re-run
 over a trusted-dam sample at each setting, and the routine reports how the
 trusted-set size, the A-F grade distribution and the median trusted-set
-power-law exponent ``b`` move. The goal is to demonstrate that the released
-catalogue is insensitive to the precise value of these constants.
+power-law exponent ``b`` move, which measures how sensitive the released
+parameters are to the precise values of these constants. The sweep holds the
+remaining constants, structural gates of the placement and acceptance checks,
+fixed.
 
 Constants swept (``eaves.config`` provenance)
 ---------------------------------------------
-* ``ALIGN_WEIGHT``              (= 2.35) wall-to-crest alignment weight (``placement``).
+* ``ALIGN_WEIGHT``              (= 2.35) alignment weight relative to the valley-gap
+  term, scoring the crest against the river and SRTM downslope directions
+  (``placement``).
 * ``MAX_CREST_FLOW_DOT``        (= 0.74) max ``|dot(wall, flow)|`` to accept a crest.
 * ``VOID_THRESHOLD``            (= 0.05) max NaN-void fraction accepted in a fill (``curves``).
 * ``DRAIN_WALL_TOLERANCE_M``    (= 1000) distance past the half wall (m) within
@@ -43,18 +48,18 @@ import time
 
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 from shapely.geometry import Point
 
 import eaves.config as _cfg
-from ..pipeline import terrain as _terrain
-from ..pipeline import placement as _placement
+
 from ..pipeline import curves as _curves
 from ..pipeline import drainage as _drainage
-from ..pipeline.curves import process_dam
-from ..pipeline.workers import DamRow
+from ..pipeline import placement as _placement
+from ..pipeline import terrain as _terrain
+from ..pipeline.curves import DamRow, process_dam
 from ..utils import buffer_deg_for_dam, dams_with_fill, round_released_columns
 from .regionalization import assign_quality
+from .reliability import trusted_mask
 
 
 # Maps each swept constant to (module, attribute, baseline), read live from eaves.config
@@ -66,17 +71,6 @@ def _constants() -> dict:
         "DRAIN_WALL_TOLERANCE_M":    (_drainage,  "DRAIN_WALL_TOLERANCE_M",    float(_cfg.DRAIN_WALL_TOLERANCE_M)),
         "DRAIN_MAX_OUTLET_POSITION": (_drainage,  "DRAIN_MAX_OUTLET_POSITION", float(_cfg.DRAIN_MAX_OUTLET_POSITION)),
     }
-
-
-def _trusted_mask(df: pd.DataFrame) -> pd.Series:
-    """Production trusted-set mask (regionalization.run_regionalization step A)."""
-    return (
-        df["quality"].isin(["A", "B"])
-        & (df["r_squared"] >= 0.98)
-        & df["vol_ratio"].between(0.3, 5.0)
-        & (df["n_pixels"] >= 50)
-        & df["b"].notna()
-    )
 
 
 def _run_one(dam_dict, gdf_rivers):
@@ -115,7 +109,6 @@ def _run_one(dam_dict, gdf_rivers):
                 "r_squared": float(r["r_squared"]),
                 "n_pixels": int(r["n_pixels"]),
                 "spillway_height_m": sp,
-                "srtm_max_vol_mcm": max_vol_mcm,
                 "vol_ratio": (max_vol_mcm / cap_mcm) if cap_mcm > 0 else np.nan,
                 "z_range_ratio": (z_range / sp) if sp > 0 else np.nan,
             }
@@ -150,7 +143,7 @@ def _grade_and_tag(rows):
     if len(df) == 0:
         return 0, np.nan, {}, 0
     df["quality"] = df.apply(assign_quality, axis=1)
-    trusted = df[_trusted_mask(df)]
+    trusted = df[trusted_mask(df)]
     grade_counts = df["quality"].value_counts().to_dict()
     median_b = float(trusted["b"].median()) if len(trusted) else np.nan
     return int(len(trusted)), median_b, grade_counts, int(len(df))
@@ -170,7 +163,7 @@ def _select_sample(summary_csv: str, n_dams: int, seed: int):
     gate exactly and computes no parameter.
     """
     s = dams_with_fill(pd.read_csv(summary_csv))
-    trusted = s[_trusted_mask(s)].copy()
+    trusted = s[trusted_mask(s)].copy()
     trusted = trusted[trusted["capacity_mcm"] > 0].reset_index(drop=True)
     logcap = np.log10(trusted["capacity_mcm"].values)
     n = min(n_dams, len(trusted))
@@ -189,7 +182,6 @@ def _select_sample(summary_csv: str, n_dams: int, seed: int):
 
 def sensitivity_sweep(
     summary_csv: str,
-    domain_dir: str,
     out_dir: str,
     *,
     dam_data_list,
@@ -203,7 +195,6 @@ def sensitivity_sweep(
     Parameters
     ----------
     summary_csv : path to ``eaves_summary.csv`` (sample selection + baselines).
-    domain_dir : unused directly here, accepted for a uniform validation API.
     out_dir : directory to write ``sensitivity_sweep.csv`` into.
     dam_data_list : worker dam dicts (from ``cli._build_dam_data_list``).
     gdf_rivers : split river network GeoDataFrame (or ``None``).

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import argparse
 
-from ..panels import make_panels
 from ...settings import load_settings
+from ..panels import make_panels
 
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="Render EAVES Data Descriptor panel figures (1-5).",
+        description="Render the EAVES publication panel figures (p1-p6, s1-s5).",
     )
     parser.add_argument(
         "--settings",
@@ -28,8 +28,8 @@ def main(argv: list[str] | None = None) -> None:
         "--figures",
         nargs="+",
         type=str,
-        choices=["1", "2", "3", "4", "5", "s1", "s2", "s3", "s4", "s5"],
-        default=["1", "2", "3", "4", "5", "s1", "s2", "s3", "s4", "s5"],
+        choices=["1", "2", "3", "4", "5", "6", "s1", "s2", "s3", "s4", "s5"],
+        default=["1", "2", "3", "4", "5", "6", "s1", "s2", "s3", "s4", "s5"],
         metavar="ID",
         help="Subset of panel IDs to render (default: all, including the "
              "supplementary s1-s5 figures).",

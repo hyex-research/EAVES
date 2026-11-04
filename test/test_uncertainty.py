@@ -1,7 +1,7 @@
 """Unit tests for :mod:`eaves.postprocess.uncertainty`.
 
 Covers the b_sigma estimator, the anchor back-solve, and the V band algebra
-that backs the S3 supplementary panel. All synthetic, no disk I/O.
+that backs the S2 supplementary panel. All synthetic, no disk I/O.
 """
 
 from __future__ import annotations
@@ -74,7 +74,7 @@ class TestVSigmaLog10:
         assert _v_sigma_log10(0.26, 1.0) == pytest.approx(0.0)
 
     def test_equals_b_sigma_at_tenth_pool(self):
-        # |log10(0.1)| = 1, so sigma == b_sigma at a tenth of full-pool area
+        # sigma equals b_sigma at a tenth of full-pool area, where |log10(0.1)| = 1
         assert _v_sigma_log10(0.26, 0.10) == pytest.approx(0.26)
 
     def test_widens_as_area_drops(self):

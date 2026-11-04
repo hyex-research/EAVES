@@ -4,35 +4,35 @@ One dam per call: load and reproject the SRTM tiles, extract topographic
 features, run :func:`eaves.pipeline.curves.process_dam` (with a
 snapped-coordinate fallback), write the per-dam EAV table and QC flood
 map, and return a summary dict or a self-contained failure record.
-Top-level functions so the spawn-context Pool can pickle them.
+Top-level functions, picklable by the worker pool.
 """
 
 from __future__ import annotations
 
 import os
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
+from pyproj import Transformer
 from rasterio.transform import rowcol
+from shapely.geometry import Point
 
 import eaves.config as _cfg
-from ..utils import (
-    _get_placement_override,
-    _ov_bool,
-    utm_epsg_from_lon,
-    buffer_deg_for_dam,
-    _classify_failure,
-    round_released_columns,
-)
-from .terrain import (
-    load_srtm_tiles,
-    clip_and_reproject_dem,
-    _extract_topo_features,
-)
-from .placement import _snap_dam_elev
-from .curves import process_dam
+
 from ..postprocess.plots import save_flood_map
+from ..utils import (
+    buffer_deg_for_dam,
+    round_released_columns,
+    utm_epsg_from_lon,
+)
+from .curves import DamRow, process_dam
+from .placement import _snap_dam_elev
+from .terrain import (
+    _extract_topo_features,
+    clip_and_reproject_dem,
+    load_srtm_tiles,
+)
 
 # River table of this worker, built once when the worker starts
 _worker_rivers = {"gdf": None}
@@ -45,21 +45,10 @@ def _init_worker(gdf_rivers_data):
     )
 
 
-class DamRow:
-    """Lightweight stand-in for a GeoDataFrame row passed via multiprocessing."""
-    def __init__(self, data, geom):
-        self._data = data
-        self.geometry = geom
-    def __getitem__(self, key):
-        return self._data[key]
-    def get(self, key, default=None):
-        return self._data.get(key, default)
+def _catalog_features(dam_data):
+    """Catalog features attached to every failure record.
 
-
-def _catalogue_features(dam_data):
-    """Catalogue-available features attached to every failure record.
-
-    Returns the catalogue/external columns that can be populated without
+    Returns the catalog and external columns that can be populated without
     running placement (capacity, dam height, spillway height, upstream catchment
     area). Non-numeric or missing values come through as NaN.
     """
@@ -88,26 +77,32 @@ def _catalogue_features(dam_data):
     }
 
 
+def _classify_failure(reason):
+    if "bad_fill_auto" in reason:
+        return "bad_fill_auto"
+    if "srtm_voids" in reason:
+        return "srtm_voids"
+    if "placement_failed" in reason:
+        return "placement_failed"
+    if "leak" in reason.lower():
+        return "flood_fill_leak"
+    if "seed" in reason.lower() or "fill" in reason.lower():
+        return "flood_fill_failed"
+    if "NaN" in reason or "nan" in reason.lower():
+        return "insufficient_pixels"
+    if "no srtm" in reason.lower() or "tiles" in reason.lower():
+        return "no_srtm_tiles"
+    if "missing" in reason.lower():
+        return "missing_attributes"
+    return "processing_error"
+
+
 def _process_dam_worker(dam_data, gdf_rivers):
     _cfg._srtm_cache = {}
 
     dam_id = dam_data.get("dam_id", "")
     dam_name_latin = dam_data.get("dam_name_latin", "")
-    ov_early = _get_placement_override(dam_id)
-    if _ov_bool(ov_early, "mark_placement_failed"):
-        return None, {
-            "dam_id": dam_id,
-            "dam_name": dam_name_latin,
-            "reason": "manual_skip",
-            "detail": (
-                "mark_placement_failed=1 in dam_placement_overrides.csv "
-                "(QC: skip SRTM placement; catalogue/terrain not trustworthy for this site)."
-            ),
-            **_catalogue_features(dam_data),
-        }
 
-    from shapely.geometry import Point
-    from pyproj import Transformer
     dam_geom = Point(dam_data["_lon"], dam_data["_lat"])
     dam_row = DamRow(dam_data, dam_geom)
 
@@ -128,7 +123,7 @@ def _process_dam_worker(dam_data, gdf_rivers):
             "dam_name": dam_name_latin,
             "reason": "missing_attributes",
             "detail": "Invalid dam_height_m or storage_capacity_m3",
-            **_catalogue_features(dam_data),
+            **_catalog_features(dam_data),
         }
 
     buf_deg = buffer_deg_for_dam(capacity_m3)
@@ -162,12 +157,12 @@ def _process_dam_worker(dam_data, gdf_rivers):
         pass
 
     # ---- Flood fill with coordinate fallbacks ----
-    coords_to_try = [(kml_lat, kml_lon, "kml")]
+    coords_to_try = [(kml_lat, kml_lon)]
     if abs(snapped_lat - kml_lat) > 0.001 or abs(snapped_lon - kml_lon) > 0.001:
-        coords_to_try.append((snapped_lat, snapped_lon, "snapped"))
+        coords_to_try.append((snapped_lat, snapped_lon))
 
     last_error = None
-    for dam_lat, dam_lon, coord_type in coords_to_try:
+    for dam_lat, dam_lon in coords_to_try:
         try:
             srtm_data, srtm_tf, srtm_crs = load_srtm_tiles(
                 dam_lat, dam_lon, buffer_deg=buf_deg + 0.02
@@ -216,7 +211,7 @@ def _process_dam_worker(dam_data, gdf_rivers):
         "dam_name": dam_name_latin,
         "reason": _classify_failure(str(last_error)),
         "detail": str(last_error),
-        **_catalogue_features(dam_data),
+        **_catalog_features(dam_data),
     }
     failure.update(topo_features)
     return None, failure

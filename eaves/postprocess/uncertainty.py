@@ -1,7 +1,7 @@
 """Per-dam V uncertainty propagation.
 
 For every dam in ``eaves_params.csv``, propagates uncertainty into a
-1$\\sigma$ band on V at three standard fill levels:
+1σ band on V at three standard fill levels:
 
 - half pool   (A = 0.50 A_cap)
 - quarter pool (A = 0.25 A_cap)
@@ -9,11 +9,7 @@ For every dam in ``eaves_params.csv``, propagates uncertainty into a
 
 The band combines three independent error sources in quadrature:
 
-.. math::
-
-    \\sigma^2(\\log_{10}V) \\approx (b\\,\\sigma_{\\log A_\\mathrm{cap}})^2
-        + (b_\\sigma\\,\\log_{10}(A/A_\\mathrm{cap}))^2
-        + \\sigma^2(\\log_{10}V_\\mathrm{cap})
+    σ²(log10 V) ≈ (b · σ(log10 A_cap))² + (b_σ · log10(A/A_cap))² + σ²(log10 V_cap)
 
 1. **A_cap regression error** ``(b * sigma_logAcap)``. For regionalized
    dams the full-pool area is predicted by the multi-feature log-A_cap
@@ -21,14 +17,14 @@ The band combines three independent error sources in quadrature:
    units, from ``validation/regionalization_loo.csv``) propagates to
    V through the exponent ``b``. This term is **constant in area** (it is an
    anchor-position error) and therefore does **not vanish at the anchor**.
-   SRTM-derived dams measure A_cap directly from the DEM, so this term is
-   zero for them.
+   SRTM-derived dams take their curve from the flood fill, with no
+   predicted full-pool area, so this term is zero for them.
 2. **Exponent-spread error** ``(b_sigma * log10(A/A_cap))``. The
-   dam-to-dam geometric spread of $b$, which fans out away from
+   dam-to-dam geometric spread of b, which fans out away from
    full pool and is zero at the anchor.
-3. **Catalog-capacity error** ``sigma_logVcap``. A stated 1$\\sigma$ on the
-   published storage capacity that anchors $V_\\mathrm{cap}$, taken from the
-   uncapped-training-fill spread of $\\log_{10}(V_\\mathrm{SRTM}/V_\\mathrm{cap})$. Also
+3. **Catalog-capacity error** ``sigma_logVcap``. An estimated 1σ on the
+   catalog capacity V_cap that anchors every curve, taken from the
+   uncapped-training-fill spread of log10(V_SRTM/V_cap). Also
    constant in area, so it too does not vanish at the anchor.
 
 Because terms (1) and (3) are area-independent, the band for regionalized
@@ -49,16 +45,16 @@ Usage
 from __future__ import annotations
 
 import argparse
-import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 import eaves.config as _cfg
-from .reliability import training_mask
-from ..utils import dams_with_fill, round_released_columns
 
+from ..settings import load_settings
+from ..utils import dams_with_fill, round_released_columns
+from .reliability import training_mask
 
 _FILL_LEVELS = {
     "half_pool":    0.50,
@@ -67,20 +63,12 @@ _FILL_LEVELS = {
 }
 
 
-_TRUSTED_FILTER_GATES = {
-    "quality":   ("A", "B"),
-    "r_squared": 0.98,
-    "vol_ratio": (0.3, 5.0),
-    "n_pixels":  50,
-}
-
-
 def compute_b_sigma(summary_df: pd.DataFrame) -> float:
-    """Population 1$\\sigma$ half-width on $b$ from the training set.
+    """Population 1σ half-width on b from the training set.
 
     The training set is the trusted dams built after the SRTM acquisition
-    (the same population the regionalization recipe is trained on). Equal
-    to the LOO baseline sigma for predicting $b$ from the global median,
+    (the same population the regionalization procedure is trained on). Equal
+    to the LOO baseline sigma for predicting b from the global median,
     and the single region-level number that propagates into every per-dam
     V band below.
     """
@@ -92,15 +80,15 @@ def compute_b_sigma(summary_df: pd.DataFrame) -> float:
 
 
 def compute_sigma_log_acap(loo_df: pd.DataFrame) -> float:
-    """1$\\sigma$ (log10 units) leave-one-out error of the multi-feature
-    $\\log A_\\mathrm{cap}$ regression.
+    """1σ (log10 units) leave-one-out error of the multi-feature
+    log A_cap regression.
 
     Computed as the population half-width of
-    $\\log_{10}(A_\\mathrm{cap}^\\mathrm{pred} / A_\\mathrm{DEM})$ over the
-    trusted dams in ``validation/regionalization_loo.csv``. This is the
+    log10(A_cap_pred / A_DEM) over the
+    training dams in ``validation/regionalization_loo.csv``. This is the
     A_cap-position error that applies to every regionalized dam (whose
-    full-pool area is predicted, not measured). Falls back to 0.16 log10
-    units (the KSA value) when the table is missing or too small.
+    full-pool area is predicted, not recovered from the flood fill). Falls
+    back to 0.16 log10 units when the table is missing or too small.
     """
     if loo_df is None or not {"multi_A_cap_km2", "A_DEM_km2"}.issubset(loo_df.columns):
         return 0.16
@@ -113,20 +101,22 @@ def compute_sigma_log_acap(loo_df: pd.DataFrame) -> float:
 
 
 def compute_sigma_log_vcap(summary_df: pd.DataFrame) -> float:
-    """1$\\sigma$ (log10 units) catalog-capacity error.
+    """1σ (log10 units) catalog-capacity error.
 
     Estimated from the uncapped-training-fill spread of
-    $\\log_{10}(V_\\mathrm{SRTM}/V_\\mathrm{cap})$, which measures how much the independent
-    geometric (SRTM) volume disagrees with the published catalog capacity on
-    dams where both are trustworthy. Stands in for the unknown error on the
-    catalog storage value that anchors every curve. Falls back to 0.08 log10
-    units (the KSA value) when unavailable.
+    log10(V_SRTM/V_cap), which measures how much the independent SRTM volume
+    disagrees with the catalog capacity. Stands in for the unknown error on
+    the catalog storage value that anchors every curve. The capped fills are
+    excluded as right-censored. The uncapped subset, moreover, includes
+    genuine sub-grid-cell shortfall, which inflates the spread, so the
+    estimate is conservative. Falls back to 0.08 log10 units when
+    unavailable.
     """
     if summary_df is None or "vol_ratio" not in summary_df.columns:
         return 0.08
     m = training_mask(summary_df)
     sub = summary_df.loc[m]
-    # Keeps only uncapped fills. Capped fills are right-censored by the capacity cap (their ratio is pinned near unity) and carry no usable spread. The resulting estimate is conservative, since the uncapped subset also contains genuine sub-pixel shortfall, which inflates the spread
+    # Keeps only uncapped fills
     if "capped" in sub.columns:
         sub = sub[~sub["capped"].astype(bool)]
     vr = sub["vol_ratio"].dropna()
@@ -144,7 +134,7 @@ def _a_cap_m2(c: float, b: float, capacity_mcm: float) -> float:
 
 
 def _v_sigma_log10(b_sigma: float, fill_frac: float) -> float:
-    """1-sigma uncertainty on log10(V) at A = fill_frac * A_cap."""
+    """Geometric (exponent-spread) term of the 1-sigma band on log10(V) at A = fill_frac * A_cap."""
     return float(b_sigma * abs(np.log10(fill_frac)))
 
 
@@ -154,13 +144,13 @@ def compute_uncertainty_table(params_df: pd.DataFrame,
                               sigma_log_vcap: float = 0.0) -> pd.DataFrame:
     """Return one row per dam with V uncertainty at the three fill levels.
 
-    The 1$\\sigma$ band on $\\log_{10}V$ combines three terms in quadrature:
+    The 1σ band on log10 V combines three terms in quadrature:
 
     - ``b * sigma_log_acap``: the A_cap-regression error, applied **only**
-      to regionalized (``regi_multi`` / ``regr_derived``) dams whose
-      full-pool area is predicted. SRTM-derived dams measure A_cap from the
-      DEM and carry no A_cap-regression error. Area-independent (does not
-      vanish at the anchor).
+      to regionalized (``regi_multi``) dams whose
+      full-pool area is predicted. SRTM-derived dams take their curve from
+      the flood fill and carry no A_cap-regression error. Area-independent
+      (does not vanish at the anchor).
     - ``b_sigma * |log10(A/A_cap)|``: the exponent-spread error. Zero at
       the anchor, fans out at low fill.
     - ``sigma_log_vcap``: the catalog-capacity error. Area-independent.
@@ -176,10 +166,9 @@ def compute_uncertainty_table(params_df: pd.DataFrame,
         if not (np.isfinite(c) and np.isfinite(b) and c > 0 and b > 0 and cap > 0):
             continue
         a_cap = _a_cap_m2(c, b, cap)
-        v_cap = cap * 1e6
         src = str(p.get("source", ""))
-        # The predicted-A_cap term applies to regionalized tiers only. SRTM dams measure A_cap
-        acap_term = (b * sigma_log_acap) if src.startswith("regi") or src.startswith("regr") else 0.0
+        # The predicted-A_cap term applies to regionalized dams only, SRTM-derived dams take their curve from the flood fill
+        acap_term = (b * sigma_log_acap) if src == "regi_multi" else 0.0
         vcap_term = sigma_log_vcap
         row = {
             "dam_id":           p["dam_id"],
@@ -208,7 +197,6 @@ def compute_uncertainty_table(params_df: pd.DataFrame,
 def run(settings_path: str | None = None) -> pd.DataFrame:
     """Compute the table and write it to ``<CSV_DIR>/validation/v_uncertainty.csv``."""
     if settings_path is not None:
-        from eaves.settings import load_settings
         load_settings(settings_path)
 
     params_path  = Path(_cfg.CSV_DIR) / "eaves_params.csv"
@@ -227,7 +215,7 @@ def run(settings_path: str | None = None) -> pd.DataFrame:
     b_sigma = compute_b_sigma(summary_df)
     sigma_log_acap = compute_sigma_log_acap(loo_df)
     sigma_log_vcap = compute_sigma_log_vcap(summary_df)
-    print(f"  b_sigma (population 1-sigma on b)            = {b_sigma:.4f} log10 units")
+    print(f"  b_sigma (population 1-sigma on b)            = {b_sigma:.4f}")
     print(f"  sigma_log_acap (A_cap LOO regression error)  = {sigma_log_acap:.4f} log10 units")
     print(f"  sigma_log_vcap (catalog-capacity error)      = {sigma_log_vcap:.4f} log10 units")
 

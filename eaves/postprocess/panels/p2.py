@@ -1,4 +1,7 @@
-"""Panel set p2: dam wall placement, three exemplars from the six-stage algorithm.
+"""Panel set p2: three examples of the six-stage dam-wall placement procedure.
+
+Three equal square map panels in one row on a 187 mm canvas, with one shared
+key centered below them. Each panel carries the dam name in a corner box.
 
 Panel a: Stage 1 direct placement (King Fahad).
 Panel b: Stage 4 river-direction retry (Marikh).
@@ -16,32 +19,30 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import LightSource
 from matplotlib.patches import Patch
+from pyproj import Transformer
+from shapely.geometry import box as _shp_box
 
 import eaves.config as _cfg
-from ...utils import dams_with_fill
 
+from ...pipeline.curves import DamRow, process_dam
+from ...pipeline.terrain import load_srtm_tiles
+from ...utils import buffer_deg_for_dam, dams_with_fill, utm_epsg_from_lon
 from ._shared import (
     COL_BASIN,
     COL_DAM,
     COL_LAND,
     COL_RIVER,
     COL_WALL,
+    PANEL_TEXT_RC,
     mm_to_in,
     panel_label,
     save_panel,
 )
 
-
 _EXPECTED_METHODS: dict[str, str] = {
     "a": "stage_1_fast_path",
     "b": "stage_4_river_retry",
     "c": "stage_6_fallback",
-}
-
-_STAGE_TITLES: dict[str, str] = {
-    "a": "Stage 1: direct placement",
-    "b": "Stage 4: river-direction retry",
-    "c": "Stage 6: fallback",
 }
 
 # Pins the preferred exemplar dam IDs, tried first, with the automatic ranking as fallback
@@ -80,26 +81,9 @@ def _candidate_pool(summary_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     return {"a": cand_a, "b": cand_b, "c": cand_c}
 
 
-class _DamRow:
-    """Lightweight stand-in for a GeoDataFrame row passed to ``process_dam``."""
-    def __init__(self, data, geom):
-        self._d = data
-        self.geometry = geom
-
-    def __getitem__(self, key):
-        return self._d[key]
-
-    def get(self, key, default=None):
-        return self._d.get(key, default)
-
-
 def _compute_placement_result(dam_id: str, gdf_dams: gpd.GeoDataFrame,
                               gdf_rivers: gpd.GeoDataFrame) -> dict:
     """Re-run the placement pipeline for ``dam_id`` and return the result dict."""
-    from ...pipeline.curves import process_dam
-    from ...pipeline.terrain import load_srtm_tiles
-    from ...utils import buffer_deg_for_dam
-
     sub = gdf_dams[gdf_dams["dam_id"] == dam_id]
     if sub.empty:
         raise RuntimeError(f"Dam {dam_id!r} missing from snapped GeoDataFrame.")
@@ -112,16 +96,16 @@ def _compute_placement_result(dam_id: str, gdf_dams: gpd.GeoDataFrame,
     dam_dict["_snapped_lon"] = float(g.geometry.x)
     dam_dict["dam_id"] = dam_id
     dam_dict["storage_capacity_m3"] = float(g["storage_capacity_m3"])
-    dam_row = _DamRow(dam_dict, g.geometry)
+    dam_row = DamRow(dam_dict, g.geometry)
 
     coords_to_try = [
-        (float(g["latitude"]), float(g["longitude"]), "kml"),
-        (float(g.geometry.y), float(g.geometry.x), "snapped"),
+        (float(g["latitude"]), float(g["longitude"])),
+        (float(g.geometry.y), float(g.geometry.x)),
     ]
     buf_deg = buffer_deg_for_dam(float(g["storage_capacity_m3"]))
 
     last_error = None
-    for lat, lon, _tag in coords_to_try:
+    for lat, lon in coords_to_try:
         try:
             srtm_data, srtm_tf, srtm_crs = load_srtm_tiles(
                 lat, lon, buffer_deg=buf_deg + 0.02,
@@ -164,8 +148,7 @@ def _xy_from_rc(rows, cols, dem_transform) -> tuple[np.ndarray, np.ndarray]:
 
 def _clip_rivers_to_bbox(gdf_rivers: gpd.GeoDataFrame, bbox_lonlat: tuple,
                          target_epsg: int) -> gpd.GeoDataFrame:
-    """Clip MERIT polylines to a lon/lat bounding box and reproject to UTM."""
-    from shapely.geometry import box as _shp_box
+    """Clip MERIT-Basins reaches to a lon/lat bounding box and reproject to UTM."""
     if gdf_rivers is None or gdf_rivers.empty:
         return gpd.GeoDataFrame(geometry=[], crs=f"EPSG:{target_epsg}")
     poly = _shp_box(*bbox_lonlat)
@@ -206,8 +189,6 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
                             target_epsg: int,
                             panel_extent_m: float = 4000.0) -> None:
     """Render one placement panel: hillshade + wall + flooded basin + rivers."""
-    from pyproj import Transformer
-
     dem = np.asarray(result["dem_utm"], dtype=float)
     dem_tf = result["dem_transform"]
     fp = np.asarray(result["footprint"], dtype=bool)
@@ -216,18 +197,18 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
 
     full_left, full_right, full_bottom, full_top = _dem_extent_m(dem_tf, dem.shape)
 
-    # Centers the window on the midpoint between the catalogue dam and the accepted wall pixel
+    # Centers the window on the midpoint between the catalog dam and the accepted wall pixel
     tr_fwd = Transformer.from_crs("EPSG:4326", f"EPSG:{target_epsg}", always_xy=True)
     tr_back = Transformer.from_crs(f"EPSG:{target_epsg}", "EPSG:4326", always_xy=True)
     cat_x, cat_y = tr_fwd.transform(cat_lon, cat_lat)
     wall_x = dem_tf.c + (dam_c + 0.5) * abs(dem_tf.a)
     wall_y = dem_tf.f - (dam_r + 0.5) * abs(dem_tf.e)
-    centre_x = 0.5 * (cat_x + wall_x)
-    centre_y = 0.5 * (cat_y + wall_y)
+    center_x = 0.5 * (cat_x + wall_x)
+    center_y = 0.5 * (cat_y + wall_y)
 
     half = float(panel_extent_m)
-    win_left, win_right = centre_x - half, centre_x + half
-    win_bottom, win_top = centre_y - half, centre_y + half
+    win_left, win_right = center_x - half, center_x + half
+    win_bottom, win_top = center_y - half, center_y + half
 
     # Draws the gainsboro land base and the LightSource hillshade overlay at alpha=0.45
     ax.set_facecolor(COL_LAND)
@@ -248,7 +229,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
         ax.plot(poly_xy[:, 0], poly_xy[:, 1],
                 color=COL_BASIN, alpha=0.85, lw=0.8, zorder=4)
 
-    # Draws the MERIT rivers within the panel window
+    # Draws the MERIT-Basins reaches within the panel window
     if gdf_rivers_lonlat is not None and not gdf_rivers_lonlat.empty:
         corners_x = [win_left, win_right, win_right, win_left]
         corners_y = [win_bottom, win_bottom, win_top, win_top]
@@ -279,7 +260,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
                     ax.plot(xs_l, ys_l, color=COL_RIVER, lw=lw,
                             solid_capstyle="round", zorder=2)
 
-    # Draws the accepted wall with a black halo and an amber core, for contrast on any hillshade
+    # Draws the accepted wall as an amber core on a black halo
     wall_vec = result.get("wall_vec")
     eff_length_m = result.get("eff_length_m")
     if wall_vec is not None and eff_length_m and pixel_size_m:
@@ -295,7 +276,7 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
         ax.plot(x_wall, y_wall, color=COL_WALL, lw=2.6,
                 solid_capstyle="round", zorder=6)
 
-    # Marks the catalogue dam location (red star) and the MERIT-snapped node where it is offset
+    # Marks the catalog dam location (red star) and the snapped MERIT-Basins node where it is offset
     ax.scatter([cat_x], [cat_y], marker="*", s=85,
                facecolor=COL_DAM, edgecolor="white", linewidth=0.8, zorder=7)
     snap_x, snap_y = tr_fwd.transform(snap_lon, snap_lat)
@@ -307,25 +288,24 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
     ax.set_xlim(win_left, win_right)
     ax.set_ylim(win_bottom, win_top)
     ax.set_aspect("equal")
-    ax.tick_params(labelsize=8.5, direction="out", length=2.5, pad=1.5)
+    ax.tick_params(labelsize=10, direction="out", length=2.5, pad=1.5)
 
     def _lon_fmt(val, _pos):
-        lon, _ = tr_back.transform(val, centre_y)
+        lon, _ = tr_back.transform(val, center_y)
         return f"{lon:.2f}"
 
     def _lat_fmt(val, _pos):
-        _, lat = tr_back.transform(centre_x, val)
+        _, lat = tr_back.transform(center_x, val)
         return f"{lat:.2f}"
 
     ax.xaxis.set_major_formatter(plt.FuncFormatter(_lon_fmt))
     ax.yaxis.set_major_formatter(plt.FuncFormatter(_lat_fmt))
-    ax.set_xticks([centre_x])
-    ax.set_yticks([centre_y])
+    ax.set_xticks([center_x])
+    ax.set_yticks([center_y])
     ax.set_xlabel("Longitude (°E)", fontsize=10)
     ax.set_ylabel("Latitude (°N)" if letter == "a" else "", fontsize=10)
 
-    panel_label(ax, letter, y_offset_pt=22.0, fontsize=12)
-    ax.set_title(_STAGE_TITLES[letter], fontsize=10, pad=4, loc="left")
+    panel_label(ax, letter, fontsize=12)
 
     # Writes the dam name in the top-right corner, without the dam_id
     if dam_name:
@@ -336,20 +316,23 @@ def _render_placement_panel(ax, result: dict, *, dam_name: str,
 
 
 def _placement_legend(fig) -> None:
-    """Shared figure-level legend below the placement panels."""
+    """Shared key in one row of five entries, centered below the three map panels."""
     handles = [
         plt.Line2D([0], [0], marker="*", linestyle="none",
                    markerfacecolor=COL_DAM, markeredgecolor="white",
-                   markersize=8, label="catalogue dam"),
-        plt.Line2D([0], [0], color=COL_WALL, lw=2.0, label="accepted wall"),
+                   markersize=8, label="Catalog dam"),
+        plt.Line2D([0], [0], marker="v", linestyle="none",
+                   markerfacecolor="white", markeredgecolor="black",
+                   markersize=5, label="Snapped river node"),
+        plt.Line2D([0], [0], color=COL_WALL, lw=2.0, label="Accepted wall"),
         Patch(facecolor=COL_BASIN, edgecolor=COL_BASIN, alpha=0.55,
-              label="flooded basin"),
-        plt.Line2D([0], [0], color=COL_RIVER, lw=0.9, label="MERIT river"),
+              label="Flooded basin"),
+        plt.Line2D([0], [0], color=COL_RIVER, lw=0.9, label="MERIT-Basins river"),
     ]
     fig.legend(
-        handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.01),
-        ncol=4, frameon=False, handlelength=1.6, handletextpad=0.6,
-        columnspacing=2.0, borderaxespad=0.0, fontsize=10,
+        handles=handles, loc="lower center", bbox_to_anchor=(0.5, 0.0),
+        ncol=5, frameon=False, handlelength=1.2, handletextpad=0.4,
+        columnspacing=0.8, borderaxespad=0.0, fontsize=10,
     )
 
 
@@ -360,8 +343,7 @@ def _select_with_reproducibility(letter: str, candidates: pd.DataFrame,
                                  ) -> tuple[str, pd.Series, dict]:
     """Pick the first candidate whose placement re-run reproduces the expected stage.
 
-    Falls back to the first successful placement if no candidate matches, so
-    the figure still renders rather than aborts.
+    Falls back to the first successful placement if no candidate matches.
     """
     expected = _EXPECTED_METHODS[letter]
     if candidates.empty:
@@ -398,9 +380,12 @@ def _select_with_reproducibility(letter: str, candidates: pd.DataFrame,
 
 
 def make_p2_placement(output_dir: str | os.PathLike) -> Path:
-    """Render p2 (dam wall placement, 1×3 panels). Returns the PNG path."""
-    from ...utils import utm_epsg_from_lon
+    """Renders p2, three square placement maps in one row with the shared key below.
 
+    Panel a: Stage 1 direct placement (King Fahad).
+    Panel b: Stage 4 river-direction retry (Marikh).
+    Panel c: Stage 6 fallback (Marat).
+    """
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "p2_placement.png"
@@ -419,7 +404,7 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
     gdf_dams = gpd.read_file(Path(_cfg.DOMAIN_DIR) / "dams_snapped.geojson")
     rivers_path = Path(_cfg.DOMAIN_DIR) / "rivers_split.geojson"
     gdf_rivers = gpd.read_file(rivers_path) if rivers_path.exists() else None
-    catalogue = pd.read_csv(_cfg.DAMS_CSV)
+    catalog = pd.read_csv(_cfg.DAMS_CSV)
 
     exemplars: dict = {}
     results: dict = {}
@@ -430,24 +415,6 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
         exemplars[letter] = (dam_id, sum_row)
         results[letter] = result
 
-    # Sets uniform 10 pt text across every element. Panel labels are overridden to 12
-    rc_override = {
-        "font.size":       10,
-        "axes.labelsize":  10,
-        "axes.titlesize":  10,
-        "xtick.labelsize": 10,
-        "ytick.labelsize": 10,
-        "legend.fontsize": 10,
-    }
-    rc_stack = plt.rc_context(rc_override)
-    rc_stack.__enter__()
-
-    fig, axes = plt.subplots(
-        nrows=1, ncols=3,
-        figsize=(mm_to_in(220.0), mm_to_in(100.0)),
-        constrained_layout=False,
-    )
-
     def _half_m_from_area(km2: float) -> float:
         radius_m = np.sqrt(max(float(km2), 0.05) * 1e6 / np.pi)
         return float(np.clip(2.5 * radius_m, 1500.0, 3000.0))
@@ -457,40 +424,55 @@ def make_p2_placement(output_dir: str | os.PathLike) -> Path:
         for lt in ("a", "b", "c")
     }
 
-    for letter, ax in zip(["a", "b", "c"], axes):
-        dam_id, sum_row = exemplars[letter]
-        result = results[letter]
-        cat_row = catalogue[catalogue["dam_id"] == dam_id]
-        if cat_row.empty:
-            cat_lat = float(sum_row["lat"])
-            cat_lon = float(sum_row["lon"])
-            dam_name = ""
-        else:
-            cat_lat = float(cat_row.iloc[0]["latitude"])
-            cat_lon = float(cat_row.iloc[0]["longitude"])
-            dam_name = str(cat_row.iloc[0].get("dam_name", "")).strip()
-        snap_row = gdf_dams[gdf_dams["dam_id"] == dam_id]
-        if not snap_row.empty:
-            snap_lon = float(snap_row.iloc[0].geometry.x)
-            snap_lat = float(snap_row.iloc[0].geometry.y)
-        else:
-            snap_lon, snap_lat = cat_lon, cat_lat
-        _render_placement_panel(
-            ax, result,
-            dam_name=dam_name,
-            letter=letter,
-            gdf_rivers_lonlat=gdf_rivers,
-            cat_lat=cat_lat, cat_lon=cat_lon,
-            snap_lat=snap_lat, snap_lon=snap_lon,
-            target_epsg=utm_epsg_from_lon(cat_lon),
-            panel_extent_m=panel_half_m[letter],
+    # Sizes the canvas in mm, three square panels fill the row between a left margin for the y-axis label, two gaps for the degree tick labels and the right edge, with the panel letters above and the shared key below
+    fig_w_mm = 187.0
+    left_mm, right_mm, gap_mm = 18.85, 2.54, 14.0
+    top_mm, bottom_mm = 9.5, 19.0
+    panel_mm = (fig_w_mm - left_mm - right_mm - 2.0 * gap_mm) / 3.0
+    fig_h_mm = top_mm + panel_mm + bottom_mm
+
+    with plt.rc_context(PANEL_TEXT_RC):
+        fig, axes = plt.subplots(
+            nrows=1, ncols=3,
+            figsize=(mm_to_in(fig_w_mm), mm_to_in(fig_h_mm)),
+        )
+        fig.subplots_adjust(
+            left=left_mm / fig_w_mm, right=1.0 - right_mm / fig_w_mm,
+            bottom=bottom_mm / fig_h_mm, top=1.0 - top_mm / fig_h_mm,
+            wspace=gap_mm / panel_mm,
         )
 
-    _placement_legend(fig)
-    plt.subplots_adjust(left=0.05, right=0.99, top=0.85, bottom=0.18, wspace=0.30)
+        for letter, ax in zip(["a", "b", "c"], axes):
+            dam_id, sum_row = exemplars[letter]
+            result = results[letter]
+            cat_row = catalog[catalog["dam_id"] == dam_id]
+            if cat_row.empty:
+                cat_lat = float(sum_row["lat"])
+                cat_lon = float(sum_row["lon"])
+                dam_name = ""
+            else:
+                cat_lat = float(cat_row.iloc[0]["latitude"])
+                cat_lon = float(cat_row.iloc[0]["longitude"])
+                dam_name = str(cat_row.iloc[0].get("dam_name", "")).strip()
+            snap_row = gdf_dams[gdf_dams["dam_id"] == dam_id]
+            if not snap_row.empty:
+                snap_lon = float(snap_row.iloc[0].geometry.x)
+                snap_lat = float(snap_row.iloc[0].geometry.y)
+            else:
+                snap_lon, snap_lat = cat_lon, cat_lat
+            _render_placement_panel(
+                ax, result,
+                dam_name=dam_name,
+                letter=letter,
+                gdf_rivers_lonlat=gdf_rivers,
+                cat_lat=cat_lat, cat_lon=cat_lon,
+                snap_lat=snap_lat, snap_lon=snap_lon,
+                target_epsg=utm_epsg_from_lon(cat_lon),
+                panel_extent_m=panel_half_m[letter],
+            )
 
-    save_panel(fig, out_png)
+        _placement_legend(fig)
+        save_panel(fig, out_png)
     plt.close(fig)
-    rc_stack.__exit__(None, None, None)
     print(f"wrote {out_png}")
     return out_png

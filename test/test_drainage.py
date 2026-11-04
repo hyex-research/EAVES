@@ -115,7 +115,7 @@ def test_pool_too_small_to_judge_passes(valley):
 
 
 def test_short_pool_below_the_dam_is_rejected(valley):
-    # A pool shorter than the reach of the wall lies wholly within it, so only its outlet position tells the side
+    # A pool shorter than the reach of the wall lies wholly within it, and only its outlet position tells the side
     rows = np.mgrid[0:NROWS, 0:NCOLS][0]
     last = DAM_ROW + 12
     short = (valley <= valley[last, CHANNEL] + 4.0) & (rows > DAM_ROW) & (rows <= last)
@@ -138,7 +138,7 @@ def test_dam_without_a_river_reach_is_never_judged(valley):
 
 
 def test_slope_alone_does_not_place_a_pool_downstream(valley):
-    # A reach drawn the wrong way round places the pool up the channel, so the slope stands alone and the pool is kept
+    # A reach drawn the wrong way round places the pool up the channel. The slope stands alone and the pool is kept
     assert not _pool_lies_downstream(_pool(valley, False), valley, DAM_ROW, CHANNEL, -UP_THE_CHANNEL)
 
 

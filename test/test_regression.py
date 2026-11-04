@@ -1,14 +1,11 @@
-"""End-to-end regression check that runs the 15-dam fixture and compares every
-emitted CSV against the committed SHA256 golden hashes. A second test reads the
-summary of the same run and checks that it holds every dam of the parameter
-table, and a third reruns a copy of the tables through ``--plot-only`` and
-through a single-dam ``--only`` and checks that they come out unchanged.
+"""Regression tests that run the 15-dam fixture through the full pipeline.
 
-Marked ``slow`` because it invokes the full pipeline (about 80 s on a 112-core
-workstation).
-Run with:
-    pytest -m slow
-    pytest -m "not slow"     # skip this test (default for fast pushes)
+The first compares every emitted CSV against the SHA-256 golden hashes, the
+second checks that the summary of the same run holds every dam of the
+parameter table, and the third reruns a copy of the tables through
+``--plot-only`` and through a single-dam ``--only`` and checks that they come
+out unchanged. The ``slow`` marker selects them with ``pytest -m slow`` and
+``pytest -m "not slow"`` leaves them out.
 """
 
 from __future__ import annotations

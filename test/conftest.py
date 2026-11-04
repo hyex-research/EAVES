@@ -10,17 +10,11 @@ from pathlib import Path
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURE_DIR = REPO_ROOT / "test" / "fixture"
 TEST_SETTINGS = FIXTURE_DIR / "settings.json"
 LOCAL_TEST_SETTINGS = FIXTURE_DIR / "settings_local.json"
 GOLDEN_HASHES = REPO_ROOT / "test" / "golden_hashes.json"
-
-
-@pytest.fixture(scope="session")
-def repo_root() -> Path:
-    return REPO_ROOT
 
 
 @pytest.fixture(scope="session")
@@ -36,19 +30,11 @@ def golden_hashes() -> dict:
 
 @pytest.fixture(scope="session")
 def fixture_output(test_settings_path: Path) -> Path:
-    """Run the test-fixture pipeline into ``test/fixture/output/``.
+    """Run the 15-dam fixture through the pipeline into ``test/fixture/output/`` once per session.
 
-    Session-scoped so the run (about 80 s on a 112-core workstation) happens
-    once per pytest invocation.
-    The output tree is committed as publication reference. CSV content is
-    byte-stable across runs, so re-runs leave the CSVs unchanged.
-    PNG timestamps may diff after a run, which is expected.
-
-    ``--panels`` is intentionally NOT passed. Most publication panels need
-    production-only inputs (bathymetry CSV, country shapefile, GRDL data,
-    validation outputs) that the 15-dam fixture does not ship. The pipeline
-    only writes per-dam flood maps under ``0_check_dams/``, and nothing lands
-    in ``2_results_plots/`` for the fixture run.
+    The run leaves out ``--panels`` and writes the tables under ``1_results_csv/`` and the
+    per-dam flood maps under ``0_check_dams/``. Its CSV files are byte-stable across runs,
+    and the regression test hashes only them.
     """
     out = FIXTURE_DIR / "output"
     out.mkdir(parents=True, exist_ok=True)

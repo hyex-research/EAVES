@@ -1,22 +1,12 @@
-"""QC plotting helpers, styled for the Scientific Data submission.
-
-Panel labels use bold lowercase letters (a, b, c, ...).
-Font sizes: 5-7 pt (Nature max 7 pt), Arial / Helvetica.
-Figure widths: 89 mm / 3.5 in (single column), 183 mm / 7.2 in (double column).
-Colorblind-safe palette throughout, viridis as default sequential cmap.
-Flood QC maps stay at 100 DPI (not for publication).
-"""
+"""QC flood map of a dam: the DEM, the inundated footprint, the dam wall and the river overlay, rendered at 100 DPI."""
 
 from __future__ import annotations
 
 import os
 
-import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
-import eaves.config as _cfg
-
+import numpy as np
 
 # ---- Flood map (QC only, 100 DPI, not publication) ----
 
@@ -107,5 +97,3 @@ def save_flood_map(result, flood_dir, dam_id=None, dam_name=None):
         plt.savefig(os.path.join(flood_dir, f"{file_label}_flood.png"),
                     dpi=100, bbox_inches="tight")
         plt.close(fig)
-
-

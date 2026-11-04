@@ -4,33 +4,40 @@ Default diagnostics (cheap, run unless skipped), all mirroring the logic in
 :mod:`regionalization`:
 
 * :func:`loo_regionalization_eval`: leave-one-out evaluation of the
-  regionalization recipe on the training dams (trusted SRTM fits built
-  after the SRTM acquisition). For each training dam, hide its SRTM
-  curve, re-run the regionalization step
-  (regional-median ``b``; the shipped multi-feature LR anchor for
-  ``A_cap``, plus the satellite and log-log anchors for
+  regionalization procedure on the training dams (trusted SRTM fits built
+  after the SRTM acquisition). For each training dam, it hides the SRTM
+  curve, re-runs the regionalization step
+  (regional-median ``b``, the selected multi-feature LR anchor for
+  ``A_cap``, plus the satellite 95th-percentile and log-log anchors for
   comparison, to back-solve ``c``) using the other training dams as
   training data, then
-  compare the regionalized curve against the SRTM "truth".
+  compares the predicted volumes with the SRTM-derived reference curve at
+  full, half and tenth pool (100%, 50% and 10% of ``A_DEM``).
 
 * :func:`dem_vs_sat_area_check`: per-dam comparison of the DEM-derived
   full-pool area ``footprint_area_km2`` against the satellite 95th
-  percentile ``water_area_km2``. Flags placement / satellite disagreement.
+  percentile ``water_area_km2``. Flags dams whose satellite 95th-percentile
+  water area departs from the full-pool area by a factor of three or more.
+  The observed pools rarely approach the design pool, so a much smaller
+  satellite area is the common case.
 
-* :func:`goodness_of_fit_check`: deployed-direction fractional volume
-  residual of every fitted curve, reported alongside ``r_squared``.
+* :func:`goodness_of_fit_check`: absolute fractional volume residual of
+  every released curve at each fitted level, reported alongside
+  ``r_squared``, with its medians by fill level, its value at the
+  typical satellite extent and the residual of a two-segment fit.
 
 * :func:`eaves.postprocess.regionalization.acap_regression_diagnostics`:
   collinearity and incremental leave-one-out skill of the ``A_cap`` regression
   features.
 
-Opt-in diagnostics (expensive, OFF by default; each re-runs the real
+Opt-in diagnostics (expensive and off by default, each re-runs the real
 flood-fill many times and is enabled by its own flag):
 
 * ``--sensitivity``: :mod:`eaves.postprocess.sensitivity`. Perturbs five
-  placement/acceptance constants, the three hand-tuned ones and the two
-  calibrated constants of the drainage rule, and reports how the trusted-set
-  size, grade distribution and median ``b`` move.
+  placement and acceptance constants (the two placement-scoring constants,
+  the internal void-fraction threshold and the two constants of the drainage
+  rule) and reports how the trusted-set size, grade distribution and median
+  ``b`` move.
 
 * ``--dem-mc``: :mod:`eaves.postprocess.dem_error`. SRTM vertical-error
   Monte-Carlo that propagates DEM noise into recovered volumes and ``b`` over a
@@ -53,34 +60,29 @@ from __future__ import annotations
 
 import argparse
 import os
-from typing import Tuple
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
+from numpy.polynomial.polynomial import polyfit
 
 import eaves.config as _cfg
-from .reliability import training_mask
+
+from ..cli import _build_dam_data_list, _load_translit_map
+from ..settings import load_settings
 from ..utils import dams_with_fill, round_released_columns
+from .dem_error import dem_error_montecarlo
 from .regionalization import (
     _REGIONAL_FEATURES,
-    acap_regression_diagnostics,
     _fit_multi_anchor_lr,
     _predict_multi_anchor_lr,
+    acap_regression_diagnostics,
 )
+from .reliability import training_mask, trusted_mask
+from .sensitivity import sensitivity_sweep
 
 
-def _reliable_mask(df: pd.DataFrame) -> pd.Series:
-    """Same definition as regionalization.run_regionalization step A."""
-    return (
-        df["quality"].isin(["A", "B"])
-        & (df["r_squared"] >= 0.98)
-        & df["vol_ratio"].between(0.3, 5.0)
-        & (df["n_pixels"] >= 50)
-        & df["b"].notna()
-    )
-
-
-def _read_sat_p95(water_extent_dir: str, dam_id: str) -> Tuple[float, int]:
+def _read_sat_p95(water_extent_dir: str, dam_id: str) -> tuple[float, int]:
     """Return (A_cap_P95_km2, n_obs). NaN, 0 if unavailable / insufficient."""
     path = os.path.join(water_extent_dir, f"{dam_id}_ts_filtered.csv")
     if not os.path.isfile(path):
@@ -105,7 +107,6 @@ def _fit_a_cap_fallback(train: pd.DataFrame):
     valid = np.isfinite(log_cap) & np.isfinite(log_area)
     if valid.sum() < 10:
         return None
-    from numpy.polynomial.polynomial import polyfit
     return polyfit(log_cap[valid], log_area[valid], 1)
 
 
@@ -114,9 +115,9 @@ def loo_regionalization_eval(
     water_extent_dir: str,
     out_dir: str,
     *,
-    test_area_fractions: Tuple[float, ...] = (1.0, 0.5, 0.1),
+    test_area_fractions: tuple[float, ...] = (1.0, 0.5, 0.1),
 ) -> pd.DataFrame:
-    """Leave-one-out validation of the regionalization recipe.
+    """Leave-one-out validation of the regionalization procedure.
 
     Parameters
     ----------
@@ -128,8 +129,7 @@ def loo_regionalization_eval(
     Returns the per-dam result DataFrame.
     """
     df = dams_with_fill(pd.read_csv(summary_csv))
-    df["reliable"] = _reliable_mask(df)
-    # The LOO runs on the training population (trusted and post-2000, with the small-population fallback), the dams the recipe is trained on
+    # The LOO runs on the training population (trusted and post-2000, with the small-population fallback), the dams the procedure is trained on
     df["training"] = training_mask(df)
     trusted = df[df["training"]].copy().reset_index(drop=True)
     if len(trusted) == 0:
@@ -155,7 +155,7 @@ def loo_regionalization_eval(
 
         a_sat_p95, n_obs = _read_sat_p95(water_extent_dir, dam_id)
 
-        # Builds the anchor of each recipe: current_sat (P95 anchor), alt_loglog (single-feature), multi_lr (shipped)
+        # Builds the three anchors: current_sat (satellite P95 anchor), alt_loglog (capacity-only log-log), multi_lr (selected)
         anchors: dict[str, tuple[float, str]] = {}
 
         a_curr = np.nan
@@ -241,10 +241,10 @@ def _print_loo_summary(out: pd.DataFrame, fracs, out_path: str) -> None:
     print(f"  Dams evaluated: {len(out)}")
     for recipe in ("current", "alt", "multi"):
         print(f"\n  Recipe: {recipe}")
-        print(f"    Source breakdown:")
+        print("    Source breakdown:")
         for src, n in out[f"{recipe}_source"].value_counts().items():
             print(f"      {src}: {n}")
-        print(f"    Errors (signed log10 ratio of regionalized / SRTM):")
+        print("    Errors (signed log10 ratio of regionalized / SRTM):")
         print(f"      median log10(c_reg/c_srtm) = "
               f"{out[f'{recipe}_log10_c_ratio'].median():+.3f}")
         for frac in fracs:
@@ -279,7 +279,7 @@ def dem_vs_sat_area_check(
     Writes ``dem_vs_sat_area.csv`` and prints a summary.
     """
     df = dams_with_fill(pd.read_csv(summary_csv))
-    df["reliable"] = _reliable_mask(df)
+    df["reliable"] = trusted_mask(df)
     trusted = df[df["reliable"]].copy().reset_index(drop=True)
 
     rows = []
@@ -319,7 +319,7 @@ def dem_vs_sat_area_check(
     round_released_columns(out).to_csv(out_path, index=False)
 
     print("\n" + "=" * 70)
-    print("  DEM vs SATELLITE FULL-POOL AREA CHECK (trusted dams)")
+    print("  DEM FULL-POOL AREA vs SATELLITE P95 WATER AREA (trusted dams)")
     print("=" * 70)
     paired = out["sat_over_dem"].dropna()
     print(f"  Trusted dams:                {len(out)}")
@@ -328,13 +328,55 @@ def dem_vs_sat_area_check(
         print(f"  median A_sat / A_DEM:        {paired.median():.2f}")
         print(f"  log10 ratio: median={out['log10_ratio'].median():+.3f}, "
               f"1-sigma={(out['log10_ratio'].quantile(0.84) - out['log10_ratio'].quantile(0.16))/2.0:.3f} log10 units")
-    print(f"  Flag breakdown:")
+    print("  Flag breakdown:")
     for flag, n in out["flag"].value_counts(dropna=False).items():
-        flag_label = flag if flag else "(within {0:.0f}x)".format(flag_ratio)
+        flag_label = flag if flag else f"(within {flag_ratio:.0f}x)"
         print(f"    {flag_label}: {n}")
     print(f"\n  Saved: {out_path}")
     print("=" * 70)
     return out
+
+
+_MIN_SEGMENT_LEVELS = 3
+
+_AREA_BANDS = (
+    ("upper_half", 0.5, 1.01),
+    ("quarter_to_half", 0.25, 0.5),
+    ("tenth_to_quarter", 0.1, 0.25),
+    ("below_tenth", 0.0, 0.1),
+)
+
+
+def _two_segment_rms(log_a, log_v, v, upper):
+    """RMS fractional residual of the best two-segment straight-line fit in log space, over every level and over the upper levels.
+
+    The break runs over every split that leaves at least ``_MIN_SEGMENT_LEVELS``
+    levels in each segment, and the split with the smallest log-space sum of
+    squares is kept. Returns NaN pairs when the levels are too few.
+    """
+    n = len(log_a)
+    if n < 2 * _MIN_SEGMENT_LEVELS:
+        return np.nan, np.nan
+    best_sse = np.inf
+    best_pred = None
+    for k in range(_MIN_SEGMENT_LEVELS, n - _MIN_SEGMENT_LEVELS + 1):
+        lower = np.polyfit(log_a[:k], log_v[:k], 1)
+        higher = np.polyfit(log_a[k:], log_v[k:], 1)
+        pred = np.concatenate([np.polyval(lower, log_a[:k]), np.polyval(higher, log_a[k:])])
+        sse = float(np.sum((log_v - pred) ** 2))
+        if sse < best_sse:
+            best_sse, best_pred = sse, pred
+    frac = np.abs(np.exp(best_pred) - v) / v
+    return float(np.sqrt(np.mean(frac ** 2))), float(np.sqrt(np.mean(frac[upper] ** 2)))
+
+
+def _typical_extent_frac(out_dir: str) -> float:
+    """Median satellite 95th-percentile extent over the full-pool area, from ``dem_vs_sat_area.csv`` of ``out_dir`` when it exists."""
+    path = os.path.join(out_dir, "dem_vs_sat_area.csv")
+    if not os.path.isfile(path):
+        return np.nan
+    ratio = pd.read_csv(path)["sat_over_dem"].dropna()
+    return float(ratio.median()) if len(ratio) else np.nan
 
 
 def goodness_of_fit_check(
@@ -342,25 +384,41 @@ def goodness_of_fit_check(
     params_csv: str,
     eav_tables_dir: str,
     out_dir: str,
+    typical_extent_frac: float = np.nan,
 ) -> pd.DataFrame:
-    """Non-mechanical goodness-of-fit for every fitted EAV curve.
+    """Fractional volume residual of every released EAV curve at each fitted level.
 
-    The reported ``r_squared`` is a least-squares fit on the cumulative
-    volume integral, so it is close to unity by construction (an
-    integral-vs-integrand artifact) and says little about how faithfully
-    the deployed curve $V = c\\,A^{b}$ reproduces the hypsometry. This routine
-    re-reads each per-dam EAV table and reports two fit-direction metrics
+    The reported ``r_squared`` is computed on the untransformed volumes, so
+    the fit and its R² emphasize the upper levels, where most storage lies,
+    and a high R² can mask larger relative errors at low storage. This
+    routine re-reads each per-dam EAV table and reports the residual
     *alongside* (not replacing) ``r_squared``:
 
     * ``max_frac_resid``: the maximum absolute fractional volume residual
-      $\\max_i |c A_i^b - V_i| / V_i$ over the fitted elevation bins.
-    * ``rms_frac_resid``: the root-mean-square of the same per-bin
+      max_i |c * A_i^b - V_i| / V_i over the fitted elevation levels.
+    * ``rms_frac_resid``: the root-mean-square of the same per-level
       fractional residual.
+    * ``abs_frac_resid_full_pool``: the residual at the top fitted level.
+    * ``median_abs_frac_resid_<band>``: the median residual over the levels
+      whose area is in a band of the top fitted area, the upper half, a
+      quarter to a half, a tenth to a quarter and below a tenth.
+    * ``abs_frac_dev_typical_extent``: the departure |c * a^b / V(a) - 1| at
+      the area ``a`` that is ``typical_extent_frac`` of the top area, with
+      V(a) interpolated in the EAV table. ``typical_extent_frac`` is the
+      domain median of the satellite 95th-percentile extent over the
+      full-pool area, from ``dem_vs_sat_area.csv``.
+    * ``rms_frac_resid_upper_volume``: the root-mean-square residual over
+      the levels holding at least a tenth of the maximum fitted volume.
+    * ``rms_frac_resid_two_segment`` and
+      ``rms_frac_resid_two_segment_upper_volume``: the same two statistics
+      for the best two-segment straight-line fit in log space, the
+      alternative to the single power law.
 
-    Both are evaluated in the **deployed** A$\\to$V direction over exactly the
-    bins the power law was fit on: bins above ``srtm_water_level_m`` for the
-    ``partial`` curves, all positive-area/positive-volume bins otherwise
-    (mirroring :func:`eaves.pipeline.curves` ). This is a diagnostic CSV only.
+    All are evaluated in the A→V direction of the released curves over
+    exactly the levels the power law was fit on: levels above
+    ``srtm_water_level_m`` for the ``partial`` curves, all
+    positive-area/positive-volume levels otherwise (mirroring
+    :mod:`eaves.pipeline.curves`). This is a diagnostic CSV only.
     It neither alters the grade gates nor the trusted-set filter, and writes
     nothing back into ``eaves_summary.csv``.
 
@@ -369,7 +427,7 @@ def goodness_of_fit_check(
     """
     summary = dams_with_fill(pd.read_csv(summary_csv))
     params = pd.read_csv(params_csv).set_index("dam_id")
-    summary["trusted"] = _reliable_mask(summary)
+    summary["trusted"] = trusted_mask(summary)
     summary["in_training"] = training_mask(summary)
 
     rows = []
@@ -386,6 +444,12 @@ def goodness_of_fit_check(
             "n_fit_bins":    0,
             "max_frac_resid": np.nan,
             "rms_frac_resid": np.nan,
+            "abs_frac_resid_full_pool": np.nan,
+            **{f"median_abs_frac_resid_{band}": np.nan for band, _, _ in _AREA_BANDS},
+            "abs_frac_dev_typical_extent": np.nan,
+            "rms_frac_resid_upper_volume": np.nan,
+            "rms_frac_resid_two_segment": np.nan,
+            "rms_frac_resid_two_segment_upper_volume": np.nan,
         }
         if dam_id in params.index and os.path.isfile(table_path):
             c = float(params.at[dam_id, "c"])
@@ -410,6 +474,21 @@ def goodness_of_fit_check(
                 rec["n_fit_bins"]     = int(fit_mask.sum())
                 rec["max_frac_resid"] = float(np.max(frac))
                 rec["rms_frac_resid"] = float(np.sqrt(np.mean(frac ** 2)))
+                rec["abs_frac_resid_full_pool"] = float(frac[-1])
+                area_ratio = Af / Af.max()
+                for band, lo, hi in _AREA_BANDS:
+                    in_band = (area_ratio >= lo) & (area_ratio < hi)
+                    if in_band.any():
+                        rec[f"median_abs_frac_resid_{band}"] = float(np.median(frac[in_band]))
+                if np.isfinite(typical_extent_frac):
+                    a_typ = typical_extent_frac * A[-1]
+                    v_typ = float(np.interp(a_typ, A, V))
+                    if v_typ > 0:
+                        rec["abs_frac_dev_typical_extent"] = float(abs(c * a_typ ** b / v_typ - 1.0))
+                upper = Vf >= 0.1 * Vf.max()
+                rec["rms_frac_resid_upper_volume"] = float(np.sqrt(np.mean(frac[upper] ** 2)))
+                rec["rms_frac_resid_two_segment"], rec["rms_frac_resid_two_segment_upper_volume"] = (
+                    _two_segment_rms(np.log(Af), np.log(Vf), Vf, upper))
         rows.append(rec)
 
     out = pd.DataFrame(rows)
@@ -418,7 +497,7 @@ def goodness_of_fit_check(
     round_released_columns(out).to_csv(out_path, index=False)
 
     print("\n" + "=" * 70)
-    print("  GOODNESS-OF-FIT (deployed A->V fractional volume residual)")
+    print("  GOODNESS-OF-FIT (fractional volume residual per fitted level)")
     print("=" * 70)
     trusted = out[out["is_trusted"] & out["max_frac_resid"].notna()]
     print(f"  Dams with a curve:           {int(out['max_frac_resid'].notna().sum())}")
@@ -426,20 +505,30 @@ def goodness_of_fit_check(
     if len(trusted) > 0:
         for col, label in (("r_squared", "R^2"),
                            ("max_frac_resid", "max |dV|/V"),
-                           ("rms_frac_resid", "RMS |dV|/V")):
+                           ("rms_frac_resid", "RMS |dV|/V"),
+                           ("rms_frac_resid_upper_volume", "RMS, V>=0.1 Vmax"),
+                           ("rms_frac_resid_two_segment", "RMS two-seg"),
+                           ("rms_frac_resid_two_segment_upper_volume", "two-seg, V>=0.1 Vmax"),
+                           ("abs_frac_resid_full_pool", "|dV|/V full pool"),
+                           ("median_abs_frac_resid_upper_half", "median, A>=0.5 Amax"),
+                           ("median_abs_frac_resid_below_tenth", "median, A<0.1 Amax"),
+                           ("abs_frac_dev_typical_extent", "|dV|/V typical ext")):
             s = trusted[col].dropna()
-            print(f"  {label:<12s} median={s.median():.3f}  "
+            if len(s) == 0:
+                continue
+            print(f"  {label:<22s} median={s.median():.3f}  "
                   f"P16={s.quantile(0.16):.3f}  P84={s.quantile(0.84):.3f}  "
                   f"P95={s.quantile(0.95):.3f}  max={s.max():.3f}")
+        if np.isfinite(typical_extent_frac):
+            print(f"  typical extent = {typical_extent_frac:.4f} of the full-pool area")
     print(f"\n  Saved: {out_path}")
     print("=" * 70)
     return out
 
 
-def _resolve_paths(settings_json: str | None) -> Tuple[str, str, str]:
+def _resolve_paths(settings_json: str | None) -> tuple[str, str, str]:
     """Returns (summary_csv, water_extent_dir, out_dir)."""
     if settings_json is not None:
-        from eaves.settings import load_settings
         load_settings(settings_json)
     summary_csv = os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")
     water_extent_dir = _cfg.WATER_EXTENT_DIR
@@ -454,9 +543,6 @@ def _load_dams_and_rivers():
     re-run the real flood-fill. Reuses the production CLI helpers so the dam
     inputs are byte-identical to a normal pipeline run.
     """
-    import geopandas as gpd
-    from eaves.cli import _load_translit_map, _build_dam_data_list
-
     translit = _load_translit_map()
     gdf_dams = gpd.read_file(os.path.join(_cfg.DOMAIN_DIR, "dams_snapped.geojson"))
     dam_data_list = _build_dam_data_list(gdf_dams, translit)
@@ -477,17 +563,17 @@ def main(argv=None) -> None:
     )
     p.add_argument(
         "--skip-area-check", action="store_true",
-        help="Skip the A_DEM vs A_sat^P95 consistency check.",
+        help="Skip the A_DEM vs A_sat^P95 area comparison.",
     )
     p.add_argument(
         "--skip-gof", action="store_true",
-        help="Skip the deployed-direction goodness-of-fit check.",
+        help="Skip the fractional-volume-residual goodness-of-fit check.",
     )
     p.add_argument(
         "--skip-acap", action="store_true",
         help="Skip the A_cap regression diagnostics.",
     )
-    # ---- Opt-in expensive steps (OFF by default; each re-runs the flood-fill) ----
+    # ---- Opt-in expensive steps, off by default ----
     p.add_argument(
         "--sensitivity", action="store_true",
         help="OPT-IN: run the sensitivity sweep of the five placement/acceptance "
@@ -551,21 +637,20 @@ def main(argv=None) -> None:
     if not args.skip_gof:
         params_csv = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
         eav_tables_dir = os.path.join(_cfg.CSV_DIR, "eav_tables")
-        goodness_of_fit_check(summary_csv, params_csv, eav_tables_dir, out_dir)
+        goodness_of_fit_check(summary_csv, params_csv, eav_tables_dir, out_dir,
+                              typical_extent_frac=_typical_extent_frac(out_dir))
     if not args.skip_acap:
         acap_regression_diagnostics(dams_with_fill(pd.read_csv(summary_csv)), out_dir)
 
     if args.sensitivity:
-        from .sensitivity import sensitivity_sweep
         dam_data_list, gdf_rivers = _load_dams_and_rivers()
         sensitivity_sweep(
-            summary_csv, _cfg.DOMAIN_DIR, out_dir,
+            summary_csv, out_dir,
             dam_data_list=dam_data_list, gdf_rivers=gdf_rivers,
             n_dams=args.sensitivity_n_dams, seed=args.sensitivity_seed,
         )
 
     if args.dem_mc:
-        from .dem_error import dem_error_montecarlo
         dam_data_list, gdf_rivers = _load_dams_and_rivers()
         dem_error_montecarlo(
             summary_csv, args.settings, _cfg.DOMAIN_DIR, out_dir,

@@ -1,38 +1,46 @@
-"""Fast sanity checks, run on every push.
+"""Fast sanity checks, run by the continuous integration with the unit tier.
 
 These tests exercise imports, settings loading, and value validation without
-invoking the per-dam pipeline. The module takes under 1 s on a 112-core
-workstation.
+invoking the per-dam pipeline.
 """
 
 from __future__ import annotations
 
+import importlib
 import json
 import tempfile
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
-from eaves.settings import load_settings
 import eaves.config as _cfg
+from eaves.postprocess.external_data import add_sedimentation_columns
+from eaves.postprocess.reliability import add_uncertainty_flags
+from eaves.settings import load_settings
+
+PACKAGE_MODULES = (
+    "eaves",
+    "eaves.cli",
+    "eaves.config",
+    "eaves.preprocess",
+    "eaves.settings",
+    "eaves.utils",
+    "eaves.pipeline.curves",
+    "eaves.pipeline.placement",
+    "eaves.pipeline.terrain",
+    "eaves.pipeline.workers",
+    "eaves.postprocess.external_data",
+    "eaves.postprocess.plots",
+    "eaves.postprocess.regionalization",
+    "eaves.postprocess.reliability",
+)
 
 
 def test_package_imports():
-    """All key modules must import cleanly."""
-    import eaves                          # noqa: F401
-    import eaves.cli                      # noqa: F401
-    import eaves.config                   # noqa: F401
-    import eaves.preprocess               # noqa: F401
-    import eaves.settings                 # noqa: F401
-    import eaves.utils                    # noqa: F401
-    import eaves.pipeline.curves          # noqa: F401
-    import eaves.pipeline.placement       # noqa: F401
-    import eaves.pipeline.terrain         # noqa: F401
-    import eaves.pipeline.workers         # noqa: F401
-    import eaves.postprocess.external_data   # noqa: F401
-    import eaves.postprocess.plots           # noqa: F401
-    import eaves.postprocess.regionalization # noqa: F401
-    import eaves.postprocess.reliability     # noqa: F401
+    """Every key module imports cleanly."""
+    for module in PACKAGE_MODULES:
+        importlib.import_module(module)
 
 
 def test_test_settings_load(test_settings_path: Path):
@@ -85,8 +93,6 @@ def test_settings_rejects_unknown_key(test_settings_path: Path):
 
 def test_uncertainty_flags_on_empty_df():
     """add_uncertainty_flags handles a 0-row DataFrame without crashing."""
-    import pandas as pd
-    from eaves.postprocess.reliability import add_uncertainty_flags
     df = pd.DataFrame()
     out = add_uncertainty_flags(df)
     assert "uncertainty_flags" in out.columns
@@ -95,8 +101,6 @@ def test_uncertainty_flags_on_empty_df():
 
 def test_sedimentation_merge_is_noop_when_unset():
     """add_sedimentation_columns is a no-op when sedimentation_dir is None."""
-    import pandas as pd
-    from eaves.postprocess.external_data import add_sedimentation_columns
     df = pd.DataFrame({"dam_id": ["id_x", "id_y"]})
     out = add_sedimentation_columns(df, None)
     assert list(out.columns) == ["dam_id"]

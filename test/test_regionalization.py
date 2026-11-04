@@ -1,11 +1,13 @@
 """Unit tests for the multi-feature LR regionalization recipe.
 
-Covers feature-vector construction, model fitting, prediction, and the
-single-recipe back-solve. All checks run on small synthetic data. The
-module takes under 1 s on a 112-core workstation.
+Covers feature-vector construction, model fitting, prediction, the
+single-recipe back-solve and the choice of the reliability threshold. All
+checks run on small synthetic data.
 """
 
 from __future__ import annotations
+
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -13,12 +15,12 @@ import pytest
 
 from eaves.postprocess.regionalization import (
     _REGIONAL_FEATURES,
-    _log_feature_vector,
     _fit_multi_anchor_lr,
+    _log_feature_vector,
     _predict_multi_anchor_lr,
     acap_regression_diagnostics,
+    choose_reliability_threshold,
 )
-
 
 # ---- Synthetic data generator ----
 
@@ -154,9 +156,9 @@ class TestMultiAnchorPredict:
             if a_pred is not None and a_pred > 0:
                 errors.append(np.log(a_pred / row["footprint_area_km2"]))
         errors = np.asarray(errors)
-        # Median residual sits on zero (well within 0.05 log10 units of zero)
+        # Median residual sits on zero (well within 0.05 natural-log units of zero)
         assert abs(float(np.median(errors))) < 0.05
-        # 1-sigma residual matches the injected noise (0.1 log10 units) reasonably
+        # 1-sigma residual matches the injected noise (0.1 natural-log units) reasonably
         sigma = float((np.quantile(errors, 0.84) - np.quantile(errors, 0.16)) / 2)
         assert sigma < 0.2
 
@@ -184,15 +186,12 @@ class TestBackSolveAtAnchor:
 # ---- Example regionalized dams ----
 
 class TestExampleRegionalizedDams:
-    """Two named example dams that exercise the multi-LR + back-solve path.
+    """Two named example dams that exercise the multi-LR and back-solve path.
 
-    Trains on a synthetic trusted set, then regionalizes a small handful of
-    representative ungaged dams end-to-end. Useful as a worked example. The
-    test prints nothing, and the assertions document the expected shape of the
-    output for the two named cases.
+    The tests train on a synthetic trusted set and regionalize the two dams end to end.
     """
 
-    # A small wadi reservoir (mountainous catchment, narrow valley) and a large plains reservoir (wide valley, gentle slopes). Together they bracket the typical regionalization workload of the catalogue
+    # A small wadi reservoir (mountainous catchment, narrow valley) and a large plains reservoir (wide valley, gentle slopes). Together they bracket the typical regionalization workload of the catalog
     EXAMPLE_DAMS = [
         {
             "dam_id": "example_small_wadi",
@@ -249,10 +248,10 @@ class TestExampleRegionalizedDams:
         )
 
     def test_missing_feature_returns_none_predict(self):
-        """With valley_ratio dropped from the example small-wadi dam, predict must
-        return None rather than silently fabricate a value. The production
-        pipeline catches this case and median-imputes the missing feature
-        before predicting (see ``run_regionalization``)."""
+        """With valley_ratio dropped from the example small-wadi dam, the prediction is None.
+
+        The pipeline median-imputes a missing feature before it predicts (see ``run_regionalization``).
+        """
         train = _synthetic_trusted(n=200)
         coefs = _fit_multi_anchor_lr(train)
         dam = dict(self.EXAMPLE_DAMS[0])
@@ -276,7 +275,6 @@ class TestAcapRegressionDiagnostics:
         assert {"diagnostic", "feature", "value", "metric"}.issubset(out.columns)
 
     def test_reports_all_seven_vifs_and_condition_number(self):
-        import tempfile
         with tempfile.TemporaryDirectory() as d:
             out = acap_regression_diagnostics(self._frame(), d)
         vif = out[out["diagnostic"] == "vif"]
@@ -286,7 +284,6 @@ class TestAcapRegressionDiagnostics:
         assert len(cn) == 1 and np.isfinite(cn["value"].iloc[0])
 
     def test_incremental_loo_full_has_seven_steps(self):
-        import tempfile
         with tempfile.TemporaryDirectory() as d:
             out = acap_regression_diagnostics(self._frame(), d)
         inc = out[out["diagnostic"] == "incremental_loo"]
@@ -294,9 +291,58 @@ class TestAcapRegressionDiagnostics:
         assert (inc["value"] > 0).all()              # LOO RMS in log10 units is positive
 
     def test_no_capacity_variant_drops_capacity(self):
-        import tempfile
         with tempfile.TemporaryDirectory() as d:
             out = acap_regression_diagnostics(self._frame(), d)
         nc = out[out["diagnostic"] == "incremental_loo_no_capacity"]
         assert len(nc) == len(_REGIONAL_FEATURES) - 1
         assert "capacity_mcm" not in set(nc["feature"])
+
+    def test_drop_one_has_one_row_per_feature(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = acap_regression_diagnostics(self._frame(), d)
+        drop = out[out["diagnostic"] == "drop_one_loo"]
+        assert list(drop["feature"]) == list(_REGIONAL_FEATURES)
+        assert (drop["n_features"] == len(_REGIONAL_FEATURES) - 1).all()
+        assert (drop["value"] > 0).all()
+        assert np.isfinite(drop["delta_loo_rms_log10"]).all()
+
+
+# ---- choose_reliability_threshold ----
+
+class TestChooseReliabilityThreshold:
+
+    def test_returns_first_primary_match(self):
+        df = pd.DataFrame({
+            "threshold_mcm": [1.0, 5.0, 10.0],
+            "frac_reliable": [0.75, 0.82, 0.91],
+            "n_above":       [200, 80,   40],
+        })
+        assert choose_reliability_threshold(df) == pytest.approx(5.0)
+
+    def test_falls_back_to_secondary_when_no_primary(self):
+        df = pd.DataFrame({
+            "threshold_mcm": [1.0, 5.0, 10.0],
+            "frac_reliable": [0.65, 0.72, 0.79],
+            "n_above":       [200, 50,   15],
+        })
+        assert choose_reliability_threshold(df) == pytest.approx(5.0)
+
+    def test_returns_none_when_neither_condition_met(self):
+        df = pd.DataFrame({
+            "threshold_mcm": [1.0, 2.0, 5.0],
+            "frac_reliable": [0.50, 0.55, 0.60],
+            "n_above":       [10,  8,    5],
+        })
+        assert choose_reliability_threshold(df) is None
+
+    def test_n_above_gate_prevents_primary_match(self):
+        df = pd.DataFrame({
+            "threshold_mcm": [5.0, 10.0],
+            "frac_reliable": [0.85, 0.90],
+            "n_above":       [10,   35],
+        })
+        assert choose_reliability_threshold(df) == pytest.approx(10.0)
+
+    def test_empty_df_returns_none(self):
+        df = pd.DataFrame(columns=["threshold_mcm", "frac_reliable", "n_above"])
+        assert choose_reliability_threshold(df) is None

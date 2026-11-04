@@ -1,39 +1,24 @@
 """Module-level configuration shared by every pipeline stage.
 
-Matplotlib rcParams, processing constants (bin size, placement tolerances,
-acceptance gates), module-level caches shared across workers, and the path
-attributes populated from the settings JSON by :func:`configure`
-(see :mod:`eaves.settings`).
+Processing constants (elevation interval, placement tolerances, acceptance gates),
+the module-level tile cache shared across workers, and the path attributes
+populated from the settings JSON by :func:`configure` (see
+:mod:`eaves.settings`).
 """
 
 from __future__ import annotations
 
 import os
+import sys
 import warnings
 
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib as _mpl
-import matplotlib.pyplot
 import rasterio
+
+_mpl.use("Agg")
 
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-# ---- Nature-style figure settings (Arial/Helvetica, 5-7 pt, 300 DPI) ----
-_BASE_FS = 7
-_mpl.rcParams.update({
-    "font.family": "sans-serif",
-    "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans", "sans-serif"],
-    "font.size": _BASE_FS,
-    "axes.titlesize": _BASE_FS,
-    "axes.labelsize": _BASE_FS,
-    "xtick.labelsize": 6,
-    "ytick.labelsize": 6,
-    "legend.fontsize": 6,
-    "axes.linewidth": 0.6,
-    "figure.dpi": 300,
-})
 
 # ---- Paths, populated by configure() from the settings JSON (see eaves.settings) ----
 
@@ -41,6 +26,8 @@ COUNTRY_NAME_COL = "NAME"
 
 # ---- Processing parameters ----
 BIN_Z = 0.5
+B_LOWER_BOUND = 1.0  # Lower bound of the released exponent of V = c * A^b, no upper bound applies
+LEVEL_MERGE_M = 0.01  # A regular level this close below the spillway or the capped level gives way to it
 VOID_THRESHOLD = 0.05
 WALL_BUFFER_PX = 5
 WALL_THICKNESS = 3
@@ -57,7 +44,7 @@ MAX_CREST_FLOW_DOT = 0.74
 TERRAIN_WALL_TOP_K = 18
 ALIGN_WEIGHT = 2.35
 
-# Stage-2/5 early-exit tolerance on the volume error |log(approx_vol / catalogue_capacity)|
+# Stage-2/5 early-exit tolerance on the volume error |log(approx_vol / capacity_m3)|
 PLACEMENT_GOOD_ENOUGH_VOL_ERR = 0.26
 # Loose fallback tolerance when no early-exit candidate wins the upstream walk
 PLACEMENT_UPSTREAM_MAX_VOL_ERR = 1.5
@@ -83,17 +70,17 @@ _PLACEMENT_BUDGET_S = 300.0
 
 # Significant digits kept by a floating-point value in the released tables
 RELEASE_SIGNIFICANT_DIGITS = 4
-# Decimals always kept, so that large values such as elevations are not coarsened
+# Decimals a floating-point value in the released tables always keeps, large values such as elevations included
 RELEASE_MIN_DECIMALS = 2
 # Columns that keep a fixed number of decimals, where the entry of b also covers the columns named after the exponent, such as b_reg and ref_b
 RELEASE_DECIMALS = {"capacity_mcm": 4, "b": 4}
 # Coordinates and dam dimensions, written as they come from the catalog
 RELEASE_VERBATIM = ("lat", "lon", "latitude", "longitude", "dam_height_m", "spillway_height_m", "dam_length_m")
 
-# Preprocessing (MERIT clip + segment split + dam snap)
+# Longest reach part and largest snap distance (m) of the preprocessing, which clips the MERIT-Basins reaches, subdivides the longer reaches into equal parts and snaps the dams
 MAX_SEG_LEN_M = 2000.0
 MAX_SNAP_DISTANCE_M = 1000.0
-# Buffer (degrees) applied around each dam when clipping the MERIT network
+# Buffer (degrees) applied around each dam when clipping the MERIT-Basins network
 DAM_BBOX_BUFFER_DEG = 0.3
 
 GRDL_NAME_MAP = {
@@ -102,9 +89,8 @@ GRDL_NAME_MAP = {
     "rabigh": "id_020018",
 }
 
-# ---- Module-level caches (shared across workers via import) ----
+# ---- Module-level cache (shared across workers via import) ----
 _srtm_cache: dict = {}
-_placement_overrides_cache = None
 
 
 # ---- Runtime reconfiguration (programmatic / CLI overrides) ----
@@ -122,6 +108,7 @@ def configure(
     country_name_col: str | None = None,
     bathymetry_eav_csv: str | None = None,
     bathymetry_dam_id: str | None = None,
+    bathymetry_survey_date: str | None = None,
     grdl_dir: str | None = None,
     sedimentation_dir: str | None = None,
     max_seg_len_m: float | None = None,
@@ -133,7 +120,7 @@ def configure(
     ``eaves.config.X`` (i.e. ``_cfg.X``) rather than locally-bound names
     so that changes made here are visible everywhere.
     """
-    import eaves.config as _self
+    _self = sys.modules[__name__]
 
     if srtm_dir is not None:
         _self.SRTM_DIR = srtm_dir
@@ -157,6 +144,8 @@ def configure(
         _self.BATHYMETRY_EAV_CSV = bathymetry_eav_csv
     if bathymetry_dam_id is not None:
         _self.BATHYMETRY_DAM_ID = bathymetry_dam_id
+    if bathymetry_survey_date is not None:
+        _self.BATHYMETRY_SURVEY_DATE = bathymetry_survey_date
     if grdl_dir is not None:
         _self.GRDL_DIR = grdl_dir
     if sedimentation_dir is not None:

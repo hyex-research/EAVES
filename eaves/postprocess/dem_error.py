@@ -2,7 +2,7 @@
 
 This module quantifies how SRTM vertical error propagates into EAVES recovered
 volumes and power-law exponents. It perturbs the raw SRTM mosaic with
-spatially-correlated Gaussian noise at the published low-relief SRTM accuracy
+spatially correlated Gaussian noise at the published SRTM vertical accuracy
 and re-runs the *real* EAVES flood-fill + power-law fit over many realizations,
 on a log-capacity-stratified sample of trusted ``srtm_derived`` dams spanning
 the full capacity range. The unperturbed run is the per-dam reference. The
@@ -11,15 +11,16 @@ across realizations relative to that reference.
 
 Noise model
 -----------
-Zero-mean Gaussian, point sigma ``sigma_m`` (~3.6 m, i.e. LE90 ~6 m for
-low-relief SRTM divided by 1.6449), with a short spatial correlation length of
-a few SRTM pixels imposed by a Gaussian blur of a white field, rescaled to
-preserve the target point sigma. Only finite (non-void) elevations are
-perturbed so that NaN voids are never turned into spurious terrain.
+Zero-mean Gaussian, point sigma ``sigma_m`` (~3.6 m, i.e. the published SRTM
+vertical accuracy of LE90 ~6 m divided by 1.6449), with a short spatial
+correlation length of a few SRTM pixels imposed by a Gaussian blur of a white
+field, rescaled to preserve the target point sigma. Only finite (non-void)
+elevations are perturbed so that NaN voids are never turned into spurious
+terrain.
 
 Robustness against being killed mid-run
 ---------------------------------------
-Results are written INCREMENTALLY. Each dam's row is appended to the output CSV
+Results are written incrementally. Each dam's row is appended to the output CSV
 (with ``flush`` + ``fsync`` under an advisory file lock) the moment that dam
 finishes. A run that is killed therefore preserves every completed dam.
 Re-launching resumes. Dams already present in the CSV are skipped, and the
@@ -37,23 +38,27 @@ only to select trusted dams and writes a single new file:
 
 from __future__ import annotations
 
+import fcntl
+import multiprocessing as mp
 import os
 import time
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
+from scipy.ndimage import gaussian_filter
 from shapely.geometry import Point
 
 import eaves.config as _cfg
-from ..settings import load_settings
+
+from ..cli import _build_dam_data_list, _load_translit_map
 from ..pipeline import terrain as _terrain
-from ..pipeline.curves import process_dam
-from ..pipeline.workers import DamRow
+from ..pipeline.curves import DamRow, process_dam
+from ..settings import load_settings
 from ..utils import buffer_deg_for_dam, dams_with_fill, round_released_value
+from .reliability import trusted_mask
 
-
-# Fixes the column order of the incremental CSV, which must stay stable across appends
+# Fixes the column order of the incremental CSV
 FIELDS = [
     "dam_id", "capacity_mcm", "released_b", "released_max_vol_mcm",
     "ref_b", "ref_max_vol_mcm", "n_realizations", "n_ok", "n_fail",
@@ -65,15 +70,13 @@ FIELDS = [
 
 
 def _correlated_noise(shape, sigma_m, corr_px, rng):
-    """Spatially-correlated zero-mean Gaussian field with point sigma ``sigma_m``.
+    """Spatially correlated zero-mean Gaussian field with point sigma ``sigma_m``.
 
     A white Gaussian field is smoothed with a Gaussian kernel of standard
     deviation ``corr_px`` (the correlation length in pixels), then rescaled so
     its per-pixel standard deviation equals ``sigma_m`` again (smoothing
     otherwise shrinks the variance).
     """
-    from scipy.ndimage import gaussian_filter
-
     white = rng.standard_normal(shape).astype(np.float32)
     if corr_px and corr_px > 0:
         field = gaussian_filter(white, sigma=corr_px, mode="reflect")
@@ -85,17 +88,6 @@ def _correlated_noise(shape, sigma_m, corr_px, rng):
     return (field * sigma_m).astype(np.float32)
 
 
-def _trusted_mask(df: pd.DataFrame) -> pd.Series:
-    """Production trusted-set mask (regionalization.run_regionalization step A)."""
-    return (
-        df["quality"].isin(["A", "B"])
-        & (df["r_squared"] >= 0.98)
-        & df["vol_ratio"].between(0.3, 5.0)
-        & (df["n_pixels"] >= 50)
-        & df["b"].notna()
-    )
-
-
 def _select_dams(summary_csv: str, n_dams: int, seed: int = 0):
     """Pick ~``n_dams`` trusted srtm_derived dams spanning the capacity range.
 
@@ -104,10 +96,8 @@ def _select_dams(summary_csv: str, n_dams: int, seed: int = 0):
     trusted-set gate exactly and recomputes no parameter.
     """
     s = dams_with_fill(pd.read_csv(summary_csv))
-    trusted = s[_trusted_mask(s)].copy()
+    trusted = s[trusted_mask(s)].copy()
     trusted = trusted[trusted["capacity_mcm"] > 0].reset_index(drop=True)
-    # Excludes id_100017, whose spread from 5 realizations is unstable (factor-6 outlier)
-    trusted = trusted[trusted["dam_id"] != "id_100017"].reset_index(drop=True)
     logcap = np.log10(trusted["capacity_mcm"].values)
     edges = np.quantile(logcap, np.linspace(0, 1, n_dams + 1))
     rng = np.random.default_rng(seed)
@@ -124,7 +114,7 @@ def _select_dams(summary_csv: str, n_dams: int, seed: int = 0):
         picks.append(int(rng.choice(idxs)))
     picks = sorted(set(picks))
     out = trusted.iloc[picks].reset_index(drop=True)
-    # Orders small dams first. A kill then costs only the unfinished expensive giants
+    # Orders the sample from small to large capacity
     return out.sort_values("capacity_mcm").reset_index(drop=True)
 
 
@@ -158,7 +148,7 @@ def _run_one(dam_dict, gdf_rivers, sigma_m=0.0, corr_px=0.0, rng=None):
                 dam_lat, dam_lon, buffer_deg=buf_deg + 0.02
             )
             if sigma_m > 0:
-                # Perturbs only finite elevations. NaN voids stay voids and never become terrain
+                # Perturbs the finite elevations and leaves the voids
                 pert = srtm_data.copy()
                 finite = np.isfinite(pert)
                 noise_field = _correlated_noise(pert.shape, sigma_m, corr_px, rng)
@@ -173,8 +163,6 @@ def _run_one(dam_dict, gdf_rivers, sigma_m=0.0, corr_px=0.0, rng=None):
             return {
                 "max_vol_mcm": max_vol_mcm,
                 "b": float(result["b"]),
-                "c": float(result["c"]),
-                "r_squared": float(result["r_squared"]),
                 "n_pixels": int(result["n_pixels"]),
                 "curve_type": result["curve_type"],
             }
@@ -206,8 +194,6 @@ def _append_row(out_path, record):
     well-formed even with several dams finishing at once. The header is written
     by whichever worker first finds the file empty.
     """
-    import fcntl
-
     line = _row_text(record)
     # Opens in a+ mode, which creates the file if needed, and takes the lock before deciding on the header
     with open(out_path, "a+", newline="") as fh:
@@ -301,15 +287,12 @@ def _compute_dam(dam_dict, srow, gdf_rivers, n_real, sigma_m, corr_px,
     return record
 
 
-# ---- Parallel worker plumbing, module-level so the spawn-context Pool can import it ----
+# ---- Parallel worker plumbing ----
 _W: dict = {}
 
 
 def _worker_init(settings_json, domain_dir, out_path, n_real, sigma_m, corr_px,
                  per_dam_budget_s):
-    # Imports inside the worker, where the spawned interpreter resolves the names in its own namespace
-    from ..cli import _load_translit_map, _build_dam_data_list
-
     load_settings(settings_json)
     translit = _load_translit_map()
     gdf_dams = gpd.read_file(os.path.join(domain_dir, "dams_snapped.geojson"))
@@ -431,7 +414,10 @@ def dem_error_montecarlo(
             print(f"  [{idx}/{n_total}] {dam_id}: skip ({status})", flush=True)
             return
         n_written += 1
-        f = lambda v: (f"{v:.3f}" if np.isfinite(v) else "nan")
+
+        def f(v):
+            return f"{v:.3f}" if np.isfinite(v) else "nan"
+
         note = " [budget-capped]" if status == "budget-capped" else ""
         print(f"  [{idx}/{n_total}] {dam_id} cap={rec['capacity_mcm']:.2f} "
               f"ref_V={rec['ref_max_vol_mcm']:.3f} MCM  "
@@ -457,7 +443,6 @@ def dem_error_montecarlo(
             dam_id, rec, status = _worker_task(payload)
             _report(dam_id, rec, status, i)
     else:
-        import multiprocessing as mp
         ctx = mp.get_context("spawn")
         with ctx.Pool(processes=workers, initializer=_worker_init,
                       initargs=initargs) as pool:
@@ -465,11 +450,26 @@ def dem_error_montecarlo(
                     pool.imap_unordered(_worker_task, tasks), 1):
                 _report(dam_id, rec, status, i)
 
+    # Rewrites the table in dam order
+    if os.path.isfile(out_path) and os.path.getsize(out_path) > 0:
+        _sort_rows(out_path)
+        df = pd.read_csv(out_path)
+    else:
+        df = pd.DataFrame(columns=FIELDS)
     # Prints the final aggregate summary from whatever is on disk, which covers resumed runs too
-    df = pd.read_csv(out_path) if os.path.isfile(out_path) and os.path.getsize(out_path) > 0 \
-        else pd.DataFrame(columns=FIELDS)
     _print_summary(df, n_written, n_real, sigma_m, corr_px, out_path)
     return df
+
+
+def _sort_rows(out_path):
+    """Rewrite the CSV with its data rows sorted by dam id, the header first."""
+    with open(out_path, newline="") as fh:
+        header, *rows = fh.read().splitlines(keepends=True)
+    rows = [r if r.endswith("\n") else r + "\n" for r in rows]
+    rows.sort(key=lambda r: r.split(",", 1)[0])
+    with open(out_path, "w", newline="") as fh:
+        fh.write(header)
+        fh.writelines(rows)
 
 
 def _print_summary(df, n_written, n_real, sigma_m, corr_px, out_path):
@@ -501,12 +501,5 @@ def _print_summary(df, n_written, n_real, sigma_m, corr_px, out_path):
               flush=True)
         print(f"  Median per-dam b std:                 {med_b_std:.4f}",
               flush=True)
-        print(flush=True)
-        print("  Comparison to released regionalization band:", flush=True)
-        print(f"    sigma_logVcap (published)   ~ 0.076 log10 units", flush=True)
-        print(f"    sigma_logAcap (published)   ~ 0.16 log10 units", flush=True)
-        print(f"    b_sigma (published)         ~ 0.26 log10 units", flush=True)
-        print(f"    DEM-error sigma_logV (this) ~ {med_sigma_logV:.4f} log10 units "
-              f"(median per dam)", flush=True)
     print(f"\n  Saved: {out_path}", flush=True)
     print("=" * 70, flush=True)

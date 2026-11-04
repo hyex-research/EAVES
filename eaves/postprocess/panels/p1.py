@@ -1,8 +1,12 @@
 """Panel set p1: domain map (a) + EAVES pipeline flowchart (b).
 
-The map reads ``eaves_summary.csv``, ``eaves_params.csv``, and
-``failed_dams.csv``. The flowchart is drawn from static stage
-definitions.
+Panel a maps the retained dams over the country from ``eaves_summary.csv``,
+``eaves_params.csv`` and ``failed_dams.csv``, colored by the parameter
+source, with the key inside the map and an inset of the southwestern
+escarpment between Jeddah and Jizan in the southeast corner. Panel b
+draws the pipeline flowchart from static stage definitions on a millimeter
+canvas, so every box holds 10 pt text. The map takes the left part of the
+187 mm row at its plate carree aspect and the flowchart the right part.
 """
 
 from __future__ import annotations
@@ -12,14 +16,16 @@ from pathlib import Path
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
-from matplotlib.patches import Ellipse, FancyArrowPatch, FancyBboxPatch, Polygon
+from matplotlib.patches import Ellipse, FancyArrowPatch, FancyBboxPatch, Polygon, Rectangle
+from matplotlib.ticker import MultipleLocator
+from shapely.geometry import box
+from shapely.ops import unary_union
 
 import eaves.config as _cfg
-from ...utils import dams_with_fill
 
+from ...utils import dams_with_fill
 from ._shared import (
     COL_BORDER,
     COL_BOX_DECISION,
@@ -37,158 +43,209 @@ from ._shared import (
     COL_LAND_OTHER,
     COL_REGI,
     COL_SRTM,
+    COL_WATER,
+    PANEL_TEXT_RC,
     mm_to_in,
     panel_label,
     save_panel,
 )
 
+# ---- Figure layout in millimeters ----
+
+FIG_W = 187.0        # canvas width
+MAP_LEFT = 13.9      # map axes left edge, after the latitude labels
+MAP_W = 85.6         # map axes width
+GAP = 5.0            # gap between the map and the flowchart
+FLOW_W = 80.0        # flowchart axes width
+TOP = 9.5            # room above the axes for the panel letters
+XAXIS = 10.3         # longitude tick labels and axis label under the map
+BOTTOM = 2.5         # clearance under the row
+
+# Map padding around the country bounds in degrees, the north pad keeps the Gulf corner free for the parameter-source key and the south pad sets the map height that the flowchart follows
+PAD_LON = 0.5
+PAD_S = 4.0
+PAD_N = 4.0
+
+# Marker area of every dam in pt^2, one size for the whole catalog
+MARKER_PT2 = 8.0
+
+# Inset of the southwestern escarpment between Jeddah and Jizan, the window on the main map and the side and margin of the square in the southeast corner, all in degrees
+INSET_WINDOW = ((38.9, 44.4), (16.6, 22.1))
+INSET_SIDE = 9.2
+INSET_MARGIN = 0.35
+INSET_EDGE = "0.25"
+
+# Veil over everything outside the country, sea included
+DIM_ALPHA = 0.35
+
+# Parameter-source groups, the regionalized dams are drawn above the SRTM-derived ones and the failed dams above both
+GROUPS = [
+    ("srtm_derived",     COL_SRTM,   "SRTM-derived",                  "v", False, 4.0),
+    ("regi_multi",       COL_REGI,   "Regionalized",                  "v", False, 4.5),
+    ("placement_failed", COL_FAILED, "Placement, fill or\nfit failed", "x", True,  5.0),
+]
+
+# ---- Flowchart geometry in millimeters, one axis unit is one millimeter ----
+
+FLOW_BOX_W = 79.5    # full-width box
+H_IN = 7.0           # input ellipse height
+H_STD = 5.0          # single-line box height
+H_SIX = 16.5         # six-stage box height
+H_DEC = 7.5          # decision diamond height
+H_REGI = 13.0        # regionalization box height
+CONV = 2.5           # drop of the input lines to their junction
+NO_EXTRA = 1.0       # extra length of the No arrow that holds its label clear of the boxes
+MARGIN = 0.5         # clearance to the axes edge
+
 
 def _load_dam_points() -> pd.DataFrame:
-    """Return DataFrame with columns: dam_id, lat, lon, capacity_mcm, source."""
+    """Return DataFrame with columns: dam_id, lat, lon, source."""
     summary_csv = os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")
     params_csv = os.path.join(_cfg.CSV_DIR, "eaves_params.csv")
     failed_csv = os.path.join(_cfg.CSV_DIR, "failed_dams.csv")
 
-    summary = dams_with_fill(pd.read_csv(summary_csv, usecols=["dam_id", "lat", "lon", "capacity_mcm", "n_pixels"])).drop(columns="n_pixels")
-    params = pd.read_csv(params_csv, usecols=["dam_id", "source", "capacity_mcm"])
+    summary = dams_with_fill(pd.read_csv(summary_csv, usecols=["dam_id", "lat", "lon", "n_pixels"])).drop(columns="n_pixels")
+    params = pd.read_csv(params_csv, usecols=["dam_id", "source"])
     failed_ids = pd.read_csv(failed_csv, usecols=["dam_id"])["dam_id"].tolist()
 
-    catalogue = pd.read_csv(
+    catalog = pd.read_csv(
         _cfg.DAMS_CSV,
-        usecols=["dam_id", "latitude", "longitude", "storage_capacity_m3"],
+        usecols=["dam_id", "latitude", "longitude"],
     ).rename(columns={"latitude": "lat", "longitude": "lon"})
-    catalogue["capacity_mcm"] = catalogue["storage_capacity_m3"] / 1.0e6
 
     merged = summary.merge(params[["dam_id", "source"]], on="dam_id", how="left")
     merged["source"] = merged["source"].fillna("regi_multi")
     merged.loc[merged["dam_id"].isin(failed_ids), "source"] = "placement_failed"
 
-    failed_only = catalogue[
-        catalogue["dam_id"].isin(failed_ids)
-        & ~catalogue["dam_id"].isin(merged["dam_id"])
+    failed_only = catalog[
+        catalog["dam_id"].isin(failed_ids)
+        & ~catalog["dam_id"].isin(merged["dam_id"])
     ].copy()
     failed_only["source"] = "placement_failed"
-    failed_only = failed_only[["dam_id", "lat", "lon", "capacity_mcm", "source"]]
+    failed_only = failed_only[["dam_id", "lat", "lon", "source"]]
 
     return pd.concat([merged, failed_only], ignore_index=True).dropna(subset=["lat", "lon"])
 
 
-def _marker_sizes(capacity_mcm: pd.Series) -> np.ndarray:
-    """Sqrt-scaled marker areas for catalogue capacity (Mm^3): 12-85 pt^2."""
-    cap = np.asarray(capacity_mcm, dtype=float)
-    cap = np.where(np.isfinite(cap) & (cap > 0), cap, 1e-3)
-    s_min, s_max = 12.0, 85.0
-    cap_min, cap_max = 0.05, 200.0
-    cap_clipped = np.clip(cap, cap_min, cap_max)
-    return s_min + (np.sqrt(cap_clipped) - np.sqrt(cap_min)) / (
-        np.sqrt(cap_max) - np.sqrt(cap_min)
-    ) * (s_max - s_min)
-
-
-def _draw_panel_a(ax) -> None:
-    dams = _load_dam_points()
-
+def _load_country() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Return the country layer in EPSG:4326 and the target country."""
     world = gpd.read_file(_cfg.COUNTRY_SHP)
     if world.crs is None or world.crs.to_epsg() != 4326:
         world = world.to_crs(epsg=4326)
     name_col = getattr(_cfg, "COUNTRY_NAME_COL", "NAME")
-    target = _cfg.TARGET_COUNTRY
-    ksa = world[world[name_col] == target]
-    minx, miny, maxx, maxy = ksa.total_bounds
+    ksa = world[world[name_col] == _cfg.TARGET_COUNTRY]
+    return world, ksa
 
-    pad_x = 0.5
-    pad_y = 1.5
-    xlim = (minx - pad_x, maxx + pad_x)
-    ylim = (miny - pad_y, maxy + pad_y)
+
+def _map_extent(ksa) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Return the (xlim, ylim) of the map, the country bounds plus the padding."""
+    minx, miny, maxx, maxy = ksa.total_bounds
+    return (minx - PAD_LON, maxx + PAD_LON), (miny - PAD_S, maxy + PAD_N)
+
+
+def _draw_basemap(ax, world, ksa, xlim, ylim) -> None:
+    """Draw the neighbors, the country fill, the veil over everything outside the country and its boundary inside the given extent."""
     ax.set_xlim(*xlim)
     ax.set_ylim(*ylim)
-
+    ax.set_facecolor(COL_WATER)
     nbrs = world.cx[xlim[0]:xlim[1], ylim[0]:ylim[1]]
     nbrs.plot(
         ax=ax, facecolor=COL_LAND_OTHER, edgecolor=COL_BORDER,
         linewidth=0.4, zorder=1,
     )
     ksa.plot(ax=ax, facecolor=COL_LAND_KSA, edgecolor="none", zorder=1.4)
+    outside = box(xlim[0], ylim[0], xlim[1], ylim[1]).difference(unary_union(ksa.geometry))
+    gpd.GeoSeries([outside], crs=ksa.crs).plot(
+        ax=ax, facecolor="black", edgecolor="none", alpha=DIM_ALPHA, zorder=1.6,
+    )
     ksa.boundary.plot(ax=ax, edgecolor=COL_KSA_BORDER, linewidth=0.8, zorder=2)
+    ax.set_aspect("equal", adjustable="datalim")
 
-    sizes = _marker_sizes(dams["capacity_mcm"])
-    counts = dams["source"].value_counts()
-    groups = [
-        ("srtm_derived",     COL_SRTM,   "SRTM-derived",          "v", False),
-        ("regi_multi",     COL_REGI,   "Regionalization",       "v", False),
-        ("placement_failed", COL_FAILED, "Placement failed",      "x", True),
-    ]
-    for src, colour, _label, marker, is_failed in groups:
+
+def _draw_dams(ax, dams: pd.DataFrame) -> None:
+    """Scatter the dams of every parameter-source group at one marker size."""
+    for src, color, _label, marker, is_failed, zorder in GROUPS:
         mask = dams["source"] == src
         if not mask.any():
             continue
         if is_failed:
             ax.scatter(
                 dams.loc[mask, "lon"], dams.loc[mask, "lat"],
-                s=sizes[mask.values] * 0.7,
-                c=colour, linewidth=1.0,
-                marker=marker, zorder=5, alpha=0.95,
+                s=MARKER_PT2 * 0.7,
+                c=color, linewidth=1.0,
+                marker=marker, zorder=zorder, alpha=0.95,
             )
         else:
             ax.scatter(
                 dams.loc[mask, "lon"], dams.loc[mask, "lat"],
-                s=sizes[mask.values],
-                facecolor=colour, edgecolor="black", linewidth=0.35,
-                marker=marker, zorder=4 if src == "regi_multi" else 4.5,
-                alpha=0.92,
+                s=MARKER_PT2,
+                facecolor=color, edgecolor="black", linewidth=0.35,
+                marker=marker, zorder=zorder, alpha=0.92,
             )
+
+
+def _draw_inset(ax, world, ksa, dams: pd.DataFrame, xlim, ylim) -> None:
+    """Draw the window rectangle on the main map and the zoomed square in its southeast corner."""
+    (wx0, wx1), (wy0, wy1) = INSET_WINDOW
+    ax.add_patch(Rectangle(
+        (wx0, wy0), wx1 - wx0, wy1 - wy0,
+        facecolor="none", edgecolor=INSET_EDGE, linewidth=0.8, zorder=6,
+    ))
+    x0 = xlim[1] - INSET_MARGIN - INSET_SIDE
+    y0 = ylim[0] + INSET_MARGIN
+    ax_in = ax.inset_axes([x0, y0, INSET_SIDE, INSET_SIDE], transform=ax.transData)
+    _draw_basemap(ax_in, world, ksa, (wx0, wx1), (wy0, wy1))
+    _draw_dams(ax_in, dams)
+    ax_in.set_xticks([])
+    ax_in.set_yticks([])
+    for spine in ax_in.spines.values():
+        spine.set_edgecolor(INSET_EDGE)
+        spine.set_linewidth(0.8)
+    ax_in.set_zorder(7)
+
+
+def _draw_panel_a(ax, world, ksa, xlim, ylim) -> None:
+    """Panel a, the dams over the country map with the parameter-source key in the Gulf corner and the inset in the southeast corner."""
+    dams = _load_dam_points()
+    _draw_basemap(ax, world, ksa, xlim, ylim)
+    _draw_dams(ax, dams)
 
     ax.set_xlabel("Longitude (°E)", fontsize=10)
     ax.set_ylabel("Latitude (°N)", fontsize=10)
-    ax.set_aspect("equal", adjustable="datalim")
-    ax.tick_params(length=2.5, direction="out", labelsize=9)
+    ax.xaxis.set_major_locator(MultipleLocator(5.0))
+    ax.yaxis.set_major_locator(MultipleLocator(5.0))
+    ax.tick_params(length=2.5, direction="out", labelsize=10)
     ax.grid(False)
 
+    counts = dams["source"].value_counts()
     src_handles = []
-    for src, colour, label, marker, is_failed in groups:
+    for src, color, label, marker, is_failed, _zorder in GROUPS:
         n = int(counts.get(src, 0))
         if n == 0:
             continue
         if is_failed:
             src_handles.append(
-                Line2D([0], [0], marker=marker, color=colour,
+                Line2D([0], [0], marker=marker, color=color,
                        markerfacecolor="none", markeredgewidth=1.1,
-                       linewidth=0, markersize=5.5,
+                       linewidth=0, markersize=4.0,
                        label=f"{label} (n = {n})")
             )
         else:
             src_handles.append(
                 Line2D([0], [0], marker=marker, color="none",
-                       markerfacecolor=colour, markeredgecolor="black",
-                       markersize=6, markeredgewidth=0.4,
+                       markerfacecolor=color, markeredgecolor="black",
+                       markersize=4, markeredgewidth=0.4,
                        label=f"{label} (n = {n})")
             )
-    leg1 = ax.legend(
+    ax.legend(
         handles=src_handles, loc="upper right",
         title="Parameter source", title_fontsize=10, fontsize=10,
-        borderpad=0.45, handletextpad=0.45, labelspacing=0.55,
-        frameon=True, fancybox=False, edgecolor=COL_BORDER, framealpha=0.92,
+        alignment="left", frameon=False,
+        handlelength=1.0, handletextpad=0.4, labelspacing=0.3,
+        borderpad=0.2, borderaxespad=0.5,
     )
-    leg1.get_frame().set_linewidth(0.5)
-    ax.add_artist(leg1)
 
-    cap_ticks = [0.1, 1.0, 10.0, 100.0]
-    cap_sz = _marker_sizes(pd.Series(cap_ticks))
-    cap_handles = [
-        Line2D([0], [0], marker="v", color="none",
-               markerfacecolor="0.35", markeredgecolor="black",
-               markeredgewidth=0.35, markersize=np.sqrt(s) * 0.95,
-               label=f"{c:g}")
-        for c, s in zip(cap_ticks, cap_sz)
-    ]
-    leg2 = ax.legend(
-        handles=cap_handles, loc="lower right",
-        title="Capacity (MCM)", title_fontsize=10, fontsize=10,
-        borderpad=0.55, handletextpad=0.6, labelspacing=0.95,
-        frameon=True, fancybox=False, edgecolor=COL_BORDER, framealpha=0.92,
-    )
-    leg2.get_frame().set_linewidth(0.5)
-
+    _draw_inset(ax, world, ksa, dams, xlim, ylim)
     panel_label(ax, "a", fontsize=12)
 
 
@@ -252,9 +309,7 @@ def _diamond(ax, x, y, w, h, text, *,
 def _arrow(ax, x1, y1, x2, y2, *,
            color="0.20", label=None, lw=0.8,
            label_dx: float = 0.0, label_dy: float = 1.6) -> None:
-    """Draw an arrow from (x1, y1) to (x2, y2). If *label* is given, place
-    it offset from the arrow midpoint by ``(label_dx, label_dy)`` so it
-    sits beside or above the arrow line, never on top of it."""
+    """Draw an arrow from (x1, y1) to (x2, y2), with an optional label offset from its midpoint by ``(label_dx, label_dy)``."""
     ax.add_patch(FancyArrowPatch(
         (x1, y1), (x2, y2),
         arrowstyle="-|>", mutation_scale=9,
@@ -271,70 +326,64 @@ def _arrow(ax, x1, y1, x2, y2, *,
         )
 
 
-def _draw_panel_b(ax) -> None:
-    """Pipeline flowchart on a 0-100 canvas. Box widths match their text
-    (no fixed-width forcing) so nothing overflows. Yes/No labels sit beside
-    or above their arrows, never on the line."""
-    ax.set_xlim(0, 100)
-    ax.set_ylim(-5, 100)
+def _draw_panel_b(ax, height: float) -> None:
+    """Panel b, the pipeline flowchart on a canvas of FLOW_W by ``height`` millimeters, the arrows share the height the boxes leave."""
+    ax.set_xlim(0.0, FLOW_W)
+    ax.set_ylim(0.0, height)
+    ax.set_aspect("equal")
     ax.set_axis_off()
-    ax.set_aspect("auto")
 
-    cx = 50.0
-    w_proc = 95.0      # processing-step box width
-    w_six = 95.0       # 6-stage box width
-    w_out = 95.0       # output / regionalization box width
-    h_std = 5.0        # uniform sequential-box height
-    arrow = 4.0        # uniform arrow length (center-to-center minus halves)
+    cx = FLOW_W / 2.0
+    boxes = H_IN + H_STD + H_SIX + 4 * H_STD + H_DEC + H_REGI
+    arrow = (height - 2 * MARGIN - CONV - NO_EXTRA - boxes) / 8.0
 
     # ---- Inputs (ellipses) ----
-    in_y = 95.0
-    in_w = 30.0
-    in_h = 9.0
+    in_y = height - MARGIN - H_IN / 2.0
     inputs = [
-        (cx - 32.0, in_y, "SRTM"),
-        (cx,        in_y, "Dam catalogue"),
-        (cx + 32.0, in_y, "MERIT Hydro"),
+        (7.5, 14.0, "SRTM"),
+        (34.0, 27.0, "Dam catalog"),
+        (66.5, 26.0, "MERIT-Basins"),
     ]
-    for (x, y, t) in inputs:
-        _ellipse(ax, x, y, in_w, in_h, t,
+    for (x, w, t) in inputs:
+        _ellipse(ax, x, in_y, w, H_IN, t,
                  facecolor=COL_BOX_INPUT, edgecolor=COL_BOX_INPUT_EDGE,
                  fontsize=10)
 
-    conv_y = 87.5
+    conv_y = in_y - H_IN / 2.0 - CONV
     for (x, _, _) in inputs:
         ax.plot(
-            [x, cx], [in_y - in_h / 2.0, conv_y],
+            [x, cx], [in_y - H_IN / 2.0, conv_y],
             color="0.35", linewidth=0.7, zorder=1,
         )
 
     # ---- Snap step ----
-    snap_y = 81.0
-    _box(ax, cx, snap_y, w_proc, h_std,
-         "Snap dam to nearest MERIT segment",
+    snap_y = conv_y - arrow - H_STD / 2.0
+    _box(ax, cx, snap_y, FLOW_BOX_W, H_STD,
+         "Snap dam to nearest MERIT-Basins reach",
          facecolor=COL_BOX_PROC, edgecolor=COL_BOX_PROC_EDGE,
          fontsize=10)
+    _arrow(ax, cx, conv_y, cx, snap_y + H_STD / 2.0)
 
-    # ---- 6-stage list, where row_step gives ~1 mm row clearance (1 axis unit ~ 1.035 mm) ----
-    six_y = 66.0
-    six_h = 17.0
+    # ---- Six-stage wall placement box, the stages in two columns ----
+    six_y = snap_y - H_STD / 2.0 - arrow - H_SIX / 2.0
+    six_top = six_y + H_SIX / 2.0
     ax.add_patch(FancyBboxPatch(
-        (cx - w_six / 2.0, six_y - six_h / 2.0),
-        w_six, six_h,
+        (cx - FLOW_BOX_W / 2.0, six_y - H_SIX / 2.0),
+        FLOW_BOX_W, H_SIX,
         boxstyle="round,pad=0.012,rounding_size=1.5",
         linewidth=0.8, facecolor=COL_BOX_HIGHLIGHT,
         edgecolor=COL_BOX_PROC_EDGE, zorder=2,
     ))
     ax.text(
-        cx, six_y + six_h / 2.0 - 2.0, "6-stage wall placement:",
+        cx, six_top - 2.4, "6-stage wall placement:",
         ha="center", va="center",
         fontsize=10, color="0.10", zorder=3,
     )
-    stages_left = ["1. Fast path", "2. Upstream walk", "3. Quality recovery"]
-    stages_right = ["4. River-direction retry", "5. Relaxed alignment", "6. Multi-direction fallback"]
-    col_xs = [cx - w_six / 2.0 + 4.0, cx - 2.0]
-    base_y = six_y + 2.0
-    row_step = 3.6
+    stages_left = ["1. Direct placement", "2. Upstream walk", "3. Quality recovery"]
+    stages_right = ["4. River-direction retry", "5. Relaxed alignment", "6. Synthetic fallback"]
+    col_xs = [cx - FLOW_BOX_W / 2.0 + 1.2, cx - 1.5]
+    row_step = 3.8
+    base_y = six_top - 2.4 - row_step
     for col, stages in enumerate((stages_left, stages_right)):
         for row, s in enumerate(stages):
             ax.text(
@@ -342,99 +391,98 @@ def _draw_panel_b(ax) -> None:
                 ha="left", va="center",
                 fontsize=10, color="0.10", zorder=3,
             )
+    _arrow(ax, cx, snap_y - H_STD / 2.0, cx, six_top)
 
     # ---- Sequential processing steps ----
     proc = [
-        ("Flood fill to spillway height",                  51.0),
-        ("EAV curve: 0.5 m bins",                          42.0),
-        ("Power-law fit: $V = c \\cdot A^{b}$",            33.0),
-        ("Quality grade: A, B, C, D, F",                   24.0),
+        "Flood fill to spillway or capacity",
+        "EAV levels every 0.5 m",
+        "Power-law fit: $V = c \\cdot A^{b}$",
+        "Quality grade: A, B, C, D, F",
     ]
-    proc_ys = []
-    for (text, y) in proc:
-        _box(ax, cx, y, w_proc, h_std, text,
+    prev_bottom = six_y - H_SIX / 2.0
+    for text in proc:
+        y = prev_bottom - arrow - H_STD / 2.0
+        _box(ax, cx, y, FLOW_BOX_W, H_STD, text,
              facecolor=COL_BOX_PROC, edgecolor=COL_BOX_PROC_EDGE,
              fontsize=10)
-        proc_ys.append(y)
-
-    # ---- Equal-length arrows along the main spine ----
-    _arrow(ax, cx, conv_y, cx, snap_y + h_std / 2.0)
-    _arrow(ax, cx, snap_y - h_std / 2.0, cx, six_y + six_h / 2.0)
-    _arrow(ax, cx, six_y - six_h / 2.0, cx, proc_ys[0] + h_std / 2.0)
-    for i in range(len(proc_ys) - 1):
-        _arrow(ax, cx, proc_ys[i] - h_std / 2.0,
-               cx, proc_ys[i + 1] + h_std / 2.0)
+        _arrow(ax, cx, prev_bottom, cx, y + H_STD / 2.0)
+        prev_bottom = y - H_STD / 2.0
 
     # ---- Decision (rhombus / diamond) ----
-    dec_y = 13.5
-    dec_w = 30.0
-    dec_h = 8.0
-    _diamond(ax, cx, dec_y, dec_w, dec_h, "Reliable?", fontsize=10)
-    _arrow(ax, cx, proc_ys[-1] - h_std / 2.0,
-           cx, dec_y + dec_h / 2.0)
+    dec_w = 34.0
+    dec_y = prev_bottom - arrow - H_DEC / 2.0
+    _diamond(ax, cx, dec_y, dec_w, H_DEC, "Reliable?", fontsize=10)
+    _arrow(ax, cx, prev_bottom, cx, dec_y + H_DEC / 2.0)
 
-    # ---- Yes branch (right), where the arrow matches the spine length and yes_w sits snug around "SRTM" ----
-    yes_w = 15.0
-    yes_h = 9.0
-    yes_x = cx + dec_w / 2.0 + arrow + yes_w / 2.0
-    _box(ax, yes_x, dec_y, yes_w, yes_h, "SRTM",
+    # ---- Yes branch (right) ----
+    yes_w = 14.0
+    yes_gap = 5.0
+    yes_x = cx + dec_w / 2.0 + yes_gap + yes_w / 2.0
+    _box(ax, yes_x, dec_y, yes_w, H_DEC, "SRTM",
          facecolor=COL_BOX_OUT_SRTM, edgecolor=COL_SRTM, fontsize=10)
     _arrow(
         ax,
         cx + dec_w / 2.0, dec_y,
         yes_x - yes_w / 2.0, dec_y,
-        label="Yes", label_dx=-1.5, label_dy=1.8,
+        label="Yes", label_dx=-0.8, label_dy=2.5,
     )
 
-    # ---- No branch (down), regionalization box with title and recipe ----
-    regi_y = 1.0
-    regi_h = 9.0
-    _box(ax, cx, regi_y, w_out, regi_h, "",
+    # ---- No branch (down) to the regionalization box ----
+    regi_y = dec_y - H_DEC / 2.0 - arrow - NO_EXTRA - H_REGI / 2.0
+    _box(ax, cx, regi_y, FLOW_BOX_W, H_REGI, "",
          facecolor=COL_BOX_OUT_REGI, edgecolor=COL_REGI)
-    ax.text(
-        cx, regi_y + 1.8, "Regionalization",
-        ha="center", va="center",
-        fontsize=10, color="0.10", zorder=3,
-    )
-    ax.text(
-        cx, regi_y - 1.8,
-        "Multi-feature LR for $A_\\mathrm{cap}$  +  regional-median $b$",
-        ha="center", va="center",
-        fontsize=10, color="0.10", zorder=3,
-    )
+    regi_lines = [
+        (4.0, "Regionalization"),
+        (0.0, "Multi-feature regression for $A_\\mathrm{cap}$"),
+        (-4.0, "+ regional-median $b$"),
+    ]
+    for dy, text in regi_lines:
+        ax.text(
+            cx, regi_y + dy, text,
+            ha="center", va="center",
+            fontsize=10, color="0.10", zorder=3,
+        )
     _arrow(
         ax,
-        cx, dec_y - dec_h / 2.0,
-        cx, regi_y + regi_h / 2.0,
-        label="No", label_dx=3.0, label_dy=0.0,
+        cx, dec_y - H_DEC / 2.0,
+        cx, regi_y + H_REGI / 2.0,
+        label="No", label_dx=4.2, label_dy=0.0,
     )
 
     panel_label(ax, "b", fontsize=12)
 
 
 def make_p1_domain(output_dir: str | os.PathLike) -> Path:
-    """Render p1 (domain map + flowchart). Returns the PNG path."""
+    """Render p1 (domain map + flowchart) as one 187 mm row. Returns the PNG path.
+
+    The map axes keeps the plate carree aspect of its extent, the flowchart
+    axes is as tall as the map plus its longitude axis, so both panels end
+    on one line.
+    """
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     out_png = out_dir / "p1_domain_flowchart.png"
 
-    # Sets a uniform 10 pt base. The panel label is 12 pt, overridden at the call site
-    with plt.rc_context({
-        "font.size":       10,
-        "axes.labelsize":  10,
-        "axes.titlesize":  10,
-        "xtick.labelsize": 10,
-        "ytick.labelsize": 10,
-        "legend.fontsize": 10,
-    }):
-        fig = plt.figure(figsize=(mm_to_in(250.0), mm_to_in(130.0)))
-        gs = fig.add_gridspec(
-            1, 2,
-            width_ratios=[1.10, 1.00],
-            wspace=0.12, left=0.05, right=0.995, bottom=0.09, top=0.91,
-        )
-        _draw_panel_a(fig.add_subplot(gs[0, 0]))
-        _draw_panel_b(fig.add_subplot(gs[0, 1]))
+    world, ksa = _load_country()
+    xlim, ylim = _map_extent(ksa)
+    map_h = MAP_W * (ylim[1] - ylim[0]) / (xlim[1] - xlim[0])
+    flow_h = map_h + XAXIS
+    fig_h = TOP + flow_h + BOTTOM
+    flow_left = MAP_LEFT + MAP_W + GAP
+
+    with plt.rc_context(PANEL_TEXT_RC):
+        fig = plt.figure(figsize=(mm_to_in(FIG_W), mm_to_in(fig_h)))
+        ax_a = fig.add_axes([
+            MAP_LEFT / FIG_W, (fig_h - TOP - map_h) / fig_h,
+            MAP_W / FIG_W, map_h / fig_h,
+        ])
+        ax_b = fig.add_axes([
+            flow_left / FIG_W, (fig_h - TOP - flow_h) / fig_h,
+            FLOW_W / FIG_W, flow_h / fig_h,
+        ])
+        _draw_panel_a(ax_a, world, ksa, xlim, ylim)
+        _draw_panel_b(ax_b, flow_h)
 
         save_panel(fig, out_png)
     plt.close(fig)

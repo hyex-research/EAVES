@@ -15,9 +15,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
 from .config import configure
-
 
 _ALLOWED_KEYS = {
     "output_dir",
@@ -32,6 +32,7 @@ _ALLOWED_KEYS = {
     "country_name_col",
     "bathymetry_eav_csv",
     "bathymetry_dam_id",
+    "bathymetry_survey_date",
     "grdl_dir",
     "sedimentation_dir",
     "max_seg_len_m",
@@ -40,6 +41,7 @@ _ALLOWED_KEYS = {
 
 _POSITIVE_NUMERIC_KEYS = {"max_seg_len_m", "max_snap_distance_m"}
 _NON_EMPTY_STRING_KEYS = {"target_country", "country_name_col", "bathymetry_dam_id"}
+_YEAR_MONTH_KEYS = {"bathymetry_survey_date"}
 
 
 def load_settings(path: str) -> dict:
@@ -47,7 +49,7 @@ def load_settings(path: str) -> dict:
 
     Returns the parsed settings dict (useful for logging).
     """
-    with open(path, "r") as f:
+    with open(path) as f:
         settings = json.load(f)
 
     if not isinstance(settings, dict):
@@ -78,6 +80,10 @@ def _validate_values(path: str, settings: dict) -> None:
         v = settings[key]
         if not isinstance(v, str) or not v.strip():
             raise ValueError(f"{path}: {key!r} must be a non-empty string, got {v!r}")
+    for key in _YEAR_MONTH_KEYS & settings.keys():
+        v = settings[key]
+        if not isinstance(v, str) or not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", v):
+            raise ValueError(f"{path}: {key!r} must be a year and month as YYYY-MM, got {v!r}")
 
 
 def _resolve_path(value, base: str, key: str):
@@ -88,7 +94,7 @@ def _resolve_path(value, base: str, key: str):
     """
     if not isinstance(value, str):
         return value
-    if key in {"target_country", "country_name_col", "bathymetry_dam_id"}:
+    if key in {"target_country", "country_name_col", "bathymetry_dam_id", "bathymetry_survey_date"}:
         return value
     expanded = os.path.expanduser(value)
     if os.path.isabs(expanded):

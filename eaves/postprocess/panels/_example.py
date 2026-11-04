@@ -1,7 +1,7 @@
-"""Worked-example dam helpers, shared by p3 (Baish DEM/A-V) and p4 (validation).
+"""Worked-example dam helpers, shared by p3 (Baish DEM/A-V) and p5 (comparison).
 
 The dam id is read from ``eaves.config.BATHYMETRY_DAM_ID`` and resolves to the
-reservoir whose sonar bathymetry is shipped with the descriptor (Baish in KSA).
+reservoir with the configured sonar bathymetry (Baish in KSA).
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from pathlib import Path
 import pandas as pd
 
 import eaves.config as _cfg
+
 from ...utils import dams_with_fill
 
 

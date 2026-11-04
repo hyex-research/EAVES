@@ -1,12 +1,12 @@
-feature_set,k,silhouette,loo_sigma_delta_b,loo_sigma_baseline,loo_relative_gain_pct,n_trusted
-raw morphometry,2,0.3672,0.2524,0.2792,9.593,216
-raw morphometry,3,0.2492,0.2292,0.2792,17.92,216
-raw morphometry,4,0.2585,0.2335,0.2792,16.37,216
-raw morphometry,5,0.2678,0.2356,0.2792,15.62,216
-raw morphometry,6,0.2481,0.2468,0.2792,11.6,216
-raw morphometry,7,0.2201,0.2426,0.2792,13.1,216
-raw morphometry,8,0.2257,0.2386,0.2792,14.52,216
-raw morphometry,9,0.2343,0.2358,0.2792,15.54,216
-raw morphometry,10,0.2256,0.2459,0.2792,11.91,216
-raw morphometry,11,0.2331,0.2474,0.2792,11.37,216
-raw morphometry,12,0.2299,0.2487,0.2792,10.91,216
+feature_set,k,silhouette,loo_sigma_delta_b,loo_sigma_baseline,loo_relative_gain_pct,loo_r2,n_trusted,pc1_var_share,pc2_var_share,pc1_spearman_b
+raw morphometry,2,0.3653,0.24,0.2573,6.72,0.07657,221,0.5997,0.1613,-0.4071
+raw morphometry,3,0.2474,0.2219,0.2573,13.75,0.08533,221,0.5997,0.1613,-0.4071
+raw morphometry,4,0.2646,0.2282,0.2573,11.33,0.05034,221,0.5997,0.1613,-0.4071
+raw morphometry,5,0.2428,0.2306,0.2573,10.38,0.1124,221,0.5997,0.1613,-0.4071
+raw morphometry,6,0.2375,0.2331,0.2573,9.415,0.1299,221,0.5997,0.1613,-0.4071
+raw morphometry,7,0.2367,0.2286,0.2573,11.17,0.1109,221,0.5997,0.1613,-0.4071
+raw morphometry,8,0.232,0.2275,0.2573,11.57,0.08808,221,0.5997,0.1613,-0.4071
+raw morphometry,9,0.2319,0.2318,0.2573,9.93,0.124,221,0.5997,0.1613,-0.4071
+raw morphometry,10,0.2341,0.2284,0.2573,11.23,0.09697,221,0.5997,0.1613,-0.4071
+raw morphometry,11,0.2151,0.2312,0.2573,10.15,0.1207,221,0.5997,0.1613,-0.4071
+raw morphometry,12,0.2329,0.239,0.2573,7.116,0.1071,221,0.5997,0.1613,-0.4071

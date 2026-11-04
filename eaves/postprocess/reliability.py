@@ -1,6 +1,6 @@
 """Physical reliability predicates for EAVES curves.
 
-Each flag marks a geometry regime where SRTM can't reliably resolve
+Each flag marks a geometry regime where SRTM cannot reliably resolve
 the reservoir (grid resolution, vertical noise, or topographic edge cases).
 Flags are additive, so a dam can be tagged by several at once.
 
@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 
 _PIXEL_SIZE_M_DEFAULT = 30.0
 
@@ -103,7 +102,7 @@ def add_uncertainty_flags(
         active["tall_narrow"] = aspect > 0.2
     else:
         active["tall_narrow"] = pd.Series(False, index=summary_df.index)
-    # pre_srtm marks definite pre-2000 construction. The curve describes the as-of-2000 valley (possibly already silted), not pristine design geometry
+    # pre_srtm marks definite pre-2000 construction
     cy = pd.to_numeric(summary_df.get("construction_year"), errors="coerce")
     active["pre_srtm"] = pd.Series(cy < SRTM_ACQUISITION_YEAR, index=summary_df.index)
     # unknown_year marks dams whose pre/post-acquisition status cannot be verified. Like pre_srtm dams they are excluded from training
@@ -128,7 +127,7 @@ def print_flag_tally(summary_df: pd.DataFrame) -> None:
     counts = {name: int(flags_col.str.contains(rf"\b{name}\b").sum()) for name in _FLAGS}
     total_flagged = int((summary_df["uncertainty_score"] > 0).sum())
     if total_flagged == 0:
-        print(f"  Uncertainty flags: 0 dams flagged")
+        print("  Uncertainty flags: 0 dams flagged")
         return
     print(f"  Uncertainty flags: {total_flagged} / {len(summary_df)} dams flagged")
     for name in _FLAGS:

@@ -2,8 +2,7 @@
 
 Tile loading and mosaicking, clip and UTM reprojection around a dam, river
 direction from the river network, downstream direction from the DEM gradient,
-and the topographic
-feature extraction used by regionalization.
+and the topographic feature extraction used by regionalization.
 """
 
 from __future__ import annotations
@@ -12,13 +11,14 @@ import os
 
 import numpy as np
 import rasterio
+from pyproj import CRS, Transformer
 from rasterio.merge import merge as rio_merge
-from rasterio.warp import calculate_default_transform, reproject, Resampling
 from rasterio.transform import rowcol
+from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 import eaves.config as _cfg
-from ..utils import srtm_tile_name
 
+from ..utils import srtm_tile_name
 
 # ---- SRTM tile loading and mosaic ----
 
@@ -112,9 +112,10 @@ def get_river_direction_from_segment(gdf_rivers, segment_id, dam_lon, dam_lat,
                                      smooth_m=500.0):
     """Unit vector along the river reach at the dam, pointing up the channel.
 
-    The chord spans ``smooth_m`` along the reach on either side of the vertex
-    nearest the dam. Reach vertices run from the outlet up the channel, so the
-    chord points upstream. Returns ``None`` for a missing or degenerate reach.
+    The chord spans ``smooth_m`` along the reach on either side of the point
+    of the reach nearest the dam, cut at the ends of the reach part. Reach
+    vertices run from the outlet up the channel, so the chord points upstream.
+    Returns ``None`` for a missing or degenerate reach.
     """
     mask = gdf_rivers["index"] == segment_id
     if mask.sum() == 0:
@@ -129,19 +130,22 @@ def get_river_direction_from_segment(gdf_rivers, segment_id, dam_lon, dam_lat,
     m_per_deg_lon = 111320.0 * np.cos(lat_rad)
     m_per_deg_lat = 110540.0
 
-    cum_dist = [0.0]
-    for i in range(1, len(coords)):
-        dx = (coords[i][0] - coords[i - 1][0]) * m_per_deg_lon
-        dy = (coords[i][1] - coords[i - 1][1]) * m_per_deg_lat
-        cum_dist.append(cum_dist[-1] + np.hypot(dx, dy))
-    total_len = cum_dist[-1]
-    cum_dist = np.array(cum_dist)
+    # Vertices in meters relative to the dam, which sits at the origin
+    xy = np.array([((c[0] - dam_lon) * m_per_deg_lon, (c[1] - dam_lat) * m_per_deg_lat) for c in coords])
+    seg_vec = xy[1:] - xy[:-1]
+    seg_len = np.hypot(seg_vec[:, 0], seg_vec[:, 1])
+    cum_dist = np.concatenate([[0.0], np.cumsum(seg_len)])
+    total_len = float(cum_dist[-1])
+    if total_len < 1e-9:
+        return None
 
-    dists_to_dam = [np.hypot((c[0] - dam_lon) * m_per_deg_lon,
-                             (c[1] - dam_lat) * m_per_deg_lat)
-                    for c in coords]
-    nearest_idx = int(np.argmin(dists_to_dam))
-    dam_s = cum_dist[nearest_idx]
+    # The point of the reach nearest the dam, the foot of the perpendicular on the nearest piece
+    with np.errstate(divide="ignore", invalid="ignore"):
+        t = np.where(seg_len > 0, -(xy[:-1] * seg_vec).sum(axis=1) / seg_len ** 2, 0.0)
+    t = np.clip(t, 0.0, 1.0)
+    foot = xy[:-1] + t[:, None] * seg_vec
+    k = int(np.argmin((foot ** 2).sum(axis=1)))
+    dam_s = float(cum_dist[k] + t[k] * seg_len[k])
 
     def _interp(s):
         s = np.clip(s, 0, total_len)
@@ -166,13 +170,11 @@ def get_river_direction_from_segment(gdf_rivers, segment_id, dam_lon, dam_lat,
 
 
 def _flood_river_overlay_from_segment(
-    gdf_rivers, segment_id, dem_tf, dem_shape, utm_epsg,
+    gdf_rivers, segment_id, dem_tf, utm_epsg,
     arrow_step_px=40.0,
     arrow_len_px=14.0,
 ):
     """Project the snapped river LineString into DEM pixel space for QC plots."""
-    from pyproj import CRS, Transformer
-
     sid = str(segment_id).strip()
     if not sid or sid.lower() == "nan" or gdf_rivers is None:
         return None
@@ -192,7 +194,6 @@ def _flood_river_overlay_from_segment(
     crs_dst = CRS.from_epsg(int(utm_epsg))
     tr = Transformer.from_crs(crs_src, crs_dst, always_xy=True)
 
-    h, w = int(dem_shape[0]), int(dem_shape[1])
     cc, rr = [], []
     for xy in geom.coords:
         lon, lat = float(xy[0]), float(xy[1])

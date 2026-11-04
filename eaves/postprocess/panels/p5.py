@@ -1,28 +1,18 @@
-"""Panel set p5: regionalization accuracy.
+"""Panel set p5: Baish comparison and domain-wide volume ratio.
 
-Single-method validation panel for the regionalization recipe shipped in
-``regionalization.py``. The recipe anchors each non-trusted dam at the
-full-pool area predicted by the multi-feature linear regression
-(log-space catalog/topographic features, trained on the trusted SRTM-derived
-dams) and back-solves the coefficient ``c = V_cap / A_cap^b``. Accuracy is
-measured by leave-one-out cross-validation on the trusted dams. Each in turn
-is masked, the regression is re-trained on the remaining trusted dams and
-re-predicted, and the resulting curve is compared against the SRTM
-"truth".
+The sonar survey measures the present-day bathymetry of Baish rather than the
+pre-impoundment valley that SRTM records, so the Baish comparison is a
+consistency check, not ground truth.
 
-Panel a: Predicted vs SRTM-truth volume at the dam's DEM full-pool area
-         on log axes, with the 1:1 identity and shaded ±factor-2 and
-         dashed ±factor-3 bands. Boxed stats give the headline accuracy
-         numbers.
-Panel b: Signed prediction error distribution (log10 V_pred / V_SRTM),
-         with the zero line, the median, and the ±1-sigma band
-         marked.
-Panel c: Error stability across the catalogue, as signed error vs catalogue
-         capacity, scatter plus a robust binned median line, on the same
-         y axis as panel b so spreads are directly comparable.
-
-Source: ``<CSV_DIR>/validation/regionalization_loo.csv`` written by
-``python -m eaves.postprocess.validation --settings <region>.json``.
+Panel a: area-volume curves at Baish from the SRTM-derived fill, the 2025
+         sonar survey and the design table, with the power-law fit of the
+         SRTM curve.
+Panel b: elevation-area curves at Baish from the same three sources, with
+         the top of dead storage, the lowest level of the design and survey
+         tables, marked.
+Panel c: distribution of (recovered maximum volume / catalog capacity) over
+         the dams with a recovered footprint, with the volume-ratio windows
+         of grades A and B marked.
 """
 
 from __future__ import annotations
@@ -33,246 +23,215 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.ticker import MaxNLocator
 
 import eaves.config as _cfg
 
+from ...utils import dams_with_fill
+from ...utils import fit_power_law as _canon_fit
+from ._example import example_dam_id, example_paths, example_summary_row
 from ._shared import (
-    P4_BLUE,
+    COL_FAILED,
+    PANEL_TEXT_RC,
+    _style_legend,
     mm_to_in,
     panel_label,
     save_panel,
 )
 
+# ---- Style ----
 
-# Sets the recipe prefix treated as final, which tracks what regionalization.py ships
-_METHOD_PREFIX = "multi"
-
-_FRAC = 100      # Evaluates at DEM full pool
-_VCOL = f"{_METHOD_PREFIX}_V_at_{_FRAC:03d}pct_m3"
-_RATIOCOL = f"{_METHOD_PREFIX}_log10_V_ratio_at_{_FRAC:03d}pct"
+COL_SONAR = "#6495ED"
+COL_SRTM_CURVE = "#FFA500"
+COL_DESIGN = "#228B22"
 
 
-def _loo_csv() -> Path:
-    return Path(_cfg.CSV_DIR) / "validation" / "regionalization_loo.csv"
+# ---- Data ----
 
-
-def _load_loo() -> pd.DataFrame:
-    p = _loo_csv()
-    if not p.exists():
-        raise RuntimeError(
-            f"Missing {p}. Run: python -m eaves.postprocess.validation "
-            f"--settings <settings>.json"
-        )
-    return pd.read_csv(p)
-
-
-def _accuracy_stats(df: pd.DataFrame) -> dict:
-    v_true = (df["V_srtm_at_100pct_m3"] / 1e6).values
-    v_pred = (df[_VCOL] / 1e6).values
-    m = (v_true > 0) & (v_pred > 0) & np.isfinite(v_true) & np.isfinite(v_pred)
-    r = np.log10(v_pred[m]) - np.log10(v_true[m])
+def _load_bathy_validation_data() -> dict:
+    """Reads the sonar bathymetry from ``BATHYMETRY_EAV_CSV`` and the SRTM EAV
+    table of the example dam.
+    """
+    bathy_csv = getattr(_cfg, "BATHYMETRY_EAV_CSV", None)
+    if not bathy_csv or not os.path.isfile(bathy_csv):
+        raise RuntimeError(f"BATHYMETRY_EAV_CSV not configured or missing: {bathy_csv!r}")
+    bathy = pd.read_csv(bathy_csv)
+    eav_path, _ = example_paths()
+    eav = pd.read_csv(eav_path)
     return {
-        "n": int(len(r)),
-        "median": float(np.median(r)),
-        "p16": float(np.quantile(r, 0.16)),
-        "p84": float(np.quantile(r, 0.84)),
-        "mae": float(np.mean(np.abs(r))),
-        "rmse": float(np.sqrt(np.mean(r ** 2))),
-        "within_2x": 100.0 * float(np.mean(np.abs(r) <= np.log10(2.0))),
-        "within_3x": 100.0 * float(np.mean(np.abs(r) <= np.log10(3.0))),
-        "within_10x": 100.0 * float(np.mean(np.abs(r) <= np.log10(10.0))),
-        "v_true": v_true[m],
-        "v_pred": v_pred[m],
-        "residuals_log10": r,
+        "elev_son": bathy["elevation_m"].to_numpy(),
+        "area_son_km2": bathy["area_m2_integrated_dem"].to_numpy() / 1e6,
+        "vol_son_mcm": bathy["volume_m3_integrated_dem"].to_numpy() / 1e6,
+        "elev_srt": eav["elevation_m"].to_numpy(),
+        "area_srt_km2": eav["area_m2"].to_numpy() / 1e6,
+        "vol_srt_mcm": eav["volume_m3"].to_numpy() / 1e6,
+        "area_des_km2": bathy["area_m2_design"].to_numpy() / 1e6,
+        "vol_des_mcm": bathy["volume_m3_design"].to_numpy() / 1e6,
     }
 
 
-def _draw_panel_a(ax, stats: dict) -> None:
-    v_true = stats["v_true"]
-    v_pred = stats["v_pred"]
+# ---- Drawing ----
 
-    lo = max(1e-3, min(v_true.min(), v_pred.min()) * 0.5)
-    hi = max(v_true.max(), v_pred.max()) * 2.0
-    grid = np.geomspace(lo, hi, 200)
-
-    ax.fill_between(grid, grid / 2.0, grid * 2.0,
-                    color="0.85", alpha=0.40, zorder=0, label="±factor 2")
-    ax.plot(grid, grid * 3.0, color="0.55", lw=0.6, ls=":", zorder=2)
-    ax.plot(grid, grid / 3.0, color="0.55", lw=0.6, ls=":", zorder=2,
-            label="±factor 3")
-    ax.plot(grid, grid, color="black", lw=1.3, zorder=4, label="1 : 1")
-
-    ax.scatter(
-        v_true, v_pred,
-        s=18, color=P4_BLUE, alpha=0.65, edgecolor="white", linewidth=0.3,
-        zorder=3,
-    )
-
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlim(lo, hi)
-    ax.set_ylim(lo, hi)
-    ax.set_xlabel(r"SRTM truth volume at $A_\mathrm{DEM}$  (MCM)", fontsize=10)
-    ax.set_ylabel(r"Regionalized volume at $A_\mathrm{DEM}$  (MCM)", fontsize=10)
-    ax.tick_params(labelsize=10, length=2.5)
-    ax.grid(True, which="both", ls=":", lw=0.4, alpha=0.5)
-
-    leg = ax.legend(loc="lower right", frameon=False, fontsize=10,
-                    handlelength=1.4, labelspacing=0.3)
-    for t in leg.get_texts():
-        t.set_color("0.10")
-
-    _r = stats["residuals_log10"]
-    bias_frac = 10 ** stats["median"] - 1.0
-    medape = float(np.median(np.abs(10 ** _r - 1.0)))
-    relrmse = float(np.sqrt(np.mean((10 ** _r - 1.0) ** 2)))
-    txt = (
-        f"n                       = {stats['n']}\n"
-        f"median bias      = {bias_frac:+.2f}\n"
-        f"median abs err = {medape:.2f}\n"
-        f"rel. RMSE          = {relrmse:.2f}"
-    )
+def _bathy_dam_label(ax, x: float, y: float, ha: str, va: str) -> None:
+    """Boxed dam-name annotation of the Baish panels at (x, y) in axes coordinates."""
+    ex_row = example_summary_row()
+    name = ex_row.get("dam_name") or example_dam_id()
     ax.text(
-        0.03, 0.97, txt,
-        transform=ax.transAxes, ha="left", va="top",
-        fontsize=10, color="0.10",
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
-                  edgecolor="0.7", linewidth=0.5, alpha=0.55),
-    )
-
-    panel_label(ax, "a", fontsize=12)
-
-
-def _draw_panel_b(ax, stats: dict) -> None:
-    r = stats["residuals_log10"]
-    edges = np.linspace(-1.5, 1.5, 41)
-
-    ax.hist(
-        r, bins=edges,
-        color=P4_BLUE, alpha=0.7, edgecolor="white", linewidth=0.3,
-        zorder=2,
-    )
-    ax.axvline(0.0, color="black", lw=1.3, zorder=4, label="zero error")
-    ax.axvline(stats["median"], color="red", lw=1.4, ls="--", zorder=4,
-               label=f"median =\n{(10 ** stats['median'] - 1.0):+.2f}")
-    ax.axvspan(stats["p16"], stats["p84"], color="red", alpha=0.10, zorder=1,
-               label=f"P16–P84:\n[{(10 ** stats['p16'] - 1.0):+.2f}, "
-                     f"{(10 ** stats['p84'] - 1.0):+.2f}]")
-    ax.axvline(np.log10(2.0), color="0.45", lw=0.6, ls=":", zorder=3)
-    ax.axvline(-np.log10(2.0), color="0.45", lw=0.6, ls=":", zorder=3)
-
-    ax.set_xlim(edges[0], edges[-1])
-    ax.set_xlabel(r"$\log_{10}(V_\mathrm{pred}\,/\,V_\mathrm{SRTM})$  at $A_\mathrm{DEM}$",
-                  fontsize=10)
-    ax.set_ylabel("Number of dams", fontsize=10)
-    ax.tick_params(labelsize=10, length=2.5)
-    ax.grid(True, ls=":", lw=0.4, alpha=0.5)
-
-    ax.text(np.log10(2.0), ax.get_ylim()[1] * 0.97,
-            " ±factor 2", color="0.45", fontsize=10, ha="left", va="top")
-    ax.text(-np.log10(2.0), ax.get_ylim()[1] * 0.97,
-            "±factor 2 ", color="0.45", fontsize=10, ha="right", va="top")
-
-    leg = ax.legend(loc="center left", frameon=False, fontsize=10,
-                    handlelength=1.4, labelspacing=0.3)
-    for t in leg.get_texts():
-        t.set_color("0.10")
-
-    panel_label(ax, "b", fontsize=12)
-
-
-def _draw_panel_c(ax, df: pd.DataFrame, stats: dict) -> None:
-    d = df.dropna(subset=["capacity_mcm", _RATIOCOL]).copy()
-    d = d[d["capacity_mcm"] > 0]
-    cap = d["capacity_mcm"].values
-    err = d[_RATIOCOL].values
-
-    ax.scatter(
-        cap, err,
-        s=14, color=P4_BLUE, alpha=0.5,
-        edgecolor="white", linewidth=0.25, zorder=2,
-    )
-
-    ax.axhline(0.0, color="black", lw=1.2, zorder=4)
-    ax.axhline(np.log10(2.0), color="0.45", lw=0.6, ls=":", zorder=3)
-    ax.axhline(-np.log10(2.0), color="0.45", lw=0.6, ls=":", zorder=3)
-    ax.axhline(np.log10(3.0), color="0.55", lw=0.6, ls=":", zorder=3)
-    ax.axhline(-np.log10(3.0), color="0.55", lw=0.6, ls=":", zorder=3)
-
-    edges = np.geomspace(max(cap.min(), 1e-3), cap.max(), 11)
-    centres = np.sqrt(edges[:-1] * edges[1:])
-    med, p16, p84, ns = [], [], [], []
-    for a, b in zip(edges[:-1], edges[1:]):
-        sub = err[(cap >= a) & (cap < b)]
-        if len(sub) >= 3:
-            med.append(float(np.median(sub)))
-            p16.append(float(np.quantile(sub, 0.16)))
-            p84.append(float(np.quantile(sub, 0.84)))
-        else:
-            med.append(np.nan); p16.append(np.nan); p84.append(np.nan)
-        ns.append(len(sub))
-    med = np.asarray(med); p16 = np.asarray(p16); p84 = np.asarray(p84)
-    valid = np.isfinite(med)
-
-    ax.fill_between(centres[valid], p16[valid], p84[valid],
-                    color="red", alpha=0.13, zorder=3, label="binned P16–P84")
-    ax.plot(centres[valid], med[valid], color="red", lw=1.8, marker="o", ms=4,
-            mfc="white", mec="red", mew=1.0, zorder=5, label="binned median")
-
-    ax.set_xscale("log")
-    ax.set_ylim(-1.5, 1.5)
-    ax.set_xlabel("Catalogue capacity (MCM)", fontsize=10)
-    ax.set_ylabel(r"$\log_{10}(V_\mathrm{pred}\,/\,V_\mathrm{SRTM})$",
-                  fontsize=10)
-    ax.tick_params(labelsize=10, length=2.5)
-    ax.grid(True, which="both", ls=":", lw=0.4, alpha=0.5)
-
-    leg = ax.legend(loc="upper right", frameon=False, fontsize=10,
-                    handlelength=1.4, labelspacing=0.3)
-    for t in leg.get_texts():
-        t.set_color("0.10")
-
-    ax.text(
-        0.03, 0.03,
-        f"n = {stats['n']} dams\nbinned across decades of $V_\\mathrm{{cap}}$",
-        transform=ax.transAxes, ha="left", va="bottom",
+        x, y, f"{name}",
+        transform=ax.transAxes, ha=ha, va=va,
         fontsize=10, color="0.10",
         bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
                   edgecolor="0.7", linewidth=0.5, alpha=0.9),
     )
 
+
+def _draw_bathy_va(ax, data: dict) -> None:
+    """Panel a, V vs A from sonar, SRTM and the design table, with the SRTM fit."""
+    a_son = data["area_son_km2"]
+    v_son = data["vol_son_mcm"]
+    a_srt = data["area_srt_km2"]
+    v_srt = data["vol_srt_mcm"]
+    a_des = data["area_des_km2"]
+    v_des = data["vol_des_mcm"]
+
+    ax.plot(a_son, v_son, color=COL_SONAR, lw=1.4, label="Survey")
+    ax.plot(a_srt, v_srt, color=COL_SRTM_CURVE, lw=1.4, label="SRTM")
+    ax.plot(a_des, v_des, color=COL_DESIGN, lw=1.4, label="Design")
+
+    # Fits c and b with the pipeline power-law fit behind eaves_params.csv
+    c_srt_si, b_srt, _ = _canon_fit(a_srt * 1e6, v_srt * 1e6)
+    # Converts c to the km^2/MCM system: V_mcm = c_si * 1e6^(b-1) * A_km2^b
+    c_srt = c_srt_si * 1e6 ** (b_srt - 1)
+    a_g = np.linspace(0, a_srt.max(), 200)
+    ax.plot(a_g, c_srt * a_g ** b_srt, color="#8B0000", ls=(0, (4, 2.5)), lw=1.1, zorder=3,
+            label=f"SRTM fit\nc = {c_srt_si:.4g}\nb = {b_srt:.4f}")
+
+    # Leaves headroom above the curves for the key
+    ax.set_ylim(-0.04 * v_srt.max(), 1.55 * max(v_son.max(), v_srt.max(), v_des.max()))
+    ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
+    ax.set_ylabel("Volume (MCM)", fontsize=10)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=5, integer=True))
+    ax.tick_params(labelsize=10, length=2.5)
+    ax.grid(True, ls="--", alpha=0.3, lw=0.4)
+    _bathy_dam_label(ax, 0.97, 0.04, "right", "bottom")
+    _style_legend(ax.legend(loc="upper left", frameon=False, fontsize=10,
+                            handlelength=1.2, handletextpad=0.4, labelspacing=0.25,
+                            borderaxespad=0.2))
+    panel_label(ax, "a", fontsize=12)
+
+
+def _draw_bathy_ea(ax, data: dict) -> None:
+    """Panel b, elevation vs A from sonar, SRTM and the design table."""
+    ax.plot(data["area_son_km2"], data["elev_son"],
+            color=COL_SONAR, lw=1.4, label="Survey")
+    ax.plot(data["area_srt_km2"], data["elev_srt"],
+            color=COL_SRTM_CURVE, lw=1.4, label="SRTM")
+    ax.plot(data["area_des_km2"], data["elev_son"],
+            color=COL_DESIGN, lw=1.4, label="Design")
+    # The design and survey tables start at the top of dead storage
+    z_dead = float(data["elev_son"].min())
+    ax.axhline(z_dead, color="0.45", ls="--", lw=1.2, zorder=1.5)
+    ax.annotate("Dead storage", xy=(0.97, z_dead),
+                xycoords=ax.get_yaxis_transform(), xytext=(0, -2),
+                textcoords="offset points", ha="right", va="top",
+                fontsize=10, color="0.30")
+    ax.set_xlabel(r"Area (km$^2$)", fontsize=10)
+    ax.set_ylabel("Elevation (m a.s.l.)", fontsize=10)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=5, integer=True))
+    ax.tick_params(labelsize=10, length=2.5)
+    ax.grid(True, ls="--", alpha=0.3, lw=0.4)
+    _bathy_dam_label(ax, 0.08, 0.97, "left", "top")
+    # The key sits between the dead-storage line and the curves
+    _style_legend(ax.legend(loc="center right", bbox_to_anchor=(1.0, 0.36),
+                            frameon=False, fontsize=10,
+                            handlelength=1.2, handletextpad=0.4, labelspacing=0.3,
+                            borderaxespad=0.2))
+    panel_label(ax, "b", fontsize=12)
+
+
+def _draw_panel_c(ax) -> None:
+    """Panel c, distribution of (recovered maximum volume / catalog capacity), with the interquartile range."""
+    summary_csv = Path(_cfg.CSV_DIR) / "eaves_summary.csv"
+    df = dams_with_fill(pd.read_csv(summary_csv))
+    vr = df["vol_ratio"].dropna().to_numpy()
+    vr = vr[vr > 0]
+
+    n_total = len(vr)
+    # Counts the fills inside the volume-ratio windows of grades A and B
+    n_win_a = int(((vr >= 0.5) & (vr <= 2.0)).sum())
+    n_win_b = int(((vr >= 0.3) & (vr <= 5.0)).sum())
+    pct_a = 100.0 * n_win_a / n_total
+    pct_b = 100.0 * n_win_b / n_total
+    median_vr = float(np.median(vr))
+    q25, q75 = float(np.quantile(vr, 0.25)), float(np.quantile(vr, 0.75))
+
+    # Bins ten per decade with one bin centered on a ratio of 1, the axis spans 1.5 decades below the smallest bin for the key to just past the wider window or the largest ratio
+    dec_lo = int(np.floor(np.log10(vr.min())))
+    dec_hi = int(np.ceil(np.log10(max(5.0, vr.max()))))
+    bins = 10.0 ** (np.arange(10 * dec_lo, 10 * dec_hi + 2) / 10.0 - 0.05)
+    x_lo = 10.0 ** (dec_lo - 1.5)
+    x_hi = 1.2 * max(5.0, vr.max())
+
+    ax.axvspan(0.5, 2.0, color="#FBC678", alpha=0.6, zorder=1,
+               label=f"Volume ratio\nin [0.5, 2.0]\n(n = {n_win_a}, {pct_a:.0f}%)")
+    ax.axvspan(0.3, 5.0, color="#F9DC9A", alpha=0.7, zorder=0,
+               label=f"Volume ratio\nin [0.3, 5.0]\n(n = {n_win_b}, {pct_b:.0f}%)")
+
+    counts, _, _ = ax.hist(
+        vr, bins=bins,
+        color="0.35", edgecolor="none", zorder=2,
+    )
+
+    # Draws the reference lines under the bars, the ideal ratio as a wide gray line under the median and quartile lines
+    ax.axvline(1.0, color="0.65", ls="-", lw=3.5, zorder=1.4,
+               label="Ideal ratio = 1")
+    ax.axvline(median_vr, color=COL_FAILED, ls="--", lw=1.7, zorder=1.6,
+               label=f"Median = {median_vr:.2f}")
+    ax.axvline(q25, color=COL_FAILED, ls=":", lw=1.3, zorder=1.6,
+               label=f"Interquartile\nrange\n[{q25:.2f}, {q75:.2f}]")
+    ax.axvline(q75, color=COL_FAILED, ls=":", lw=1.3, zorder=1.6)
+    # Leaves a band over the tallest bar where the reference lines show
+    ax.set_ylim(0.0, 1.15 * float(counts.max()))
+
+    ax.set_xscale("log")
+    ax.set_xlim(x_lo, x_hi)
+    ax.set_xlabel(r"Volume ratio  ($V_\mathrm{SRTM}/V_\mathrm{cap}$)",
+                  fontsize=10)
+    ax.set_ylabel(f"Number of dams (n = {n_total})", fontsize=10)
+    ax.tick_params(labelsize=10, length=2.5)
+    ax.grid(True, which="both", axis="x", linestyle=":", linewidth=0.4, alpha=0.5)
+    _style_legend(ax.legend(loc="upper left", frameon=False, fontsize=10,
+                            handlelength=1.0, handletextpad=0.4, labelspacing=0.25,
+                            borderaxespad=0.2, borderpad=0.2))
     panel_label(ax, "c", fontsize=12)
 
 
-def make_p5_validation(output_dir: str | os.PathLike) -> Path:
-    """Render p5 (regionalization-accuracy panel for the shipped recipe)."""
+def make_p5_comparison(output_dir: str | os.PathLike) -> Path:
+    """Renders p5, the Baish comparison and the domain-wide volume ratio in one row.
+
+    Panel a: Baish area-volume curves with the SRTM fit.
+    Panel b: Baish elevation-area curves.
+    Panel c: volume-ratio histogram over the dams with a flood fill.
+    """
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_png = out_dir / "p5_regionalization_validation.png"
+    out_png = out_dir / "p5_comparison.png"
 
-    df = _load_loo()
-    stats = _accuracy_stats(df)
+    bathy = _load_bathy_validation_data()
 
-    with plt.rc_context({
-        "font.size":       10,
-        "axes.labelsize":  10,
-        "axes.titlesize":  10,
-        "xtick.labelsize": 10,
-        "ytick.labelsize": 10,
-        "legend.fontsize": 10,
-    }):
-        fig = plt.figure(figsize=(mm_to_in(290), mm_to_in(105)))
+    with plt.rc_context(PANEL_TEXT_RC):
+        fig = plt.figure(figsize=(mm_to_in(187.0), mm_to_in(85.0)))
         gs = fig.add_gridspec(
             1, 3,
-            width_ratios=[1.30, 1.25, 1.00],
-            wspace=0.24,
-            left=0.05, right=0.985, top=0.90, bottom=0.12,
+            width_ratios=[41.0, 40.0, 58.0],
+            wspace=0.36,
+            left=0.0865, right=0.986, top=0.91, bottom=0.14,
         )
-        _draw_panel_a(fig.add_subplot(gs[0, 0]), stats)
-        _draw_panel_b(fig.add_subplot(gs[0, 1]), stats)
-        _draw_panel_c(fig.add_subplot(gs[0, 2]), df, stats)
+        _draw_bathy_va(fig.add_subplot(gs[0, 0]), bathy)
+        _draw_bathy_ea(fig.add_subplot(gs[0, 1]), bathy)
+        _draw_panel_c(fig.add_subplot(gs[0, 2]))
 
-        # Opens the axes by hiding the top and right spines
+        # Opens the axes by hiding the top and right spines across the panel set
         for _ax in fig.axes:
             _ax.spines["top"].set_visible(False)
             _ax.spines["right"].set_visible(False)

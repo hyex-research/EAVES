@@ -11,6 +11,7 @@
     "country_name_col": "NAME",
     "bathymetry_eav_csv": "input/ksa_dams/baish_bathymetry/baish_area_elev_vol.csv",
     "bathymetry_dam_id": "id_120000",
+    "bathymetry_survey_date": "2025-02",
     "grdl_dir": "input/grdl",
     "sedimentation_dir": "input/ksa_dams/sedimentation_owe",
     "max_seg_len_m": 2000,

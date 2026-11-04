@@ -1,15 +1,54 @@
+# ---- Python bytecode ----
 __pycache__/
 *.pyc
-*.nbc
-*.nbi
-*.log
+*.pyo
+*.pyd
+
+# ---- Python build and packaging artifacts ----
+build/
+dist/
+wheels/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ---- Tooling caches ----
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
 
-# Exclude graphify from the root
-graphify-out/
+# ---- Notebooks ----
+.ipynb_checkpoints/
 
-# Exclude PDF files
+# ---- Environment and local config ----
+.env
+.envrc
+.venv/
+venv/
+
+# ---- Editor and OS files ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ---- Logs and PDF exports ----
+*.log
 *.pdf
 
-# Exclude local settings that hold machine paths
+# ---- Local settings that hold machine paths ----
 *_local.json
+
+# ---- Local working files ----
+temp/
+CLAUDE*.md

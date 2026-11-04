@@ -1,144 +1,17 @@
 """Shared helpers.
 
-Placement-override loaders, upstream walk distances, coordinate and tile
-helpers (UTM EPSG selection, buffer sizing), the canonical power-law fit,
-and failure classification.
+Coordinate and tile helpers (UTM EPSG selection, buffer sizing), the
+canonical power-law fit, the precision of the released tables and the typed
+reading of their cells, and the selection of the summary rows with a flood
+fill.
 """
 
 from __future__ import annotations
 
-import os
-
 import numpy as np
-import pandas as pd
 from scipy.optimize import curve_fit
 
-from .config import (
-    UPSTREAM_STEP_PX,
-    UPSTREAM_MAX_SHIFT_PX,
-)
 import eaves.config as _cfg
-
-
-# ---- Placement-override loaders ----
-
-def _load_placement_overrides():
-    """Load ``dam_placement_overrides.csv`` once, keyed by dam_id.
-
-    Path is read from ``_cfg.PLACEMENT_OVERRIDES_CSV`` if set (see settings) and
-    silently skipped otherwise.
-    """
-    if _cfg._placement_overrides_cache is not None:
-        return _cfg._placement_overrides_cache
-    _cfg._placement_overrides_cache = {}
-    overrides_csv = getattr(_cfg, "PLACEMENT_OVERRIDES_CSV", None)
-    if not overrides_csv or not os.path.isfile(overrides_csv):
-        return _cfg._placement_overrides_cache
-    try:
-        df = pd.read_csv(overrides_csv, comment="#")
-    except Exception:
-        return _cfg._placement_overrides_cache
-    df.columns = [str(c).strip() for c in df.columns]
-    id_col = "dam_id" if "dam_id" in df.columns else "csv_id"
-    if id_col not in df.columns:
-        return _cfg._placement_overrides_cache
-    for _, row in df.iterrows():
-        cid = str(row[id_col]).strip()
-        if not cid or cid.lower() in ("nan", "none"):
-            continue
-        _cfg._placement_overrides_cache[cid] = row.to_dict()
-    return _cfg._placement_overrides_cache
-
-
-def _get_placement_override(dam_id):
-    return _load_placement_overrides().get(str(dam_id).strip(), {})
-
-
-def _ov_float(ov, key, default=None):
-    if not ov or key not in ov:
-        return default
-    v = ov[key]
-    if v is None or (isinstance(v, float) and np.isnan(v)):
-        return default
-    try:
-        x = float(v)
-        return x
-    except (TypeError, ValueError):
-        return default
-
-
-def _ov_bool(ov, key, default=False):
-    if not ov or key not in ov:
-        return default
-    v = ov[key]
-    if v is None or (isinstance(v, float) and np.isnan(v)):
-        return default
-    if isinstance(v, (bool, np.bool_)):
-        return bool(v)
-    try:
-        fv = float(v)
-        if fv == 1.0:
-            return True
-        if fv == 0.0:
-            return False
-    except (TypeError, ValueError):
-        pass
-    s = str(v).strip().lower()
-    return s in ("1", "true", "yes", "y")
-
-
-def _ov_int(ov, key, default=None):
-    if not ov or key not in ov:
-        return default
-    v = ov[key]
-    if v is None or (isinstance(v, float) and np.isnan(v)):
-        return default
-    try:
-        return int(round(float(v)))
-    except (TypeError, ValueError):
-        return default
-
-
-def _ov_preferred_crest_angles_deg(ov):
-    """Comma/semicolon-separated integers in [0, 180), tried first for wall orientation."""
-    if not ov:
-        return []
-    v = ov.get("preferred_crest_angle_deg")
-    if v is None:
-        return []
-    s = str(v).strip()
-    if not s or s.lower() == "nan":
-        return []
-    out = []
-    for part in s.replace(";", ",").split(","):
-        part = part.strip()
-        if not part:
-            continue
-        try:
-            a = int(round(float(part))) % 180
-            out.append(a)
-        except (TypeError, ValueError):
-            continue
-    return out
-
-
-# ---- Upstream walk distances ----
-
-def _upstream_sample_distances_m(pixel_size_m, max_shift_px=None):
-    """Distances (m) along the valley walk at which a wall is tried."""
-    if pixel_size_m <= 0 or not np.isfinite(pixel_size_m):
-        return np.array([0.0], dtype=float)
-    mx_px = float(UPSTREAM_MAX_SHIFT_PX if max_shift_px is None else max_shift_px)
-    max_m = mx_px * pixel_size_m
-    step_m = float(UPSTREAM_STEP_PX) * pixel_size_m
-    arr = np.arange(0.0, max_m + 1e-9, step_m)
-    out = list(arr)
-    if len(out) == 0:
-        return np.array([0.0], dtype=float)
-    if abs(out[-1] - max_m) > 0.5 * pixel_size_m:
-        out.append(max_m)
-    return np.array(out, dtype=float)
-
 
 # ---- Coordinate / tile helpers ----
 
@@ -214,6 +87,23 @@ def round_released_columns(df):
     return df
 
 
+def typed_value(text):
+    """Return a cell of a released table read as text, as a bool, an int or a float where it reads as one, None where it is empty or not finite, else the text itself."""
+    if text is None or text == "":
+        return None
+    if text in ("True", "False"):
+        return text == "True"
+    try:
+        return int(text)
+    except ValueError:
+        pass
+    try:
+        value = float(text)
+    except ValueError:
+        return text
+    return value if np.isfinite(value) else None
+
+
 # ---- Summary rows ----
 
 _FILL_DTYPES = {"n_pixels": "int64", "uncertainty_score": "int64", "capped": "bool"}
@@ -236,17 +126,6 @@ def dams_with_fill(df):
 
 # ---- Misc helpers ----
 
-def interpolate_nans(data):
-    from scipy.ndimage import distance_transform_edt
-    mask = np.isnan(data)
-    if not mask.any():
-        return data
-    _, idx = distance_transform_edt(mask, return_indices=True)
-    out = data.copy()
-    out[mask] = data[tuple(idx[:, mask])]
-    return out
-
-
 def buffer_deg_for_dam(capacity_m3):
     capacity_mcm = capacity_m3 / 1e6
     if capacity_mcm > 100:
@@ -257,47 +136,3 @@ def buffer_deg_for_dam(capacity_m3):
         return 0.05
     else:
         return 0.03
-
-
-def _approx_cone_volume_m3(n_px, pixel_area, spillway_height_m):
-    """Crude prismatoid volume for comparing fills without full EAV integration."""
-    return float(n_px) * float(pixel_area) * float(spillway_height_m) / 3.0
-
-
-def _bresenham(r0, c0, r1, c1):
-    dr = abs(r1 - r0)
-    dc = abs(c1 - c0)
-    sr = 1 if r0 < r1 else -1
-    sc = 1 if c0 < c1 else -1
-    err = dr - dc
-    while True:
-        yield (r0, c0)
-        if r0 == r1 and c0 == c1:
-            break
-        e2 = 2 * err
-        if e2 > -dc:
-            err -= dc
-            r0 += sr
-        if e2 < dr:
-            err += dr
-            c0 += sc
-
-
-def _classify_failure(reason):
-    if "bad_fill_auto" in reason:
-        return "bad_fill_auto"
-    if "srtm_voids" in reason:
-        return "srtm_voids"
-    if "placement_failed" in reason:
-        return "placement_failed"
-    if "leak" in reason.lower():
-        return "flood_fill_leak"
-    if "seed" in reason.lower() or "fill" in reason.lower():
-        return "flood_fill_failed"
-    if "NaN" in reason or "nan" in reason.lower():
-        return "insufficient_pixels"
-    if "no srtm" in reason.lower() or "tiles" in reason.lower():
-        return "no_srtm_tiles"
-    if "missing" in reason.lower():
-        return "missing_attributes"
-    return "processing_error"

@@ -1,8 +1,7 @@
 """Unit tests for small pure helpers in :mod:`eaves.pipeline.curves` and :mod:`eaves.utils`.
 
-Covers construction-year parsing, which deliberately leaves an unknown year
-as ``None`` (never a fabricated sentinel such as 2001), and the precision of
-the released tables.
+Covers construction-year parsing, which leaves an unknown year as ``None``,
+and the precision of the released tables.
 """
 
 from __future__ import annotations
@@ -29,17 +28,12 @@ class TestParseConstructionYear:
     @pytest.mark.parametrize("raw", [
         None,                # genuinely absent
         "",                  # blank cell
-        "historical",        # non-numeric catalogue note
+        "historical",        # non-numeric catalog note
         np.nan,              # pandas NaN for a missing numeric cell
         "n/a",
     ])
     def test_missing_or_non_numeric_returns_none(self, raw):
-        # Guards against a fabricated sentinel year. The result is None, never 2001
         assert _parse_construction_year(raw) is None
-
-    def test_never_returns_2001_sentinel_for_missing(self):
-        for raw in (None, "", np.nan, "historical"):
-            assert _parse_construction_year(raw) != 2001
 
 
 class TestReleasedPrecision:

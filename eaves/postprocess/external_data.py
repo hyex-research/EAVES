@@ -17,8 +17,8 @@ so that placement-failed dams already carry the column in
 from __future__ import annotations
 
 import os
-import pandas as pd
 
+import pandas as pd
 
 _MANAGED_COLS = (
     "sed_yield_t_ha_yr",

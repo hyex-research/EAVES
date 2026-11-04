@@ -1,11 +1,11 @@
 # 🏔️💧 **EAVES: Elevation-Area-Volume Estimation from SRTM**
 
-_Reconstructing reservoir bathymetry for ungaged arid-basin dams from SRTM topography acquired before most of them were built._
+_Reconstructing elevation-area-volume curves for ungauged dams in arid regions from SRTM topography acquired before most of them were built._
 
 ---
 
-[![Python](https://img.shields.io/badge/python-3.13-blue.svg)](environment.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20731020.svg)](https://doi.org/10.5281/zenodo.20731020)
+[![Python](https://img.shields.io/badge/python-3.14-blue.svg)](environment.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20731019.svg)](https://doi.org/10.5281/zenodo.20731019)
 [![KAUST](https://img.shields.io/badge/KAUST-HYEX-red.svg)](https://github.com/hyex-research)
 
 ---
@@ -16,51 +16,52 @@ _Reconstructing reservoir bathymetry for ungaged arid-basin dams from SRTM topog
 
 ## 🗺️ Overview
 
-Reservoir bathymetry is the missing link between remotely sensed water extent and storage. In arid and hyper-arid **ungaged basins**, bathymetric surveys are almost never available, so the Elevation-Area-Volume (EAV) relationship that ties surface area to volume has to be inferred. **EAVES** reconstructs it from the **Shuttle Radar Topography Mission (SRTM)** digital elevation model, exploiting the fact that SRTM was acquired in February 2000, before most dams in arid regions were constructed, so the valley topography is preserved in the DEM.
+Reservoir bathymetry ties remotely sensed water extent to storage. In arid and hyper-arid **ungauged basins**, bathymetric surveys are costly in remote terrain and seldom made, so the elevation-area-volume (EAV) curves that convert water-surface area into storage volume are rarely available for small and medium dams and have to be inferred. **EAVES** reconstructs them from the **Shuttle Radar Topography Mission (SRTM)** digital elevation model. SRTM was acquired in February 2000, before most of the Saudi Arabian dams of the dataset were built, so the DEM preserves the valley topography beneath their reservoirs.
 
 For each dam the pipeline:
 
-1. **Locates** the dam site on the SRTM DEM and searches for an optimal wall placement across the valley
-2. **Flood-fills** the valley up to the spillway height to reconstruct the reservoir footprint
-3. **Integrates** the depth-area relationship into a continuous EAV curve
+1. **Places** a wall across the valley on the SRTM DEM in up to six automated stages, starting at the catalog coordinate
+2. **Flood-fills** the valley behind the wall up to the spillway elevation, or to the level at which volume reaches catalog capacity, to reconstruct the reservoir footprint
+3. **Integrates** the wetted area over elevation at 0.5 m levels into a tabulated EAV curve
 4. **Fits** a power-law model V = c · A<sup>b</sup> to parameterize the area-volume relationship
-5. **Regionalizes** the fitted parameters so that dams with unreliable SRTM fills still receive physically plausible curves
+5. **Regionalizes** the parameters so that dams without a reliable SRTM-derived fit receive regionally calibrated curves anchored to design capacity
 
-The headline product, `eaves_params.csv`, provides the area-volume relationship for every dam in the study domain, enabling satellite-observed water extent to be converted into storage estimates for downstream hydrological modeling.
+The curves of the Saudi Arabian dams ship with the repository and need no run. [`eaves_params.csv`](region/ksa/output/1_results_csv/eaves_params.csv) gives the coefficients c and b of all 526 dams, which turn a satellite-observed water area A in m² into the storage V = c · A<sup>b</sup> in m³, and [`DATA_DICTIONARY.md`](region/ksa/output/1_results_csv/DATA_DICTIONARY.md) defines every column of the released tables with its unit. The dataset is archived on Zenodo ([doi:10.5281/zenodo.20728128](https://doi.org/10.5281/zenodo.20728128)).
 
-> **Provenance:** EAVES was developed and validated for the arid and hyper-arid dams of **Saudi Arabia** (526 dams: 319 SRTM-derived, 207 regionalized). The codebase is portable and can be applied to any region for which the required inputs (SRTM tiles, MERIT Hydro, a dam catalog) are available.
-
-## 📂 The data
-
-The Saudi Arabia EAV curves are ready to use directly, no run required:
-
-- **[`eaves_params.csv`](region/ksa/output/1_results_csv/eaves_params.csv)** - power-law coefficients (c, b) for all 526 dams. The one file most users need.
-- **[`eaves_summary.csv`](region/ksa/output/1_results_csv/eaves_summary.csv)** - full per-dam table for the same 526 dams: quality grade, uncertainty flags, fitted statistics, and topographic features. The 23 dams without a flood fill keep their catalog attributes and topographic features, and their fill and fit cells are empty.
-- **[`DATA_DICTIONARY.md`](region/ksa/output/1_results_csv/DATA_DICTIONARY.md)** - every column defined, with units.
-
-Convert a satellite-observed water area A to storage with the dam's own coefficients: V = c · A<sup>b</sup>. The full release (per-dam hypsometries and the validation suite) is archived on Zenodo (<https://doi.org/10.5281/zenodo.20728129>).
+> **Demonstration application.** EAVES was developed and validated on the arid and hyper-arid dams of **Saudi Arabia** (526 dams, 320 with an SRTM-derived curve and 206 regionalized). The method transfers to other regions with a DEM that predates most of their dams, a river network and a dam catalog with locations, design attributes and construction years, but its application to a new region is not automatic. The pipeline re-fits the regional parameters on the reliable curves of local dams built after the DEM acquisition, whereas the placement and acceptance constants and the quality thresholds, set on SRTM and the Saudi catalog, need re-evaluation for the new region.
 
 ## 🚀 Quickstart
 
 ```bash
 conda env create -f environment.yml
 conda activate eaves
-./run_all.sh region/<country>/<country>.json
+pip install -e . --no-deps
+./run_all.sh region/ksa/ksa.json
 ```
 
-This runs the full chain: placement-and-fit pipeline, validation, uncertainty propagation, panel figures, and the Markdown report. See [documentation/usage.md](documentation/usage.md) for flags, opt-in diagnostics, testing, and the settings-file reference.
+This runs the full chain: the placement-and-fit pipeline, validation, uncertainty propagation, panel figures and the Markdown report. The `/path/to/...` entries of the settings must first be set to your copies of the external data, and the regression test `pytest -m slow` runs from a clone alone. See [documentation/usage.md](documentation/usage.md) for installation, the flags, the diagnostics on request, the tests and the settings.
 
 ## 📚 Documentation
 
 | Document | Contents |
-| -------- | -------- |
-| [documentation/method.md](documentation/method.md) | The algorithm: wall placement, EAV construction, trusted/training sets, regionalization, limitations |
-| [documentation/structure.md](documentation/structure.md) | Repository layout and module map |
-| [documentation/outputs.md](documentation/outputs.md) | Every file a run produces: CSVs, panels, QC maps, report |
-| [documentation/data-dependencies.md](documentation/data-dependencies.md) | Required and optional input datasets, sources, licensing notes |
-| [documentation/usage.md](documentation/usage.md) | Run commands, flags, validation diagnostics, testing, settings keys |
-| `region/<country>/output/1_results_csv/DATA_DICTIONARY.md` | Column-level definitions and controlled vocabularies for the released data |
+| --- | --- |
+| [documentation/method.md](documentation/method.md) | Domain preprocessing, wall placement, EAV curve construction and geometric interpretation, trusted and training sets, regionalization, limitations |
+| [documentation/structure.md](documentation/structure.md) | Repository layout and region pattern |
+| [documentation/usage.md](documentation/usage.md) | Installation, run commands, configuration |
+| [documentation/outputs.md](documentation/outputs.md) | Files a run writes, from the released tables to the panels, check maps and report |
+| [documentation/data-dependencies.md](documentation/data-dependencies.md) | Included data, licensing, external datasets |
+| [DATA_DICTIONARY.md](region/ksa/output/1_results_csv/DATA_DICTIONARY.md) | Columns, units and controlled vocabularies of the released tables |
+| [AGENTS.md](AGENTS.md) | Operational brief for AI coding agents (setup, verification, conventions, guardrails) |
 | [CHANGELOG.md](CHANGELOG.md) | Versioned change log |
+
+## 🤖 Agent-ready
+
+EAVES ships with first-class support for AI coding agents and assistants:
+
+- **[AGENTS.md](AGENTS.md)**: the operational brief (layout, run commands, verification, conventions, guardrails)
+- **Machine-readable outputs**: the domain characterization has a JSON twin with typed values
+- **`eaves info`**: the resolved configuration and output layout as JSON, running nothing
+- **MCP server**: `eaves mcp` serves read-only tools over the [Model Context Protocol](https://modelcontextprotocol.io) (`pip install -e ".[mcp]"` from the repository root), so AI assistants can query configurations and results directly while execution stays with the CLI
 
 ## 📄 Related manuscript
 
@@ -70,11 +71,13 @@ This repository accompanies the manuscript:
 >
 > Ivanović, N., et al.
 
-If you use this repository in academic work, please cite the manuscript and this software. Citation metadata, including DOIs, is in [`CITATION.cff`](CITATION.cff).
+If you use this repository in academic work, please cite the manuscript and this repository ([CITATION.cff](CITATION.cff)).
 
 ## 📜 License
 
-The source code is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (`LICENSE`). The data products (the EAVES dataset and the files under `region/<country>/output/`, archived on Zenodo) are licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) (`LICENSE-DATA`).
+The **source code** is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (`LICENSE`).
+
+The **data products generated by this project** are licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) (`LICENSE-DATA`).
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-6F1B8F?logo=apache&logoColor=white&labelColor=1F1747)](https://www.apache.org/licenses/LICENSE-2.0)
-[![Data: CC BY 4.0](https://licensebuttons.net/l/by/4.0/88x31.png)](https://creativecommons.org/licenses/by/4.0/)
+[![License: CC BY 4.0](https://licensebuttons.net/l/by/4.0/88x31.png)](https://creativecommons.org/licenses/by/4.0/)

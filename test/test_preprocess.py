@@ -55,12 +55,12 @@ def test_split_parts_follow_the_channel():
     gdf = _network()
     split = _split_long_segments(gdf, max_seg_len_m=2000.0)
     parts = _parts(split, "2")
-    # The parts of a bent reach rebuild its line, a chord between cut points would cut the corner
+    # The parts of a bent reach rebuild its line, corner included
     assert sum(g.length for g in parts.geometry) == pytest.approx(gdf.geometry["2"].length)
     assert any(len(g.coords) > 2 for g in parts.geometry)
     assert parts.geometry.iloc[0].coords[0] == pytest.approx(gdf.geometry["2"].coords[0])
     assert parts.geometry.iloc[-1].coords[-1] == pytest.approx(gdf.geometry["2"].coords[-1])
-    for lower, upper in zip(parts.geometry.iloc[:-1], parts.geometry.iloc[1:]):
+    for lower, upper in zip(parts.geometry.iloc[:-1], parts.geometry.iloc[1:], strict=True):
         assert lower.coords[-1] == pytest.approx(upper.coords[0])
 
 

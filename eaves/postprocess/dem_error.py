@@ -14,9 +14,8 @@ Noise model
 Zero-mean Gaussian, point sigma ``sigma_m`` (~3.6 m, i.e. the published SRTM
 vertical accuracy of LE90 ~6 m divided by 1.6449), with a short spatial
 correlation length of a few SRTM pixels imposed by a Gaussian blur of a white
-field, rescaled to preserve the target point sigma. Only finite (non-void)
-elevations are perturbed so that NaN voids are never turned into spurious
-terrain.
+field, rescaled to preserve the target point sigma. The perturbation leaves
+the voids missing.
 
 Robustness against being killed mid-run
 ---------------------------------------

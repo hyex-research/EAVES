@@ -111,7 +111,7 @@ without a fill and 3 dams with a fill whose power-law fit failed.
 | `b` | Power-law exponent, rounded to 4 decimals | - | float | blank for the 3 grade-F fits and without a fill |
 | `r_squared` | R² of the power-law fit on untransformed areas and volumes | - | float | blank for the 3 grade-F fits and without a fill |
 | `n_pixels` | Active (flooded) SRTM grid cells in the footprint | count | Int (nullable) | blank without a fill |
-| `void_fraction` | Fraction of footprint grid cells that are SRTM voids | - | float | blank without a fill |
+| `void_fraction` | Share of the footprint cells that are DEM gaps enclosed by terrain, each given the highest elevation of its rim before the placement | - | float | blank without a fill |
 | `capped` | Integrated volume reached the catalog capacity below the spillway, so the fill ends at the elevation where it equals the capacity (the catalog values are spillway/gross capacities, and the cap bounds the SRTM fill) | - | bool | blank without a fill |
 | `placement_upstream_shift_m` | Distance the dam wall was shifted upstream during placement, negative when stage 4 moves it downstream | m | float | blank for the 3 `stage_6_fallback` dams and without a fill |
 | `placement_method` | Which placement stage produced the wall | - | str | blank without a fill |
@@ -432,7 +432,7 @@ One row per (constant, perturbation) cell. Each of the five swept constants is p
 constants, the alignment weight and the maximum crest-flow dot product (the
 largest accepted alignment of the wall with the flow direction). The other
 three are flood-fill acceptance constants, namely the internal void-fraction
-threshold (the largest accepted void fraction of a fill) and the two constants
+threshold (the void fraction at which a fill is rejected) and the two constants
 of the drainage rule. The drainage wall tolerance is the distance past the half
 wall within which a pool outlet counts as next to the wall, and the maximum
 outlet position is the largest accepted position of the outlets along the

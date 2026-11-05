@@ -19,7 +19,7 @@ Constants swept (``eaves.config`` provenance)
   term, scoring the crest against the river and SRTM downslope directions
   (``placement``).
 * ``MAX_CREST_FLOW_DOT``        (= 0.74) max ``|dot(wall, flow)|`` to accept a crest.
-* ``VOID_THRESHOLD``            (= 0.05) max NaN-void fraction accepted in a fill (``curves``).
+* ``VOID_THRESHOLD``            (= 0.05) share of enclosed DEM gaps in the footprint at which a fill is rejected (``curves``).
 * ``DRAIN_WALL_TOLERANCE_M``    (= 1000) distance past the half wall (m) within
   which a pool outlet counts as next to the wall (``drainage``).
 * ``DRAIN_MAX_OUTLET_POSITION`` (= 0.65) largest outlet position along the

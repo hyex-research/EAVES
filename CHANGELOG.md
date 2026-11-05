@@ -368,6 +368,15 @@ The project adheres to [Semantic Versioning](https://semver.org/).
   on either side of the baseline median, the band that the median
   exponent of the Saudi sweep does not leave. The key entries of panels
   p2, s1 and s2 start in sentence case.
+- **The void guard of the flood fill sees enclosed gaps**
+  (`eaves.pipeline.curves`). The fill never enters a missing cell, so a gap
+  inside a basin left a hole in the footprint that the count over the
+  footprint could not see. A gap that terrain encloses now takes the
+  highest elevation of its rim before the placement, so it floods only at
+  a level that floods every cell around it, enters the fill at that level,
+  and counts against the threshold. The missing margin of the projected
+  window stays missing. No input of the Saudi domain has a gap, so no
+  output changes. Tests in `test/test_void_guard.py`.
 
 ## [1.3.2] - 2026-10-07
 

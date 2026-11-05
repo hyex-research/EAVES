@@ -17,7 +17,7 @@ import pandas as pd
 from pyproj import Transformer
 from rasterio.transform import rowcol
 from scipy.integrate import cumulative_trapezoid
-from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import binary_dilation, binary_fill_holes, label
 
 from ..config import (
     _PLACEMENT_BUDGET_S,
@@ -63,14 +63,29 @@ def _parse_construction_year(cy_raw):
         return None
 
 
-def interpolate_nans(data):
-    mask = np.isnan(data)
-    if not mask.any():
-        return data
-    _, idx = distance_transform_edt(mask, return_indices=True)
-    out = data.copy()
-    out[mask] = data[tuple(idx[:, mask])]
-    return out
+_EIGHT_CONNECTED = np.ones((3, 3), dtype=bool)
+
+
+def fill_enclosed_voids(dem):
+    """Gives the missing cells that terrain encloses the highest elevation of their rim and returns the DEM with the mask of those cells.
+
+    The flood fill never enters a missing cell, so a gap inside a basin would leave a hole in the footprint
+    that no count over the footprint can see. At the highest elevation of its rim, a gap floods only at a level
+    that floods every cell around it, so it never opens a path that the terrain around it would close, and the
+    accepted footprint counts its cells against the void threshold. The missing margin of the projected window
+    touches the array edge and stays missing.
+    """
+    finite = np.isfinite(dem)
+    voids = binary_fill_holes(finite) & ~finite
+    if not voids.any():
+        return dem, voids
+    out = dem.copy()
+    gaps, n_gaps = label(voids, structure=_EIGHT_CONNECTED)
+    for i in range(1, n_gaps + 1):
+        gap = gaps == i
+        rim = binary_dilation(gap, structure=_EIGHT_CONNECTED) & finite
+        out[gap] = dem[rim].max()
+    return out, voids
 
 
 class DamRow:
@@ -114,6 +129,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         srtm_data, srtm_transform, srtm_crs,
         dam_lat, dam_lon, radius, target_epsg,
     )
+    dem_utm, void_mask = fill_enclosed_voids(dem_utm)
 
     tr = Transformer.from_crs("EPSG:4326", f"EPSG:{target_epsg}", always_xy=True)
     dam_x, dam_y = tr.transform(dam_lon, dam_lat)
@@ -363,17 +379,11 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         dam_elev = float(dam_elev_out)
         z_spillway = dam_elev + spillway_height
 
-    nan_in_footprint = np.isnan(dem_utm[footprint]).sum()
-    void_fraction = nan_in_footprint / n_pixels if n_pixels > 0 else 0.0
-
+    void_fraction = float(void_mask[footprint].sum()) / n_pixels if n_pixels > 0 else 0.0
     if void_fraction >= VOID_THRESHOLD:
         raise ValueError(f"srtm_voids: void_fraction={void_fraction:.3f}")
 
-    dem_filled = dem_utm.copy()
-    if nan_in_footprint > 0:
-        dem_filled = interpolate_nans(dem_filled)
-
-    dem_fp = np.where(footprint, dem_filled, np.nan)
+    dem_fp = np.where(footprint, dem_utm, np.nan)
     z_min = float(np.nanmin(dem_fp))
     z_max = z_spillway
 
@@ -425,8 +435,9 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
         vol_m3 = np.append(vol_m3[:keep], vol_cap)
         z_max = z_cap
         footprint_area_km2 = a_cap / 1e6
-        footprint = footprint & (dem_filled <= z_max)
+        footprint = footprint & (dem_utm <= z_max)
         n_pixels = int(footprint.sum())
+        void_fraction = float(void_mask[footprint].sum()) / n_pixels if n_pixels > 0 else 0.0
         capped = True
 
     year_unknown = construction_year is None

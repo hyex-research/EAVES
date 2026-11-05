@@ -1599,23 +1599,18 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     ))
     L.extend(_embed_figure(
         "s2_uncertainty_band.png",
-        "Supplementary: Per-dam volume uncertainty band",
-        "Figure S2. Per-dam volume uncertainty band. "
+        "Supplementary: Parameterization uncertainty bands for reservoir volume",
+        "Figure S2. Parameterization uncertainty bands for reservoir volume. "
         f"(a) Worked example on {exname} dam. The ±b_σ band shows the "
-        "geometric term alone. It is forced through the catalog full-pool "
-        "anchor (red star) and widens at lower water levels. (b) The two "
-        "σ(log₁₀V) tiers versus normalized area, "
-        "shown as the upper bound of the band. The SRTM-derived tier is "
-        f"floored by the catalog-capacity term ({floor_srtm} at the anchor) "
-        "and widens with the geometric b_σ term away from full pool, while "
-        "the regionalized tier adds the area-independent "
-        f"anchor terms and floors near {floor_regi}. The regional typical "
-        "operational fill level (the median 95th-percentile observed extent "
-        "as a fraction of the SRTM-derived full-pool area) is overlaid as a "
-        "vertical dashed line, and a marker on "
-        "the SRTM-derived curve gives the band at that level, so the V "
-        "uncertainty at the fill level at which most reservoirs in this "
-        "region operate can be read off directly.",
+        "exponent contribution with a fixed reference point "
+        "(A_cap, V_cap) on the fitted power law (red star). "
+        "(b) The combined bands versus normalized area, plotted as the "
+        "upper fractional deviation 10<sup>σ</sup> − 1. At the reference "
+        f"area, the SRTM-derived band is {floor_srtm} and the regionalized "
+        f"band is {floor_regi}. The dashed line marks an illustrative "
+        "area fraction set to the median ratio of the 95th-percentile "
+        "satellite water extent to the SRTM-derived full-pool area. "
+        "The circle gives the combined SRTM-derived band at this benchmark.",
     ))
     A("")
 

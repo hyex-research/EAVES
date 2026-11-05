@@ -1,11 +1,11 @@
-"""Panel s2 (supplementary): V uncertainty propagation from ``b_sigma``.
+"""Panel s2 (supplementary): parameterization uncertainty in reservoir volume.
 
-Two-panel illustration of how the population-level 1σ uncertainty on b
-propagates to a volume confidence band:
+Two-panel illustration of the exponent contribution and the combined
+parameterization bands:
 
 Panel a: Baish reservoir, SRTM-derived V(A) curve with the ±b_σ fan band of
-the geometric term alone, all curves pinned through the catalog full-pool
-anchor (A_cap, V_cap). Band and curve span the full SRTM data range.
+the geometric term alone, with a fixed reference point (A_cap, V_cap)
+defined on the fitted power law by catalog capacity.
 
 Panel b: Upper bound 10^σ − 1 of the two σ(log10 V) tiers as a function of
 normalized area. The SRTM-derived tier combines the band term
@@ -13,8 +13,9 @@ b_σ·|log10(A/A_cap)| in quadrature with the catalog-capacity term σ_logVcap.
 The regionalized tier adds the predicted-area term,
 σ_regi(A) = √((b·σ_logAcap)² + (b_σ·log10(A/A_cap))² + σ_logVcap²).
 The regionalized constants are the ``regi_multi`` medians read from
-``<CSV_DIR>/validation/v_uncertainty.csv``. The regional typical operational
-fill level is marked on the SRTM-derived curve, with the value of that curve.
+``<CSV_DIR>/validation/v_uncertainty.csv``. An illustrative area fraction,
+set to the median satellite-to-DEM area ratio, is marked on the SRTM-derived
+curve. This benchmark is not an estimate of the typical operating stage.
 """
 
 from __future__ import annotations
@@ -71,7 +72,8 @@ def _load_baish() -> tuple[dict, pd.DataFrame]:
     return info, eav
 
 
-def _typical_fill_level() -> float | None:
+def _illustrative_area_fraction() -> float | None:
+    """Returns the median satellite-to-DEM area ratio used as an illustrative fraction."""
     p = Path(_cfg.CSV_DIR) / "validation" / "dem_vs_sat_area.csv"
     if not p.exists():
         return None
@@ -106,7 +108,7 @@ def make_s2_uncertainty(out_dir: Path) -> Path:
     apply_style()
 
     info, eav = _load_baish()
-    typical_fill = _typical_fill_level()
+    area_fraction = _illustrative_area_fraction()
     regi = _regi_constants()
 
     out_dir = Path(out_dir)
@@ -151,7 +153,7 @@ def make_s2_uncertainty(out_dir: Path) -> Path:
         ax_a.scatter([A_cap / 1e6], [V_cap / 1e6],
                      marker="*", s=125, facecolor=_ANCHOR_COLOR,
                      edgecolor="white", linewidth=0.6, zorder=5,
-                     label=r"Anchor $(A_\mathrm{cap}, V_\mathrm{cap})$")
+                     label=r"Reference $(A_\mathrm{cap}, V_\mathrm{cap})$")
 
         ax_a.text(0.02, 0.97, info["dam_name"], transform=ax_a.transAxes,
                   ha="left", va="top",
@@ -197,19 +199,19 @@ def make_s2_uncertainty(out_dir: Path) -> Path:
                   "Regionalized\n" rf"floor $\approx {unc_floor:.2f}$",
                   color="black", ha="right", va="top", multialignment="right")
 
-        if typical_fill is not None and 0.02 < typical_fill < 1.0:
+        if area_fraction is not None and 0.02 < area_fraction < 1.0:
             # Uses the same expression as the SRTM-derived curve
-            sig_typ = float(np.hypot(b_sigma * np.log10(typical_fill), sig_vcap))
-            unc_typ = 10.0 ** sig_typ - 1.0
-            ax_b.axvline(typical_fill, color="0.30", linewidth=0.8,
+            sig_fraction = float(np.hypot(b_sigma * np.log10(area_fraction), sig_vcap))
+            unc_fraction = 10.0 ** sig_fraction - 1.0
+            ax_b.axvline(area_fraction, color="0.30", linewidth=0.8,
                          linestyle="--", zorder=4)
-            ax_b.scatter([typical_fill], [unc_typ], s=42, facecolor="white",
+            ax_b.scatter([area_fraction], [unc_fraction], s=42, facecolor="white",
                          edgecolor=COL_SRTM, linewidth=0.9, zorder=5)
             ax_b.annotate(
-                rf"Typical" "\n" rf"operational fill" "\n"
-                rf"$A/A_\mathrm{{cap}}={typical_fill:.2f}$" "\n"
-                rf"SRTM ${unc_typ:.2f}$",
-                xy=(typical_fill, unc_typ), xytext=(-12, -16),
+                rf"Illustrative" "\n" rf"area fraction" "\n"
+                rf"$A/A_\mathrm{{cap}}={area_fraction:.2f}$" "\n"
+                rf"SRTM ${unc_fraction:.2f}$",
+                xy=(area_fraction, unc_fraction), xytext=(-12, -16),
                 textcoords="offset points", color="0.15", ha="right", va="top",
                 multialignment="center",
                 bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.78,
@@ -219,7 +221,7 @@ def make_s2_uncertainty(out_dir: Path) -> Path:
 
         ax_b.set_xscale("log")
         ax_b.set_xlabel(r"$A / A_\mathrm{cap}$ (normalized area)")
-        ax_b.set_ylabel("Volume uncertainty, upper bound")
+        ax_b.set_ylabel("Upper fractional volume uncertainty")
         ax_b.set_xlim(frac.min(), 1.05)
         y_top = (10.0 ** max(
             b_sigma * abs(np.log10(frac.min())),

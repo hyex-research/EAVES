@@ -12,8 +12,8 @@ Panel a: per-dam fractional volume uncertainty versus storage capacity
 drawn as a segment across the class capacity range and annotated. A dam with
 fewer than ``_MIN_VALID_REALIZATIONS`` valid realizations is left out.
 
-Panel b: the same spread summarized by capacity class, median and P16 to P84
-range over the per-dam strip, with the medians annotated.
+Panel b: the same spread summarized by capacity class, median and 10th to
+90th percentile interval over the per-dam strip, with the medians annotated.
 
 Reads:
 
@@ -105,7 +105,7 @@ def _draw_panel_a(ax, df: pd.DataFrame, y_max: float) -> None:
 
 
 def _draw_panel_b(ax, df: pd.DataFrame, y_max: float) -> None:
-    """Panel b, median and P16 to P84 range per capacity class over the per-dam strip."""
+    """Panel b, median and 10th to 90th percentile interval per capacity class over the per-dam strip."""
     xs = np.arange(len(_CLASS_LABELS))
     for i in range(len(_CLASS_LABELS)):
         sub = df[df["class_idx"] == i]
@@ -113,21 +113,21 @@ def _draw_panel_b(ax, df: pd.DataFrame, y_max: float) -> None:
             continue
         vals = (10.0 ** sub[_SIGMA].values - 1.0)
         med = float(np.median(vals))
-        p16 = float(np.quantile(vals, 0.16))
-        p84 = float(np.quantile(vals, 0.84))
+        p10 = float(np.quantile(vals, 0.10))
+        p90 = float(np.quantile(vals, 0.90))
         # Draws a jittered per-dam strip behind the summary marker
         jitter = (np.random.default_rng(i).random(len(vals)) - 0.5) * 0.18
         ax.scatter(xs[i] + jitter, vals, s=14, color=_CLASS_COLORS[i],
                    alpha=0.40, edgecolor="none", zorder=2)
         ax.errorbar(
-            xs[i], med, yerr=[[med - p16], [p84 - med]],
+            xs[i], med, yerr=[[med - p10], [p90 - med]],
             fmt="o", markersize=8, color=_CLASS_COLORS[i],
             ecolor=_CLASS_COLORS[i], elinewidth=1.6, capsize=5,
             capthick=1.6, zorder=4,
         )
         ax.annotate(
             f"{med:.2f}",
-            xy=(xs[i], p84), xytext=(0, 7),
+            xy=(xs[i], p90), xytext=(0, 7),
             textcoords="offset points", color="black", fontsize=10,
             ha="center", va="bottom",
         )
@@ -148,7 +148,7 @@ def make_s3_dem_error(out_dir: Path) -> Path:
     """Renders s3, the per-dam DEM-error volume uncertainty and its by-class summary in one row.
 
     Panel a: per-dam uncertainty against storage capacity with the class medians.
-    Panel b: median and P16 to P84 range per capacity class.
+    Panel b: median and 10th to 90th percentile interval per capacity class.
     """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

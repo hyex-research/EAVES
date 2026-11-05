@@ -268,6 +268,13 @@ The project adheres to [Semantic Versioning](https://semver.org/).
   states what the volume band excludes and lists the resolution and
   single-exponent limits, and the data dependencies name the GRDL
   version and its archive. The outputs change in their wording only.
+- **Supplementary panels s2 and s3** (`eaves.postprocess.panels.s2`,
+  `eaves.postprocess.panels.s3`, `eaves.postprocess.report`). Panel s2
+  separates the exponent contribution from the combined parameterization
+  bands, names the marker at the median satellite-to-DEM area ratio an
+  illustrative area fraction and calls the star the reference point. Panel
+  s3 summarizes the variation among dams within each capacity class with
+  10th to 90th percentile intervals. The plotted values are unchanged.
 
 ### Removed
 

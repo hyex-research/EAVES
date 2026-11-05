@@ -1209,13 +1209,13 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       f"{_fmt(stats.get('b_cluster_baseline_sigma'))} to "
       f"{_fmt(stats.get('b_cluster_best_sigma'))}, but its leave-one-out R² "
       f"reaches only {_fmt(stats.get('b_cluster_best_loo_r2'))}, below the "
-      "0.25 gate applied to the regressions (Fig. S1b). Mean silhouette "
+      "0.25 gate applied to the regressions (Fig. S1c). Mean silhouette "
       f"coefficients of {_fmt(stats.get('b_cluster_silhouette_min'))} to "
       f"{_fmt(stats.get('b_cluster_silhouette_max'))} stay below the "
       "conventional 0.50 reasonable-structure threshold, so the training "
       "dams do not split into well-separated groups, although b varies "
       "gradually along the first principal component (Spearman ρ = "
-      f"{_fmt(stats.get('b_cluster_pc1_spearman_b'))}, Fig. S1c).")
+      f"{_fmt(stats.get('b_cluster_pc1_spearman_b'))}, Fig. S1b).")
     A("")
     A("_Practical implication._ "
       "No clustering configuration reaches the 0.25 gate that a regression "
@@ -1581,21 +1581,21 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         "conventional 0.50 reasonable-structure threshold for every "
         f"k. The k = {stats.get('b_cluster_silhouette_max_k', 'n/a')} peak at "
         f"{_fmt(stats.get('b_cluster_silhouette_max'))} reflects a cut "
-        "across the dominant gradient of panel c, not two morphological "
-        "types. (b) Leave-"
+        "across the dominant gradient of panel b, not two morphological "
+        "types. (b) The training dams in the plane of "
+        "the first two principal components of the standardized "
+        "log-transformed features, colored by b, with marker shapes for "
+        "the clusters at the best k of panel c. The first two components "
+        f"carry {pc1_share_str} and {pc2_share_str} of the variance, and b "
+        "varies along the first "
+        f"(Spearman ρ = {pc1_rho_str}), so the dams form "
+        "one continuous cloud along which b changes gradually. "
+        "(c) Leave-"
         "one-out σ(Δb) for a per-cluster-median predictor "
         "of b versus the global-median baseline (dashed). The best "
         f"configuration (k = {stats.get('b_cluster_best_k', 'n/a')}) lowers σ(Δb) "
         f"by {gain_str}%, while its leave-one-out R² stays at "
-        f"{_fmt(stats.get('b_cluster_best_loo_r2'))}, below the 0.25 gate. "
-        "(c) The training dams in the plane of "
-        "the first two principal components of the standardized "
-        "log-transformed features, colored by b, with marker shapes for "
-        "the clusters at the best k of panel b. The first two components "
-        f"carry {pc1_share_str} and {pc2_share_str} of the variance, and b "
-        "varies along the first "
-        f"(Spearman ρ = {pc1_rho_str}), so the dams form "
-        "one continuous cloud along which b changes gradually.",
+        f"{_fmt(stats.get('b_cluster_best_loo_r2'))}, below the 0.25 gate.",
     ))
     L.extend(_embed_figure(
         "s2_uncertainty_band.png",

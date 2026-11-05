@@ -1,6 +1,6 @@
 # EAVES domain report: Saudi Arabia
 
-Generated: 2026-11-04 15:49 UTC
+Generated: 2026-11-05 08:54 UTC
 
 Source code: `eaves/` package. This report: `eaves.postprocess.report`.
 
@@ -121,7 +121,7 @@ _Choice of b._ The selected procedure assigns every regionalized dam the regiona
 
 _1. Multivariate regression (linear and random forest)._ A linear regression and a random forest of b on `valley_ratio`, `channel_slope`, `mean_catchment_slope`, and `dam_height_m` are evaluated by leave-one-out cross-validation on the training dams at or above the minimum training capacity with complete features. The selection gate requires R²_LOO ≥ 0.25 for a regression to replace the median. Both models fall below the gate. No single feature explains more than about 10% of the variance in b (Spearman |ρ| ≤ 0.32 over the 84 dams of the regression basis), and the features are partly redundant, so combining them yields no improvement over the constant. The regional median is therefore retained.
 
-_2. Morphological clustering with a per-cluster median._ K-means clustering in standardized log space on six morphometric features (valley-width ratio, channel slope, mean catchment slope, dam height, spillway height and dam length) sweeps k = 2 to 12, with the results released in `validation/b_clustering_diagnostic.csv`. The best configuration (k = 3) lowers the leave-one-out σ(Δb) by 14%, from 0.26 to 0.22, but its leave-one-out R² reaches only 0.09, below the 0.25 gate applied to the regressions (Fig. S1b). Mean silhouette coefficients of 0.22 to 0.37 stay below the conventional 0.50 reasonable-structure threshold, so the training dams do not split into well-separated groups, although b varies gradually along the first principal component (Spearman ρ = -0.41, Fig. S1c).
+_2. Morphological clustering with a per-cluster median._ K-means clustering in standardized log space on six morphometric features (valley-width ratio, channel slope, mean catchment slope, dam height, spillway height and dam length) sweeps k = 2 to 12, with the results released in `validation/b_clustering_diagnostic.csv`. The best configuration (k = 3) lowers the leave-one-out σ(Δb) by 14%, from 0.26 to 0.22, but its leave-one-out R² reaches only 0.09, below the 0.25 gate applied to the regressions (Fig. S1c). Mean silhouette coefficients of 0.22 to 0.37 stay below the conventional 0.50 reasonable-structure threshold, so the training dams do not split into well-separated groups, although b varies gradually along the first principal component (Spearman ρ = -0.41, Fig. S1b).
 
 _Practical implication._ No clustering configuration reaches the 0.25 gate that a regression must clear, so the selected procedure keeps the **regional median**, and the `b_sigma` column of `validation/v_uncertainty.csv` quantifies the remaining spread of b.
 
@@ -220,7 +220,7 @@ To run EAVES on a new region, give the paths of the dam catalog, the DEM and the
 
 ![Supplementary: K-means clustering diagnostic for b](2_results_plots/s1_b_clustering_silhouette.png)
 
-_Figure S1. K-means clustering diagnostic on the training-set dams in log-transformed morphometric feature space. (a) Mean silhouette coefficient versus number of clusters k for the six morphometric features. It remains below the conventional 0.50 reasonable-structure threshold for every k. The k = 2 peak at 0.37 reflects a cut across the dominant gradient of panel c, not two morphological types. (b) Leave-one-out σ(Δb) for a per-cluster-median predictor of b versus the global-median baseline (dashed). The best configuration (k = 3) lowers σ(Δb) by 14%, while its leave-one-out R² stays at 0.09, below the 0.25 gate. (c) The training dams in the plane of the first two principal components of the standardized log-transformed features, colored by b, with marker shapes for the clusters at the best k of panel b. The first two components carry 60% and 16% of the variance, and b varies along the first (Spearman ρ = -0.41), so the dams form one continuous cloud along which b changes gradually._
+_Figure S1. K-means clustering diagnostic on the training-set dams in log-transformed morphometric feature space. (a) Mean silhouette coefficient versus number of clusters k for the six morphometric features. It remains below the conventional 0.50 reasonable-structure threshold for every k. The k = 2 peak at 0.37 reflects a cut across the dominant gradient of panel b, not two morphological types. (b) The training dams in the plane of the first two principal components of the standardized log-transformed features, colored by b, with marker shapes for the clusters at the best k of panel c. The first two components carry 60% and 16% of the variance, and b varies along the first (Spearman ρ = -0.41), so the dams form one continuous cloud along which b changes gradually. (c) Leave-one-out σ(Δb) for a per-cluster-median predictor of b versus the global-median baseline (dashed). The best configuration (k = 3) lowers σ(Δb) by 14%, while its leave-one-out R² stays at 0.09, below the 0.25 gate._
 
 ![Supplementary: Per-dam volume uncertainty band](2_results_plots/s2_uncertainty_band.png)
 

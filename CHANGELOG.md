@@ -57,10 +57,10 @@ The project adheres to [Semantic Versioning](https://semver.org/).
   GRDL curve at equal area.
 - **Principal components in the clustering diagnostic**
   (`eaves.postprocess.panels.s1`, `eaves.postprocess.report`). Panel s1
-  draws three panels of one height in one row 187 mm wide, where panel c
+  draws three panels of one height in one row 187 mm wide, where panel b
   shows the training dams in the plane of the first two principal
   components of the clustering features, colored by `b` and marked by
-  the clusters at the best `k` of panel b.
+  the clusters at the best `k` of panel c.
   `validation/b_clustering_diagnostic.csv` carries the leave-one-out R²
   of the per-cluster median (`loo_r2`), the variance shares of the first
   two principal components (`pc1_var_share`, `pc2_var_share`) and the

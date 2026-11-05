@@ -5,13 +5,13 @@ Three questions:
 1.  Do the training dams partition into morphological clusters in
     log-transformed feature space? Quantified by the mean silhouette
     coefficient across ``k = 2 .. 12``.
-2.  Even if they did, would a per-cluster median ``b`` reduce out-of-sample
-    error? Quantified by leave-one-out ``sigma(delta_b)`` against the
-    global-median baseline and by the leave-one-out R² of the per-cluster
-    median.
-3.  Does ``b`` follow a continuous gradient of the features instead?
+2.  Does ``b`` follow a continuous gradient of the features instead?
     Quantified by the variance shares of the first two principal components
     of the features and the Spearman correlation of ``b`` with the first.
+3.  Even if the dams did partition, would a per-cluster median ``b`` reduce
+    out-of-sample error? Quantified by leave-one-out ``sigma(delta_b)``
+    against the global-median baseline and by the leave-one-out R² of the
+    per-cluster median.
 
 Writes:
 
@@ -204,40 +204,13 @@ def make_s1_clustering(out_dir: Path) -> Path:
         ax_a.grid(True, linewidth=0.3, color="0.88")
         ax_a.set_axisbelow(True)
 
-        # ---- Panel b: LOO sigma(delta_b) vs k ----
+        # ---- Best k of the leave-one-out sweep, shared by panels b and c ----
         base = float(sub["loo_sigma_baseline"].iloc[0])
-        ax_b.plot(sub["k"], sub["loo_sigma_delta_b"],
-                  color=_CURVE_COLOR, marker="o", linewidth=1.2, markersize=4.0,
-                  label="Cluster median")
-        ax_b.axhline(base, color="black", linewidth=0.9, linestyle="--",
-                     label="Global median")
-
         best_idx = sub["loo_sigma_delta_b"].idxmin()
         best_k = int(sub.at[best_idx, "k"])
         best_sigma = float(sub.at[best_idx, "loo_sigma_delta_b"])
-        ax_b.scatter([best_k], [best_sigma], s=55, facecolor="none",
-                     edgecolor="0.20", linewidth=0.9, zorder=5)
-        gain = f"{-float(sub.at[best_idx, 'loo_relative_gain_pct']):+.0f}%".replace("-", "\N{MINUS SIGN}")
-        ax_b.annotate(
-            f"{gain}, "
-            f"$R^2_{{\\mathrm{{LOO}}}} = {sub.at[best_idx, 'loo_r2']:.2f}$",
-            xy=(best_k, best_sigma), xytext=(-4, -8), textcoords="offset points",
-            color="0.15", va="top", ha="left",
-        )
-        # Leaves a band under the curve for the best-k note and a band over the baseline for the key
-        span = base - float(sub["loo_sigma_delta_b"].min())
-        ax_b.set_ylim(best_sigma - 0.45 * span, base + 0.65 * span)
 
-        ax_b.set_xlabel(r"Number of clusters $k$")
-        ax_b.set_ylabel(r"Leave-one-out $\sigma(\Delta b)$")
-        ax_b.set_xticks(_K_RANGE[::2])
-        ax_b.set_xlim(1.7, 12.3)
-        ax_b.grid(True, linewidth=0.3, color="0.88")
-        ax_b.set_axisbelow(True)
-        ax_b.legend(loc="upper right", frameon=False,
-                    handlelength=1.5, borderaxespad=0.2)
-
-        # ---- Panel c: PC1 vs PC2 colored by b, marker shape by cluster ----
+        # ---- Panel b: PC1 vs PC2 colored by b, marker shape by cluster ----
         X = _design_matrix(T, CLUSTER_FEATURES)
         scores, _ = _principal_components(X)
         labels = _cluster_labels(X, scores[:, 0], best_k)
@@ -247,7 +220,7 @@ def make_s1_clustering(out_dir: Path) -> Path:
         for i in range(best_k):
             sel = labels == i
             marker = _CLUSTER_MARKERS[i % len(_CLUSTER_MARKERS)]
-            mappable = ax_c.scatter(
+            mappable = ax_b.scatter(
                 scores[sel, 0], scores[sel, 1], c=b[sel], cmap=_B_CMAP, norm=norm,
                 marker=marker, s=14, edgecolor="0.25", linewidth=0.3, zorder=3,
             )
@@ -255,15 +228,15 @@ def make_s1_clustering(out_dir: Path) -> Path:
                                   markersize=4.5, markerfacecolor="0.75",
                                   markeredgecolor="0.25", markeredgewidth=0.5,
                                   label=f"Cluster {i + 1}" if i == 0 else f"{i + 1}"))
-        ax_c.legend(handles=handles, loc="upper left", ncol=best_k, frameon=False,
+        ax_b.legend(handles=handles, loc="upper left", ncol=best_k, frameon=False,
                     handlelength=0.8, handletextpad=0.3, columnspacing=0.7,
                     borderaxespad=0.2)
 
         # Leaves a band over the cloud for the cluster key and a band under it for the colorbar
         y_lo, y_hi = float(scores[:, 1].min()), float(scores[:, 1].max())
         y_span = y_hi - y_lo
-        ax_c.set_ylim(y_lo - 0.22 * y_span, y_hi + 0.16 * y_span)
-        cax = ax_c.inset_axes([0.52, 0.12, 0.45, 0.04])
+        ax_b.set_ylim(y_lo - 0.22 * y_span, y_hi + 0.16 * y_span)
+        cax = ax_b.inset_axes([0.52, 0.12, 0.45, 0.04])
         cbar = fig.colorbar(mappable, cax=cax, orientation="horizontal")
         cax.text(-0.04, 0.5, "$b$", transform=cax.transAxes, ha="right", va="center")
         cbar.ax.xaxis.set_major_locator(plt.MultipleLocator(0.5))
@@ -271,12 +244,40 @@ def make_s1_clustering(out_dir: Path) -> Path:
         cbar.ax.tick_params(length=2.0, pad=1.5)
         cbar.outline.set_linewidth(0.5)
 
-        ax_c.set_xlabel(f"PC1 ({100.0 * float(sub['pc1_var_share'].iloc[0]):.0f}% of variance)")
-        ax_c.set_ylabel(f"PC2 ({100.0 * float(sub['pc2_var_share'].iloc[0]):.0f}% of variance)")
-        ax_c.xaxis.set_major_locator(plt.MultipleLocator(2))
-        ax_c.yaxis.set_major_locator(plt.MultipleLocator(2))
+        ax_b.set_xlabel(f"PC1 ({100.0 * float(sub['pc1_var_share'].iloc[0]):.0f}% of variance)")
+        ax_b.set_ylabel(f"PC2 ({100.0 * float(sub['pc2_var_share'].iloc[0]):.0f}% of variance)")
+        ax_b.xaxis.set_major_locator(plt.MultipleLocator(2))
+        ax_b.yaxis.set_major_locator(plt.MultipleLocator(2))
+        ax_b.grid(True, linewidth=0.3, color="0.88")
+        ax_b.set_axisbelow(True)
+
+        # ---- Panel c: LOO sigma(delta_b) vs k ----
+        ax_c.plot(sub["k"], sub["loo_sigma_delta_b"],
+                  color=_CURVE_COLOR, marker="o", linewidth=1.2, markersize=4.0,
+                  label="Cluster median")
+        ax_c.axhline(base, color="black", linewidth=0.9, linestyle="--",
+                     label="Global median")
+        ax_c.scatter([best_k], [best_sigma], s=55, facecolor="none",
+                     edgecolor="0.20", linewidth=0.9, zorder=5)
+        gain = f"{-float(sub.at[best_idx, 'loo_relative_gain_pct']):+.0f}%".replace("-", "\N{MINUS SIGN}")
+        ax_c.annotate(
+            f"{gain}, "
+            f"$R^2_{{\\mathrm{{LOO}}}} = {sub.at[best_idx, 'loo_r2']:.2f}$",
+            xy=(best_k, best_sigma), xytext=(-4, -8), textcoords="offset points",
+            color="0.15", va="top", ha="left",
+        )
+        # Leaves a band under the curve for the best-k note and a band over the baseline for the key
+        span = base - float(sub["loo_sigma_delta_b"].min())
+        ax_c.set_ylim(best_sigma - 0.45 * span, base + 0.65 * span)
+
+        ax_c.set_xlabel(r"Number of clusters $k$")
+        ax_c.set_ylabel(r"Leave-one-out $\sigma(\Delta b)$")
+        ax_c.set_xticks(_K_RANGE[::2])
+        ax_c.set_xlim(1.7, 12.3)
         ax_c.grid(True, linewidth=0.3, color="0.88")
         ax_c.set_axisbelow(True)
+        ax_c.legend(loc="upper right", frameon=False,
+                    handlelength=1.5, borderaxespad=0.2)
 
         panel_label(ax_a, "a", fontsize=12, y_offset_pt=8.0)
         panel_label(ax_b, "b", fontsize=12, y_offset_pt=8.0)

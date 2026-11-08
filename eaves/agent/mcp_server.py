@@ -19,6 +19,7 @@ Run over stdio (this is what MCP clients spawn)::
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from eaves.agent import info
@@ -69,7 +70,7 @@ def build_server():
         path = PROJECT_ROOT / "AGENTS.md"
         if not path.is_file():
             return "AGENTS.md not found in this installation."
-        return path.read_text()
+        return path.read_text(encoding="utf-8")
 
     @server.tool()
     def pipeline_steps() -> list[dict]:
@@ -107,7 +108,7 @@ def build_server():
 def main() -> int:
     """Entry point behind `eaves mcp`, serves over stdio until the client disconnects."""
     if MCPServer is None:
-        print(_MISSING_SDK_MSG)
+        print(_MISSING_SDK_MSG, file=sys.stderr)
         return 1
     build_server().run()
     return 0

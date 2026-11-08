@@ -74,7 +74,7 @@ VALIDATION_TABLES: dict[str, tuple[str, str]] = {
     "dem_vs_sat_area": ("1_results_csv/validation/dem_vs_sat_area.csv", "DEM full-pool area against the 95th-percentile satellite area of every trusted dam"),
     "goodness_of_fit": ("1_results_csv/validation/goodness_of_fit.csv", "Per-dam maximum and root-mean-square absolute fractional volume residual of the released curves over the fitted levels, its medians by fill level, its departure at the typical satellite extent and the residual of the two-segment alternative"),
     "acap_regression_diagnostics": ("1_results_csv/validation/acap_regression_diagnostics.csv", "Collinearity, incremental and drop-one leave-one-out skill of the features of the full-pool area regression"),
-    "b_clustering_diagnostic": ("1_results_csv/validation/b_clustering_diagnostic.csv", "Silhouette, leave-one-out spread of b and leave-one-out R² of the per-cluster median over the number of clusters, with the variance share of the first principal component of the features and the rank correlation of b with it, written by panel s1"),
+    "b_clustering_diagnostic": ("1_results_csv/validation/b_clustering_diagnostic.csv", "Silhouette, leave-one-out spread of b and leave-one-out R² of the per-cluster median over the number of clusters, with the variance shares of the first two principal components of the features and the rank correlation of b with the first, written by panel s1"),
     "sensitivity_sweep": ("1_results_csv/validation/sensitivity_sweep.csv", "Trusted-set size, grades and median b under perturbed placement and acceptance constants, written by --sensitivity"),
     "dem_error_montecarlo": ("1_results_csv/validation/dem_error_montecarlo.csv", "Per-dam spread of the volume and of b across SRTM vertical-error realizations, written by --dem-mc"),
 }
@@ -113,7 +113,7 @@ STEPS: list[dict[str, Any]] = [
         "name": "pipeline",
         "module": "eaves",
         "command": "python -m eaves --settings <settings>",
-        "what": "Clips the MERIT-Basins network to the domain closed upstream, splits it along the channel and snaps the dams into the cache of domain_dir, then places the wall, floods the valley to the spillway, tabulates the EAV curve and fits V = c * A^b for every dam in a worker pool, grades and flags every fill and regionalizes the parameters of the dams without a trusted fit. --only narrows the run to listed dams, --plot-only and --panels-only re-enter from the existing outputs and --rebuild-domain rebuilds the cache",
+        "what": "Builds the preprocessing cache of domain_dir when it is missing or --rebuild-domain is given (clips the MERIT-Basins network to the domain closed upstream, splits it along the channel and snaps the dams), then places the wall, floods the valley to the spillway, tabulates the EAV curve and fits V = c * A^b for every dam in a worker pool, grades and flags every fill and regionalizes the parameters of the dams without a trusted fit. --only narrows the run to listed dams, --panels adds the publication panels, --plot-only and --panels-only re-enter from the existing outputs and --rebuild-domain rebuilds the cache",
         "cost": "heavy over a country, minutes on a many-core machine and hours on a few cores, minutes on the 15-dam fixture, do not launch casually",
         "outputs": [TABLES[key][0] for key in ("eaves_summary", "failed_dams", "eaves_params", "threshold_analysis")] + [EAV_TABLE, CHECK_PLOT],
     },

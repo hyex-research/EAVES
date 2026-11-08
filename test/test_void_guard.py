@@ -1,5 +1,4 @@
 """Gaps of the DEM that terrain encloses enter the fill at the height of their rim and count against the void threshold."""
-import json
 
 import numpy as np
 import pandas as pd
@@ -82,8 +81,7 @@ class TestGapInAFixtureWindow:
 
     @pytest.fixture(scope="class")
     def dam(self, test_settings_path):
-        load_settings(str(test_settings_path))
-        catalog = pd.read_csv(json.loads(test_settings_path.read_text())["dams_csv"])
+        catalog = pd.read_csv(load_settings(str(test_settings_path))["dams_csv"])
         data = catalog[catalog["dam_id"] == "id_020002"].iloc[0].to_dict()
         lat, lon = float(data["latitude"]), float(data["longitude"])
         row = DamRow(data, Point(lon, lat))

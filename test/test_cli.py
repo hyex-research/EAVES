@@ -77,7 +77,7 @@ def test_info_on_an_invalid_settings_file_exits_1(tmp_path, capsys) -> None:
 def test_mcp_without_sdk_exits_1(monkeypatch, capsys) -> None:
     monkeypatch.setattr(mcp_server, "MCPServer", None)
     assert cli.main(["mcp"]) == 1
-    assert "mcp" in capsys.readouterr().out
+    assert "mcp" in capsys.readouterr().err
 
 
 def test_module_entry_point_passes_the_exit_code(tmp_path) -> None:

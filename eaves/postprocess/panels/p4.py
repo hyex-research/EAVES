@@ -7,11 +7,13 @@ catalog/topographic features, trained on the SRTM-derived training dams) and
 back-solves the coefficient ``c = V_cap / A_cap^b``. The procedure is
 evaluated by leave-one-out on the training dams. Each in turn is left out,
 the full-pool area regression is refitted, the regional exponent is
-recalculated as the median exponent of the remaining training dams, and the
-resulting curve is compared with the SRTM-derived reference at three fill
-levels, full pool (the DEM full-pool area), half pool (half of it) and tenth
-pool (a tenth of it). The test therefore assesses reconstruction of the
-SRTM-derived curves rather than accuracy against measured storage.
+recalculated by the rule of the released run (the median exponent of the
+remaining training dams at or above the minimum training capacity with
+complete features), and the resulting curve is compared with the
+SRTM-derived reference at three fill levels, full pool (the DEM full-pool
+area), half pool (half of it) and tenth pool (a tenth of it). The test
+therefore assesses reconstruction of the SRTM-derived curves rather than
+accuracy against measured storage.
 
 Two rows on a 187 mm canvas, 10 pt text, keys inside the panels, one color
 per fill level throughout.
@@ -132,7 +134,7 @@ def _level_stats(df: pd.DataFrame, level: dict) -> dict:
         "median": float(np.median(r)),
         "p16": float(np.quantile(r, 0.16)),
         "p84": float(np.quantile(r, 0.84)),
-        "within2": float(np.mean(np.abs(r) < np.log10(2.0))),
+        "within2": float(np.mean(np.abs(r) <= np.log10(2.0))),
         "v_true": v_true[m],
         "v_pred": v_pred[m],
         "residuals_log10": r,

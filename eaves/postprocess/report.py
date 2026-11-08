@@ -1,10 +1,11 @@
 """Domain characterization and pipeline report.
 
 Reads the EAVES pipeline outputs (``eaves_summary.csv``, ``eaves_params.csv``,
-``failed_dams.csv``, ``validation/regionalization_loo.csv``,
-``validation/dem_vs_sat_area.csv``) plus the auxiliary water-extent and
-sedimentation inputs, computes a characterization of the reservoir
-population in the configured region, and emits two artifacts:
+``failed_dams.csv``, ``threshold_analysis.csv`` and the validation tables
+``regionalization_loo.csv``, ``dem_vs_sat_area.csv``, ``goodness_of_fit.csv``
+and ``b_clustering_diagnostic.csv``) together with the GRDL comparison of
+panel p6, computes a characterization of the reservoir population in the
+configured region, and emits two artifacts:
 
 1. ``<CSV_DIR>/domain_characterization.csv``
    Machine-readable key/value table of every statistic computed below, with
@@ -43,7 +44,11 @@ from ..settings import load_settings
 from ..utils import dams_with_fill, round_released_value, typed_value
 from .panels.p6 import load_grdl_comparisons
 from .panels.s1 import CLUSTER_FEATURES
-from .regionalization import choose_reliability_threshold
+from .regionalization import (
+    _EXPONENT_FEATURES,
+    exponent_training_set,
+    minimum_training_capacity,
+)
 from .reliability import training_mask, trusted_mask
 
 # ---- Inputs ----
@@ -182,12 +187,12 @@ def compute_characterization(data: dict, ref_year: int | None = None,
             stats["b_min_training"]    = float(bt.min())
             stats["b_max_training"]    = float(bt.max())
 
-        # Computes the strongest rank correlation of b with one feature on the regression basis, the training dams at or above the reliability threshold with every feature present
-        thr = data.get("threshold")
-        chosen = choose_reliability_threshold(thr) if thr is not None else None
-        feats = ["valley_ratio", "channel_slope", "mean_catchment_slope", "dam_height_m"]
-        if chosen is not None and set(feats).issubset(TR.columns):
-            basis = TR[TR["capacity_mcm"] >= chosen].dropna(subset=feats + ["b"])
+        # Computes the strongest rank correlation of b with one feature on the regression basis, the exponent training set of the released rule with every feature positive
+        feats = list(_EXPONENT_FEATURES)
+        if set(feats).issubset(summary.columns):
+            fills = summary.assign(reliable=trusted_mask(summary), training=training_mask(summary))
+            chosen, _, _ = minimum_training_capacity(fills)
+            basis = exponent_training_set(fills, chosen)
             basis = basis[(basis[feats] > 0).all(axis=1)]
             if len(basis) >= 10:
                 rhos = {f: abs(float(basis["b"].corr(basis[f], method="spearman"))) for f in feats}
@@ -751,7 +756,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "outside the trusted subset receive (c, b) from the two-component, "
       "regionally calibrated empirical procedure described below.")
     A("7. **Leave-one-out evaluation** (`eaves.postprocess.validation`): "
-      "leaving out each training dam (trusted and built after 2000) in turn "
+      "leaving out each training dam (trusted and built in or after 2000) in turn "
       "gives the accuracy distribution of each regionalization anchor.")
     A("")
     A("Outputs land under `<OUTPUT_DIR>/1_results_csv/` and "
@@ -810,7 +815,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "This back-solve is exact at the anchor, so any uncertainty in b "
       "shows up as V_pred / V_ref = "
       "(A/A_cap)<sup>Δb</sup> at other water levels. A mismatch in b equal "
-      f"to the trusted-set spread ({_fmt(_bs)}, the P16 to P84 half-width) "
+      f"to the training-set spread ({_fmt(_bs)}, the P16 to P84 half-width) "
       f"therefore produces about {_pctfmt(_err_half)} volume error at "
       f"0.5 A_cap and about {_pctfmt(_err_tenth)} at 0.1 A_cap, without the "
       "area-independent terms of the band. For applications that need "
@@ -1269,8 +1274,10 @@ def render_report_md(stats: dict, generated_at: str) -> str:
       "reconstructs the SRTM-derived curves of the training dams. It "
       "assesses reconstruction of those curves rather than accuracy against "
       "measured storage. Each training dam is left out in turn. The anchors "
-      "are refitted and b is recalculated as the median exponent of the "
-      "remaining training dams, and the predicted volumes are compared with "
+      "are refitted, b is recalculated as the median exponent of the "
+      "remaining training dams at or above the minimum training capacity "
+      "with complete morphometric features, the rule that sets the released "
+      "exponent, and the predicted volumes are compared with "
       "the omitted dam's SRTM-derived power-law curve at full, half and "
       "tenth pool (100%, 50% and 10% of its recovered full-pool area "
       "A_DEM). Errors are computed in log₁₀ ratio space and reported "
@@ -1592,7 +1599,7 @@ def render_report_md(stats: dict, generated_at: str) -> str:
         "one continuous cloud along which b changes gradually. "
         "(c) Leave-"
         "one-out σ(Δb) for a per-cluster-median predictor "
-        "of b versus the global-median baseline (dashed). The best "
+        "of b versus the regional-exponent baseline (dashed). The best "
         f"configuration (k = {stats.get('b_cluster_best_k', 'n/a')}) lowers σ(Δb) "
         f"by {gain_str}%, while its leave-one-out R² stays at "
         f"{_fmt(stats.get('b_cluster_best_loo_r2'))}, below the 0.25 gate.",
@@ -1643,9 +1650,9 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("| `1_results_csv/validation/dem_vs_sat_area.csv` | A_DEM "
       "vs A_sat<sup>P95</sup> paired data. |")
     A("| `1_results_csv/validation/b_clustering_diagnostic.csv` | Silhouette, "
-      "LOO σ(Δb) and LOO R² per (feature-set, k), with the variance share "
-      "of the first principal component of the features and the Spearman "
-      "correlation of b with it, backs the supplementary figure S1. |")
+      "LOO σ(Δb) and LOO R² per (feature-set, k), with the variance shares "
+      "of the first two principal components of the features and the Spearman "
+      "correlation of b with the first, backs the supplementary figure S1. |")
     A("| `1_results_csv/validation/v_uncertainty.csv` | Per-dam combined "
       "volume band (geometric, catalog-capacity and, for regionalized "
       "curves, predicted-area terms) at half, quarter, and tenth pool, "
@@ -1664,8 +1671,8 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("| `1_results_csv/validation/sensitivity_sweep.csv` | Trusted-set "
       "stability under ±20% and ±30% perturbations of five placement and "
       "acceptance constants, backs the supplementary figure S5. |")
-    A("| `1_results_csv/domain_characterization.csv` | Flat table of every "
-      "statistic referenced in this report. |")
+    A("| `1_results_csv/domain_characterization.csv` | Flat table of the "
+      "domain statistics behind this report. |")
     A("| `1_results_csv/domain_characterization.json` | The same "
       "statistics as `domain_characterization.csv` with typed values. |")
     A("| `2_results_plots/p1_*.{png,pdf}` to `p6_*.{png,pdf}` | Panel "

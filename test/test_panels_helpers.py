@@ -21,7 +21,7 @@ from eaves.postprocess.panels.s1 import (
 # ---- Shared synthetic data ----
 
 def _synthetic_trusted(n: int = 40, seed: int = 0) -> pd.DataFrame:
-    """DataFrame with the s1 feature columns plus a 'b' column."""
+    """Training dams with the s1 feature columns, the capacity and training flag that the released exponent rule reads, and a 'b' column."""
     rng = np.random.default_rng(seed)
     return pd.DataFrame({
         "valley_ratio":         np.exp(rng.normal(3.5, 0.6, n)),
@@ -30,8 +30,14 @@ def _synthetic_trusted(n: int = 40, seed: int = 0) -> pd.DataFrame:
         "dam_height_m":         np.exp(rng.normal(2.5, 0.4, n)),
         "spillway_height_m":    np.exp(rng.normal(2.2, 0.4, n)),
         "dam_length_m":         np.exp(rng.normal(5.5, 0.5, n)),
+        "capacity_mcm":         np.exp(rng.normal(0.5, 1.2, n)),
         "b":                    rng.normal(1.5, 0.25, n),
+        "training":             True,
     })
+
+
+# A minimum training capacity below every capacity, so every remaining training dam sets the exponent
+_ALL = 0.0
 
 
 # ---- s1 helpers ----
@@ -90,18 +96,30 @@ class TestBaselineSigma:
     def test_constant_b_returns_zero(self):
         T = _synthetic_trusted(n=20)
         T["b"] = 1.5
-        sigma = _baseline_sigma(T)
+        sigma = _baseline_sigma(T, _ALL)
         assert sigma == pytest.approx(0.0, abs=1e-6)
 
     def test_returns_positive_for_spread_b(self):
         T = _synthetic_trusted(n=40)
-        sigma = _baseline_sigma(T)
+        sigma = _baseline_sigma(T, _ALL)
         assert sigma > 0.0
 
     def test_returns_finite_float(self):
         T = _synthetic_trusted(n=20)
-        sigma = _baseline_sigma(T)
+        sigma = _baseline_sigma(T, _ALL)
         assert np.isfinite(sigma)
+
+    def test_baseline_applies_the_released_exponent_rule(self):
+        T = _synthetic_trusted(n=30)
+        T.loc[:9, "capacity_mcm"] = 0.5
+        T.loc[10:, "capacity_mcm"] = 5.0
+        T.loc[:9, "b"] = T.loc[:9, "b"] + 0.5
+        b = T["b"].values
+        preds = np.array([T.drop(index=i).query("capacity_mcm >= 1.0")["b"].median() for i in range(len(T))])
+        d = preds - b
+        expected = (np.quantile(d, 0.84) - np.quantile(d, 0.16)) / 2.0
+        assert _baseline_sigma(T, 1.0) == pytest.approx(expected)
+        assert _baseline_sigma(T, 1.0) != pytest.approx(_baseline_sigma(T, _ALL))
 
     def test_larger_spread_gives_larger_sigma(self):
         rng = np.random.default_rng(99)
@@ -109,14 +127,14 @@ class TestBaselineSigma:
         T_wide = T_narrow.copy()
         T_narrow["b"] = rng.normal(1.5, 0.1, len(T_narrow))
         T_wide["b"]   = rng.normal(1.5, 1.0, len(T_wide))
-        assert _baseline_sigma(T_wide) > _baseline_sigma(T_narrow)
+        assert _baseline_sigma(T_wide, _ALL) > _baseline_sigma(T_narrow, _ALL)
 
 
 class TestLooClusterSigma:
 
     def test_returns_positive_finite_sigma_and_bounded_r2(self):
         T = _synthetic_trusted(n=30)
-        sigma, r2 = _loo_cluster_sigma(T, CLUSTER_FEATURES, k=2, n_init=1)
+        sigma, r2 = _loo_cluster_sigma(T, CLUSTER_FEATURES, k=2, threshold_mcm=_ALL, n_init=1)
         assert np.isfinite(sigma) and sigma >= 0.0
         assert np.isfinite(r2) and r2 <= 1.0
 
@@ -131,13 +149,13 @@ class TestLooClusterSigma:
             np.full(n // 2, 1.1),
             np.full(n - n // 2, 2.1),
         ])
-        sigma, _ = _loo_cluster_sigma(T, CLUSTER_FEATURES, k=2, n_init=3)
-        baseline = _baseline_sigma(T)
+        sigma, _ = _loo_cluster_sigma(T, CLUSTER_FEATURES, k=2, threshold_mcm=_ALL, n_init=3)
+        baseline = _baseline_sigma(T, _ALL)
         assert sigma < baseline
 
     def test_sigma_with_k1_equals_baseline(self):
         T = _synthetic_trusted(n=25)
-        sigma_k1, _ = _loo_cluster_sigma(T, CLUSTER_FEATURES, k=1, n_init=1)
-        baseline = _baseline_sigma(T)
+        sigma_k1, _ = _loo_cluster_sigma(T, CLUSTER_FEATURES, k=1, threshold_mcm=_ALL, n_init=1)
+        baseline = _baseline_sigma(T, _ALL)
         assert sigma_k1 == pytest.approx(baseline, rel=0.05)
 

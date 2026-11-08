@@ -22,8 +22,8 @@ The project adheres to [Semantic Versioning](https://semver.org/).
   the sediment budget at the survey date against the surveyed loss, and
   the median band widths by curve source** (`eaves.postprocess.report`).
   The optional settings key `bathymetry_survey_date` (`YYYY-MM`) gives the
-  date of the sonar survey, and a share short of 100 % prints with one
-  decimal.
+  date of the sonar survey, and a share short of 100% that would round
+  to 100% prints with one decimal.
 
 - **The full-pool area regression diagnostics gain a drop-one sweep**
   (`acap_regression_diagnostics` in `eaves.postprocess.regionalization`).
@@ -166,7 +166,7 @@ The project adheres to [Semantic Versioning](https://semver.org/).
   the recovered full-pool area, follows the exact cap, so the share
   within a factor of two at full pool reads 88% in place of 93%, with a
   median bias of +18% in place of +7%, and the shares at half and tenth
-  pool read 91% and 76% in place of 95% and 72%. The DEM-error Monte
+  pool read 91% and 75% in place of 95% and 72%. The DEM-error Monte
   Carlo sample keeps 35 dams and reads class spreads of +60%, +36% and
   +17% in place of +75%, +55% and +19%.
 - **Panel numbering follows the manuscript** (`eaves.postprocess.panels`,
@@ -310,14 +310,31 @@ The project adheres to [Semantic Versioning](https://semver.org/).
   `_flood_river_overlay_from_segment` and the `domain_dir` argument of
   `sensitivity_sweep` are removed, together with the spillway and wall
   elevations that `process_dam` set before the placement and set again
-  before any read, the `reliable` column of the leave-one-out frame, the
-  labels of the coordinate pairs that the worker and panel p2 try, the
+  before any read, the labels of the coordinate pairs that the worker and
+  panel p2 try, the
   `c`, `r_squared` and `srtm_max_vol_mcm` fields of the single runs of
   the DEM-error and sensitivity steps, and five accuracy statistics that
   panel p4 computes and never draws.
 
 ### Fixed
 
+- **The leave-one-out evaluation applies the training rule of the released
+  exponent** (`eaves.postprocess.validation`). Each fold now takes the
+  regional exponent as the median over the remaining training dams at or
+  above the minimum training capacity with complete morphometric features,
+  the rule of `run_regionalization`, where it took the median over every
+  remaining training dam. The rule lives in one place
+  (`exponent_training_set`, `regional_median_exponent` and
+  `minimum_training_capacity` in `eaves.postprocess.regionalization`), the
+  report builds its regression basis with the same helpers, the clustering
+  diagnostic of panel `s1` measures its gain against the same rule applied
+  to the remaining training dams (its table names the training count
+  `n_training`), panel `s4` marks the cut the same helper selects, and the
+  released parameters are unchanged. The leave-one-out table, the
+  clustering table, panels `p4` and `s1`, the report and the domain
+  statistics follow, the report, the method page and the data dictionary
+  describe the rule, and `test/test_loo_regionalization.py` checks it fold
+  by fold.
 - **A dam has at most one check plot** (`eaves.cli`). The rename of the
   flood plot by source now removes the plot left under the previous
   suffix, and a dam whose fill fails loses the plot of an earlier run as
@@ -863,7 +880,6 @@ downstream simulation.
   sediment-loss budget beyond the first-order estimate currently
   reported.
 
-[Unreleased]: https://github.com/hyex-research/EAVES/compare/v1.4.0...HEAD
 [1.4.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.4.0
 [1.3.2]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.2
 [1.3.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.1

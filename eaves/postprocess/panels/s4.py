@@ -1,12 +1,14 @@
-"""Panel s4 (supplementary): capacity-threshold sweep behind the training cut.
+"""Panel s4 (supplementary): capacity-threshold sweep behind the training cut of the regional exponent.
 
 Panel a: fit quality (R^2) against storage capacity, colored by quality grade,
          with the R^2 reliability cut and the selected capacity cut marked.
 Panel b: fraction of dams clearing the combined reliability gates against the
          candidate capacity cutoff, with the number of dams above each cutoff
-         as bars and the selected cut marked. The selected cut is the lowest
-         tested threshold with at least 30 dams at or above it and at least
-         80% of them clearing the gates.
+         as bars and the selected cut marked. The selected cut is the minimum
+         training capacity that ``minimum_training_capacity`` picks, the lowest tested threshold
+         with at least 30 dams at or above it and at least 80% of them
+         clearing the gates, else the lowest with at least 20 dams and 70%,
+         else the fallback of 5 MCM.
 
 Reads:
 
@@ -26,7 +28,8 @@ import pandas as pd
 import eaves.config as _cfg
 
 from ...utils import dams_with_fill
-from ..regionalization import FALLBACK_RELIABILITY_THRESHOLD_MCM, choose_reliability_threshold
+from ..regionalization import minimum_training_capacity
+from ..reliability import trusted_mask
 from ._shared import PANEL_TEXT_RC, _style_legend, mm_to_in, panel_label, save_panel
 
 # ---- Style ----
@@ -48,14 +51,15 @@ COL_BARS = "0.82"
 # ---- Data ----
 
 def _load_threshold_data() -> tuple[pd.DataFrame, pd.DataFrame, float]:
-    """Reads the per-dam summary of the dams with a fill, the threshold sweep and the cut that
-    :func:`eaves.postprocess.regionalization.choose_reliability_threshold` selects on it."""
+    """Reads the per-dam summary of the dams with a fill and the threshold sweep, and takes the minimum training
+    capacity that :func:`eaves.postprocess.regionalization.minimum_training_capacity` selects from the summary."""
     summary_df = dams_with_fill(pd.read_csv(os.path.join(_cfg.CSV_DIR, "eaves_summary.csv")))
     summary_df = summary_df[summary_df["capacity_mcm"] > 0].copy()
     threshold_df = pd.read_csv(os.path.join(_cfg.CSV_DIR, "threshold_analysis.csv"))
     threshold_df = threshold_df.sort_values("threshold_mcm").reset_index(drop=True)
-    chosen = choose_reliability_threshold(threshold_df)
-    return summary_df, threshold_df, FALLBACK_RELIABILITY_THRESHOLD_MCM if chosen is None else chosen
+    summary_df["reliable"] = trusted_mask(summary_df)
+    cutoff, _, _ = minimum_training_capacity(summary_df)
+    return summary_df, threshold_df, cutoff
 
 
 # ---- Drawing ----

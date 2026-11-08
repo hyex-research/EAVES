@@ -14,7 +14,7 @@ RUN_TOOLS = ["resolved_config", "run_status", "run_outputs", "domain_characteriz
 def test_main_without_sdk(monkeypatch, capsys):
     monkeypatch.setattr(mcp_server, "MCPServer", None)
     assert mcp_server.main() == 1
-    assert "mcp" in capsys.readouterr().out
+    assert "mcp" in capsys.readouterr().err
     with pytest.raises(RuntimeError):
         mcp_server.build_server()
 

@@ -10,8 +10,9 @@ Three questions:
     of the features and the Spearman correlation of ``b`` with the first.
 3.  Even if the dams did partition, would a per-cluster median ``b`` reduce
     out-of-sample error? Quantified by leave-one-out ``sigma(delta_b)``
-    against the global-median baseline and by the leave-one-out R² of the
-    per-cluster median.
+    against the baseline of the released exponent rule applied to the
+    remaining training dams and by the leave-one-out R² of the per-cluster
+    median.
 
 Writes:
 
@@ -39,7 +40,8 @@ from sklearn.model_selection import LeaveOneOut
 import eaves.config as _cfg
 
 from ...utils import dams_with_fill, round_released_columns
-from ..reliability import training_mask
+from ..regionalization import exponent_training_set, minimum_training_capacity, regional_median_exponent
+from ..reliability import training_mask, trusted_mask
 from ._shared import PANEL_TEXT_RC, apply_style, mm_to_in, panel_label, save_panel
 
 # ---- Feature set and k range ----
@@ -53,10 +55,10 @@ _B_CMAP = "viridis"
 _CLUSTER_MARKERS = ["o", "s", "^", "D", "v", "P", "X", "<", ">", "h", "p", "*"]
 
 
-# ---- Preprocessing ----
-def _trusted(df: pd.DataFrame) -> pd.DataFrame:
-    # Selects the training population (trusted-set criteria and post-SRTM construction), the dams the regionalization procedure is trained on
-    return df[training_mask(df)].copy().reset_index(drop=True)
+# ---- Exponent rule ----
+def _regional_exponent(train: pd.DataFrame, threshold_mcm: float) -> float:
+    # The exponent the released rule assigns from these training dams
+    return regional_median_exponent(exponent_training_set(train, threshold_mcm))
 
 
 def _design_matrix(df: pd.DataFrame, feats: list[str]) -> np.ndarray:
@@ -76,14 +78,16 @@ def _silhouette_curve(X: np.ndarray, ks: list[int], seed: int = 42) -> list[floa
     ]
 
 
-def _loo_cluster_sigma(T: pd.DataFrame, feats: list[str], k: int,
+def _loo_cluster_sigma(T: pd.DataFrame, feats: list[str], k: int, threshold_mcm: float,
                        seed: int = 42, n_init: int = 3) -> tuple[float, float]:
     """LOO sigma(delta_b) and LOO R² of the per-cluster-median prediction at the given k.
 
     Each LOO fold runs its own KMeans with ``n_init`` initializations (3 by
     default, against 10 for the silhouette curve). The resulting ``sigma`` is
-    within 0.005 of its value at ``n_init=10``. The R² is one minus the mean
-    squared error of the predictions over the variance of ``b``.
+    within 0.005 of its value at ``n_init=10``. A fold whose cluster holds no
+    training dam predicts the exponent of the released rule from the fold's
+    training dams. The R² is one minus the mean squared error of the
+    predictions over the variance of ``b``.
     """
     X = _design_matrix(T, feats)
     b = T["b"].values
@@ -92,17 +96,17 @@ def _loo_cluster_sigma(T: pd.DataFrame, feats: list[str], k: int,
         km = KMeans(n_clusters=k, n_init=n_init, random_state=seed).fit(X[tr])
         cid = km.predict(X[te])[0]
         cl = b[tr][km.labels_ == cid]
-        preds[te] = float(np.median(cl)) if len(cl) else float(np.median(b[tr]))
+        preds[te] = float(np.median(cl)) if len(cl) else _regional_exponent(T.iloc[tr], threshold_mcm)
     delta = preds - b
     sigma = float((np.quantile(delta, 0.84) - np.quantile(delta, 0.16)) / 2.0)
     r2 = float(1.0 - np.mean(delta ** 2) / np.var(b))
     return sigma, r2
 
 
-def _baseline_sigma(T: pd.DataFrame) -> float:
-    """LOO sigma(delta_b) for the global-median predictor (no clustering)."""
+def _baseline_sigma(T: pd.DataFrame, threshold_mcm: float) -> float:
+    """LOO sigma(delta_b) of the released exponent rule applied to the remaining training dams, the predictor without clustering."""
     b = T["b"].values
-    preds = np.array([np.median(np.delete(b, i)) for i in range(len(b))])
+    preds = np.array([_regional_exponent(T.drop(index=i), threshold_mcm) for i in range(len(T))])
     d = preds - b
     return float((np.quantile(d, 0.84) - np.quantile(d, 0.16)) / 2.0)
 
@@ -123,20 +127,24 @@ def _cluster_labels(X: np.ndarray, pc1: np.ndarray, k: int, seed: int = 42) -> n
 
 def _compute(summary_csv: str, out_csv_dir: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Computes the diagnostic, writes it to ``b_clustering_diagnostic.csv`` and returns it with the training dams."""
-    T = _trusted(dams_with_fill(pd.read_csv(summary_csv)))
+    fills = dams_with_fill(pd.read_csv(summary_csv))
+    fills["reliable"] = trusted_mask(fills)
+    fills["training"] = training_mask(fills)
+    threshold_mcm, _, _ = minimum_training_capacity(fills)
+    T = fills[fills["training"]].copy().reset_index(drop=True)
     if len(T) < 10:
         raise RuntimeError(
             f"training set too small (n={len(T)}). The silhouette "
             "diagnostic needs ~50+ dams to be meaningful"
         )
-    base = _baseline_sigma(T)
+    base = _baseline_sigma(T, threshold_mcm)
     X = _design_matrix(T, CLUSTER_FEATURES)
     sil = _silhouette_curve(X, _K_RANGE)
     scores, var_share = _principal_components(X)
     pc1_rho = float(spearmanr(scores[:, 0], T["b"].values).statistic)
     rows = []
     for k, s in zip(_K_RANGE, sil):
-        sigma, r2 = _loo_cluster_sigma(T, CLUSTER_FEATURES, k)
+        sigma, r2 = _loo_cluster_sigma(T, CLUSTER_FEATURES, k, threshold_mcm)
         rows.append({
             "feature_set":           "raw morphometry",
             "k":                     k,
@@ -145,7 +153,7 @@ def _compute(summary_csv: str, out_csv_dir: str) -> tuple[pd.DataFrame, pd.DataF
             "loo_sigma_baseline":    base,
             "loo_relative_gain_pct": 100.0 * (base - sigma) / base,
             "loo_r2":                r2,
-            "n_trusted":             int(len(T)),
+            "n_training":            int(len(T)),
             "pc1_var_share":         float(var_share[0]),
             "pc2_var_share":         float(var_share[1]),
             "pc1_spearman_b":        pc1_rho,
@@ -256,7 +264,7 @@ def make_s1_clustering(out_dir: Path) -> Path:
                   color=_CURVE_COLOR, marker="o", linewidth=1.2, markersize=4.0,
                   label="Cluster median")
         ax_c.axhline(base, color="black", linewidth=0.9, linestyle="--",
-                     label="Global median")
+                     label="Regional exponent")
         ax_c.scatter([best_k], [best_sigma], s=55, facecolor="none",
                      edgecolor="0.20", linewidth=0.9, zorder=5)
         gain = f"{-float(sub.at[best_idx, 'loo_relative_gain_pct']):+.0f}%".replace("-", "\N{MINUS SIGN}")

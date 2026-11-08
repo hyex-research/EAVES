@@ -7,9 +7,9 @@
 # Steps (in order):
 #   1. python -m eaves --settings <X>: placement, flood-fill, power-law fit, regionalization
 #   2. python -m eaves.postprocess.validation --settings <X>: LOO regionalization validation, DEM-vs-satellite area check, goodness of fit and A_cap regression diagnostics
-#   3. python -m eaves.postprocess.uncertainty --settings <X>: per-dam V uncertainty propagation from b_sigma at half, quarter and tenth pool (writes validation/v_uncertainty.csv)
+#   3. python -m eaves.postprocess.uncertainty --settings <X>: per-dam V uncertainty band at half, quarter and tenth pool from the exponent spread, the full-pool area error of the regionalized dams and the catalog-capacity error (writes validation/v_uncertainty.csv)
 #   4. python -m eaves.postprocess.panels --settings <X>: renders the p1-p6 main panels and the s1 (b-clustering), s2 (uncertainty band), s3 (DEM error), s4 (threshold) and s5 (sensitivity) supplementary panels, s3 and s5 from the tables of the optional validation runs when they exist. s1 also computes the b-clustering diagnostic CSV
-#   5. python -m eaves.postprocess.report --settings <X>: domain characterization CSV + Markdown report (embeds the panels)
+#   5. python -m eaves.postprocess.report --settings <X>: domain characterization CSV with its JSON twin + Markdown report (embeds the panels)
 
 # RUN_TESTS=1 also runs the regression test on the 15-dam fixture afterwards and stops at a failure. The golden hashes change only through the one-liner of test/README.md
 

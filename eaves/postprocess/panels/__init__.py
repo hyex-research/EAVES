@@ -144,6 +144,6 @@ def make_panels(
         try:
             rendered[pid] = [fn(out_dir)]
         except Exception as e:
-            # A panel failure (usually a missing input) is reported and does not abort sibling panels
+            # Reports a failed panel and continues with the next
             print(f"[panels] skipped {pid}: {type(e).__name__}: {e}")
     return rendered

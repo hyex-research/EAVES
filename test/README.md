@@ -7,8 +7,8 @@ Three tiers, in order of cost. The continuous integration runs the smoke and uni
 | Tier | Files | Marker | Runtime | What it covers |
 | --- | --- | --- | --- | --- |
 | Smoke | `test_smoke.py` | (none) | seconds | Imports, settings loading and validation, and two postprocessing helpers on empty or unset input |
-| Unit | The other `test_*.py` files | (none) | seconds | The helpers of the domain preprocessing, the drainage and placement rules, the construction-year parser and the precision of the released tables, the regionalization, the clustering helpers of panel s1, the uncertainty band, the summary rows, the sediment budget, the agent view with its MCP server and the command-line parser, on small synthetic data |
-| Regression | `test_regression.py` | `slow` | minutes | The 15-dam fixture through the full pipeline, with every emitted CSV against its SHA-256 golden hash in `golden_hashes.json`, the summary against the parameter table, and `--plot-only` and single-dam `--only` runs against the tables of the full run |
+| Unit | The other `test_*.py` files | (none) | seconds | The helpers of the domain preprocessing, the drainage and placement rules, the construction-year parser and the precision of the released tables, the regionalization and the leave-one-out evaluation of its exponent rule, the clustering helpers of panel s1, the uncertainty band, the goodness-of-fit statistics, the summary rows, the sediment budget, the void guard of the flood fill, the report formatting, the agent view with its MCP server and the command-line parser, on small synthetic data |
+| Regression | `test_regression.py`, the fixture class of `test_void_guard.py` | `slow` | minutes | The 15-dam fixture through the pipeline step, with every emitted CSV against its SHA-256 golden hash in `golden_hashes.json`, the summary against the parameter table, `--plot-only` and single-dam `--only` runs against the tables of the full run, and a gap cut into the SRTM window of a fixture dam |
 
 The run time of the regression tier grows as the core count falls.
 
@@ -16,9 +16,9 @@ The run time of the regression tier grows as the core count falls.
 
 ```bash
 pytest                       # everything (fast tests + the slow regression test)
-pytest -m slow               # the regression test in isolation
+pytest -m slow               # the fixture tests in isolation
 pytest -m "not slow"         # explicit fast subset
-pytest -k regionalization    # one file by keyword
+pytest -k drainage           # the tests whose name carries the keyword
 pytest test/test_smoke.py -v
 ```
 
@@ -39,7 +39,7 @@ If you add a dam to the fixture, the slow test will fail because the CSVs change
 
 Three paths in the file are placeholders (`/path/to/...`): the MERIT-Basins river and unit-catchment shapefiles, and the country shapefile. The pipeline reads them only when it rebuilds the domain cache with `--rebuild-domain`. To rebuild the cache, copy `settings.json` to `settings_local.json` in the same folder, set the three paths in the copy, and pass the copy to `run_eaves.py` together with `--rebuild-domain`. `settings_local.json` is ignored by git, and the test suite uses it whenever it exists.
 
-`grdl_dir` names a folder the fixture does not ship. The panels step (`python -m eaves.postprocess.panels`, `--panels` or `--panels-only`) and the report step read it, and the regression run runs neither (see `conftest.py`).
+`grdl_dir` names a folder the fixture does not ship. The panels step (`python -m eaves.postprocess.panels`, `--panels` or `--panels-only`) and the report step read it, and the regression run runs neither (see `conftest.py`). The regression run is the pipeline step alone, so the validation, uncertainty, panels and report steps have no golden hash.
 
 ## Fixture inputs
 

@@ -1,6 +1,6 @@
 # EAVES domain report: Saudi Arabia
 
-Generated: 2026-11-05 08:54 UTC
+Generated: 2026-11-08 10:50 UTC
 
 Source code: `eaves/` package. This report: `eaves.postprocess.report`.
 
@@ -13,7 +13,7 @@ This document characterizes the reservoir population in the configured region an
 - **Regionalized curves**: 206 dams without a trusted SRTM-derived fit receive parameters from a two-component, regionally calibrated empirical procedure. Of these, 28 are dams whose wall placement, fill acceptance or power-law fit fails, regionalized with the topographic features recorded when processing stopped.
 - **Operational fill behavior**: across the 282 trusted dams with a nonzero 95th-percentile satellite-observed water extent, that extent reaches a median 20.5% of the DEM-derived full-pool footprint. This is the central fact behind the choice of the regionalization anchor below.
 - **Sediment budget**: assuming delivered sediment yields (the RUSLE-by-SDR product of [Dash et al. 2025](https://doi.org/10.1016/j.jenvman.2025.127199), so no additional delivery ratio is applied) and a deposited bulk density of 1.30 t m⁻³, the median predicted capacity loss by 2026 is **42.4%** of the catalog value (loss capped at 100% by trap saturation, and 152 reservoirs reach full siltation).
-- **Regionalization accuracy (leave-one-out on the training dams, multi-feature regression)**: 88% of predicted volumes lie within a factor of two of the SRTM-derived reference at full pool, 91% at half pool and 76% at tenth pool, with a median bias of +18% at full pool.
+- **Regionalization accuracy (leave-one-out on the training dams, multi-feature regression)**: 88% of predicted volumes lie within a factor of two of the SRTM-derived reference at full pool, 91% at half pool and 75% at tenth pool, with a median bias of +18% at full pool.
 
 ## Pipeline overview
 
@@ -25,7 +25,7 @@ EAVES uses a dam catalog (coordinates, design capacity, dam length and height, s
 4. **Power-law fit** (`eaves.pipeline.curves`): the area-volume pairs from the lowest represented elevation to the spillway, or for capped fills to the level where the volume reaches catalog capacity, are fitted to V = c A<sup>b</sup> on untransformed volumes by nonlinear least squares, returning (c, b, R²). For trusted dams the released exponent has a lower bound of 1, with c re-solved to keep the full-pool area and volume.
 5. **Quality grading and reliability tagging** (`eaves.postprocess.regionalization`): each fit gets a grade A to F. The trusted subset holds the fits with grade A or B, R² ≥ 0.98 and an active footprint of at least 50 grid cells, which is stricter than grades A and B alone. The capacity floor of the training dams that set the regional b is chosen by a sweep of `frac_reliable` against candidate cutoffs (see Fig. S4).
 6. **Regionalization** (`eaves.postprocess.regionalization`): dams outside the trusted subset receive (c, b) from the two-component, regionally calibrated empirical procedure described below.
-7. **Leave-one-out evaluation** (`eaves.postprocess.validation`): leaving out each training dam (trusted and built after 2000) in turn gives the accuracy distribution of each regionalization anchor.
+7. **Leave-one-out evaluation** (`eaves.postprocess.validation`): leaving out each training dam (trusted and built in or after 2000) in turn gives the accuracy distribution of each regionalization anchor.
 
 Outputs land under `<OUTPUT_DIR>/1_results_csv/` and `<OUTPUT_DIR>/2_results_plots/`.
 
@@ -41,7 +41,7 @@ Two idealized valley shapes with uniformly sloping beds illustrate the relation.
 
 In this region's trusted set (n = 320), the unconstrained exponent b has median **1.48**, a P05 to P95 range of [1.10, 2.00] and a full range of [0.97, 2.43]. The spread that enters the uncertainty bands is taken over the training dams, b_σ = 0.26.
 
-The coefficient c sets the absolute scale of the curve. Once b is fixed, anchoring at a known point (A_cap, V_cap) pins c = V_cap / A_cap<sup>b</sup>. This back-solve is exact at the anchor, so any uncertainty in b shows up as V_pred / V_ref = (A/A_cap)<sup>Δb</sup> at other water levels. A mismatch in b equal to the trusted-set spread (0.26, the P16 to P84 half-width) therefore produces about 19% volume error at 0.5 A_cap and about 80% at 0.1 A_cap, without the area-independent terms of the band. For applications that need detail at low water levels, the released EAV tables in `eav_tables/` retain the SRTM-derived hypsometry within the reconstructed range, which the power law smooths over.
+The coefficient c sets the absolute scale of the curve. Once b is fixed, anchoring at a known point (A_cap, V_cap) pins c = V_cap / A_cap<sup>b</sup>. This back-solve is exact at the anchor, so any uncertainty in b shows up as V_pred / V_ref = (A/A_cap)<sup>Δb</sup> at other water levels. A mismatch in b equal to the training-set spread (0.26, the P16 to P84 half-width) therefore produces about 19% volume error at 0.5 A_cap and about 80% at 0.1 A_cap, without the area-independent terms of the band. For applications that need detail at low water levels, the released EAV tables in `eav_tables/` retain the SRTM-derived hypsometry within the reconstructed range, which the power law smooths over.
 
 ## Domain characterization
 
@@ -121,7 +121,7 @@ _Choice of b._ The selected procedure assigns every regionalized dam the regiona
 
 _1. Multivariate regression (linear and random forest)._ A linear regression and a random forest of b on `valley_ratio`, `channel_slope`, `mean_catchment_slope`, and `dam_height_m` are evaluated by leave-one-out cross-validation on the training dams at or above the minimum training capacity with complete features. The selection gate requires R²_LOO ≥ 0.25 for a regression to replace the median. Both models fall below the gate. No single feature explains more than about 10% of the variance in b (Spearman |ρ| ≤ 0.32 over the 84 dams of the regression basis), and the features are partly redundant, so combining them yields no improvement over the constant. The regional median is therefore retained.
 
-_2. Morphological clustering with a per-cluster median._ K-means clustering in standardized log space on six morphometric features (valley-width ratio, channel slope, mean catchment slope, dam height, spillway height and dam length) sweeps k = 2 to 12, with the results released in `validation/b_clustering_diagnostic.csv`. The best configuration (k = 3) lowers the leave-one-out σ(Δb) by 14%, from 0.26 to 0.22, but its leave-one-out R² reaches only 0.09, below the 0.25 gate applied to the regressions (Fig. S1c). Mean silhouette coefficients of 0.22 to 0.37 stay below the conventional 0.50 reasonable-structure threshold, so the training dams do not split into well-separated groups, although b varies gradually along the first principal component (Spearman ρ = -0.41, Fig. S1b).
+_2. Morphological clustering with a per-cluster median._ K-means clustering in standardized log space on six morphometric features (valley-width ratio, channel slope, mean catchment slope, dam height, spillway height and dam length) sweeps k = 2 to 12, with the results released in `validation/b_clustering_diagnostic.csv`. The best configuration (k = 3) lowers the leave-one-out σ(Δb) by 13%, from 0.26 to 0.22, but its leave-one-out R² reaches only 0.09, below the 0.25 gate applied to the regressions (Fig. S1c). Mean silhouette coefficients of 0.22 to 0.37 stay below the conventional 0.50 reasonable-structure threshold, so the training dams do not split into well-separated groups, although b varies gradually along the first principal component (Spearman ρ = -0.41, Fig. S1b).
 
 _Practical implication._ No clustering configuration reaches the 0.25 gate that a regression must clear, so the selected procedure keeps the **regional median**, and the `b_sigma` column of `validation/v_uncertainty.csv` quantifies the remaining spread of b.
 
@@ -139,25 +139,25 @@ Because the 95th-percentile extent of a typical reservoir reaches only about 20.
 
 ## Leave-one-out evaluation of regionalization
 
-The leave-one-out evaluation tests how well the regionalization reconstructs the SRTM-derived curves of the training dams. It assesses reconstruction of those curves rather than accuracy against measured storage. Each training dam is left out in turn. The anchors are refitted and b is recalculated as the median exponent of the remaining training dams, and the predicted volumes are compared with the omitted dam's SRTM-derived power-law curve at full, half and tenth pool (100%, 50% and 10% of its recovered full-pool area A_DEM). Errors are computed in log₁₀ ratio space and reported below in the relative convention (a percentage, or a multiplicative factor for larger values). The table below gives the full-pool scores and the shares within a factor of two and three at half and tenth pool, and Figure 4 shows all three levels. The full per-dam table lives in `<CSV_DIR>/validation/regionalization_loo.csv`.
+The leave-one-out evaluation tests how well the regionalization reconstructs the SRTM-derived curves of the training dams. It assesses reconstruction of those curves rather than accuracy against measured storage. Each training dam is left out in turn. The anchors are refitted, b is recalculated as the median exponent of the remaining training dams at or above the minimum training capacity with complete morphometric features, the rule that sets the released exponent, and the predicted volumes are compared with the omitted dam's SRTM-derived power-law curve at full, half and tenth pool (100%, 50% and 10% of its recovered full-pool area A_DEM). Errors are computed in log₁₀ ratio space and reported below in the relative convention (a percentage, or a multiplicative factor for larger values). The table below gives the full-pool scores and the shares within a factor of two and three at half and tenth pool, and Figure 4 shows all three levels. The full per-dam table lives in `<CSV_DIR>/validation/regionalization_loo.csv`.
 
 | Metric | Satellite 95th-percentile extent | Capacity-only regression | Multi-feature regression (selected) |
 | --- | --- | --- | --- |
 | n | 221 | 221 | 221 |
-| Median bias | 7.8× | +26% | **+18%** |
+| Median bias | 7.9× | +26% | **+18%** |
 | Median absolute percentage error | n/a | n/a | **29%** |
 | Relative RMSE | n/a | n/a | **53%** |
 | Within 2× | 15% | 64% | **88%** |
-| Within 3× | 28% | 86% | **99.5%** |
-| Within 10× | 58% | 100% | **100%** |
-| Within 2× at half pool | 15% | 72% | **91%** |
+| Within 3× | 27% | 86% | **99.5%** |
+| Within 10× | 57% | 100% | **100%** |
+| Within 2× at half pool | 15% | 73% | **91%** |
 | Within 3× at half pool | 25% | 95% | **99.5%** |
-| Within 2× at tenth pool | 14% | 70% | **76%** |
-| Within 3× at tenth pool | 24% | 87% | **90%** |
+| Within 2× at tenth pool | 15% | 71% | **75%** |
+| Within 3× at tenth pool | 24% | 87% | **91%** |
 
 'Within n×' means |log₁₀(V_pred / V_SRTM)| ≤ log₁₀(n), i.e. the predicted volume sits between V_SRTM / n and V_SRTM · n.
 
-The selected multi-feature regression has the tightest spread of the three, a 1σ of 46% against 95% for the capacity-only regression and 8.1× for the satellite anchor. Both DEM-trained anchors stay in the design regime that the catalog V_cap refers to, and the satellite anchor carries the operational bias.
+The selected multi-feature regression has the tightest spread of the three, a 1σ of 46% against 97% for the capacity-only regression and 8.2× for the satellite anchor. Both DEM-trained anchors stay in the design regime that the catalog V_cap refers to, and the satellite anchor carries the operational bias.
 
 ![Regionalization accuracy panel](2_results_plots/p4_regionalization_validation.png)
 
@@ -220,7 +220,7 @@ To run EAVES on a new region, give the paths of the dam catalog, the DEM and the
 
 ![Supplementary: K-means clustering diagnostic for b](2_results_plots/s1_b_clustering_silhouette.png)
 
-_Figure S1. K-means clustering diagnostic on the training-set dams in log-transformed morphometric feature space. (a) Mean silhouette coefficient versus number of clusters k for the six morphometric features. It remains below the conventional 0.50 reasonable-structure threshold for every k. The k = 2 peak at 0.37 reflects a cut across the dominant gradient of panel b, not two morphological types. (b) The training dams in the plane of the first two principal components of the standardized log-transformed features, colored by b, with marker shapes for the clusters at the best k of panel c. The first two components carry 60% and 16% of the variance, and b varies along the first (Spearman ρ = -0.41), so the dams form one continuous cloud along which b changes gradually. (c) Leave-one-out σ(Δb) for a per-cluster-median predictor of b versus the global-median baseline (dashed). The best configuration (k = 3) lowers σ(Δb) by 14%, while its leave-one-out R² stays at 0.09, below the 0.25 gate._
+_Figure S1. K-means clustering diagnostic on the training-set dams in log-transformed morphometric feature space. (a) Mean silhouette coefficient versus number of clusters k for the six morphometric features. It remains below the conventional 0.50 reasonable-structure threshold for every k. The k = 2 peak at 0.37 reflects a cut across the dominant gradient of panel b, not two morphological types. (b) The training dams in the plane of the first two principal components of the standardized log-transformed features, colored by b, with marker shapes for the clusters at the best k of panel c. The first two components carry 60% and 16% of the variance, and b varies along the first (Spearman ρ = -0.41), so the dams form one continuous cloud along which b changes gradually. (c) Leave-one-out σ(Δb) for a per-cluster-median predictor of b versus the regional-exponent baseline (dashed). The best configuration (k = 3) lowers σ(Δb) by 13%, while its leave-one-out R² stays at 0.09, below the 0.25 gate._
 
 ![Supplementary: Parameterization uncertainty bands for reservoir volume](2_results_plots/s2_uncertainty_band.png)
 
@@ -238,13 +238,13 @@ _Figure S2. Parameterization uncertainty bands for reservoir volume. (a) Worked 
 | `1_results_csv/eav_tables/<dam_id>_eav.csv` | Elevation, depth, area and volume table per dam with a flood fill, with elevation and depth in m, area in m² and volume in m³. |
 | `1_results_csv/validation/regionalization_loo.csv` | Per-anchor leave-one-out residuals, every training dam. |
 | `1_results_csv/validation/dem_vs_sat_area.csv` | A_DEM vs A_sat<sup>P95</sup> paired data. |
-| `1_results_csv/validation/b_clustering_diagnostic.csv` | Silhouette, LOO σ(Δb) and LOO R² per (feature-set, k), with the variance share of the first principal component of the features and the Spearman correlation of b with it, backs the supplementary figure S1. |
+| `1_results_csv/validation/b_clustering_diagnostic.csv` | Silhouette, LOO σ(Δb) and LOO R² per (feature-set, k), with the variance shares of the first two principal components of the features and the Spearman correlation of b with the first, backs the supplementary figure S1. |
 | `1_results_csv/validation/v_uncertainty.csv` | Per-dam combined volume band (geometric, catalog-capacity and, for regionalized curves, predicted-area terms) at half, quarter, and tenth pool, backs the supplementary figure S2. |
 | `1_results_csv/validation/goodness_of_fit.csv` | Per-dam fractional volume residuals of the power-law fit (area-to-volume direction), their medians by fill level, the departure at the typical satellite extent and the residual of the two-segment alternative. |
 | `1_results_csv/validation/acap_regression_diagnostics.csv` | VIF, condition number, incremental and drop-one leave-one-out diagnostics of the seven-feature A_cap regression. |
 | `1_results_csv/validation/dem_error_montecarlo.csv` | Per-dam volume spread under SRTM vertical-error perturbations, backs the supplementary figure S3. |
 | `1_results_csv/validation/sensitivity_sweep.csv` | Trusted-set stability under ±20% and ±30% perturbations of five placement and acceptance constants, backs the supplementary figure S5. |
-| `1_results_csv/domain_characterization.csv` | Flat table of every statistic referenced in this report. |
+| `1_results_csv/domain_characterization.csv` | Flat table of the domain statistics behind this report. |
 | `1_results_csv/domain_characterization.json` | The same statistics as `domain_characterization.csv` with typed values. |
 | `2_results_plots/p1_*.{png,pdf}` to `p6_*.{png,pdf}` | Panel figures. Each panel is written as both a 300-dpi PNG (embedded in this report) and a vector PDF. |
 | `2_results_plots/s1_b_clustering_silhouette.{png,pdf}` | Supplementary figure S1: K-means clustering diagnostic for b, with the training dams in the plane of the first two principal components. |

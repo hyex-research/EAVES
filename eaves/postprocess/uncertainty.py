@@ -67,10 +67,11 @@ def compute_b_sigma(summary_df: pd.DataFrame) -> float:
     """Population 1σ half-width on b from the training set.
 
     The training set is the trusted dams built after the SRTM acquisition
-    (the same population the regionalization procedure is trained on). Equal
-    to the LOO baseline sigma for predicting b from the global median,
-    and the single region-level number that propagates into every per-dam
-    V band below.
+    (the same population the regionalization procedure is trained on). It is
+    close to the leave-one-out spread of the released exponent rule over the
+    training dams, the baseline of the clustering diagnostic of panel s1, and it is
+    the single region-level number that propagates into every per-dam V band
+    below.
     """
     m = training_mask(summary_df)
     b = summary_df.loc[m, "b"].dropna()

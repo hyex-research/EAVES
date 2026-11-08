@@ -34,12 +34,20 @@ def test_fixture_outputs_match_golden(fixture_output: Path, golden_hashes: dict)
         if actual != expected:
             mismatches.append(f"  {rel}\n    expected: {expected}\n    actual:   {actual}")
 
-    if missing or mismatches:
+    emitted = sorted(
+        str(p.relative_to(fixture_output))
+        for p in (fixture_output / "1_results_csv").rglob("*.csv")
+    )
+    unhashed = [rel for rel in emitted if rel not in golden_hashes]
+
+    if missing or mismatches or unhashed:
         msg = []
         if missing:
             msg.append(f"Missing files ({len(missing)}):\n  " + "\n  ".join(missing))
         if mismatches:
             msg.append(f"Hash mismatches ({len(mismatches)}):\n" + "\n".join(mismatches))
+        if unhashed:
+            msg.append(f"CSVs without a golden hash ({len(unhashed)}):\n  " + "\n  ".join(unhashed))
         msg.append(
             "\nIf the change was intentional, regenerate the goldens with:\n"
             "  pytest -m slow  # rebuilds test/fixture/output/\n"

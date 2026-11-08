@@ -50,7 +50,7 @@ python -m eaves.postprocess.panels --settings region/ksa/ksa.json               
 python -m eaves.postprocess.report --settings region/ksa/ksa.json --ref-year 2026   # 5. domain characterization and report.md
 ```
 
-The flags of step 1 and the diagnostics on request of step 2:
+The main flags of step 1 and the diagnostics on request of step 2:
 
 ```bash
 eaves --settings region/ksa/ksa.json --only id_120000 id_020017    # these dams, merged into the existing tables
@@ -101,7 +101,7 @@ The regression test is the correctness check after code changes. It runs the fix
 - Markdown: sentence-case headings, `| --- |` table separators with spaces, `_underscore_` italics, no TeX math (use Unicode symbols), single trailing newline. A markdownlint config is committed, respect it.
 - US English in code, comments, and generated reports.
 - Match the register of existing docs: concise, precise, no marketing language.
-- User-visible changes get a [CHANGELOG.md](CHANGELOG.md) entry under `[Unreleased]`.
+- User-visible changes get a [CHANGELOG.md](CHANGELOG.md) entry under the section of the latest version.
 
 ## Guardrails
 

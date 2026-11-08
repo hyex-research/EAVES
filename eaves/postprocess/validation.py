@@ -6,13 +6,14 @@ Default diagnostics (cheap, run unless skipped), all mirroring the logic in
 * :func:`loo_regionalization_eval`: leave-one-out evaluation of the
   regionalization procedure on the training dams (trusted SRTM fits built
   after the SRTM acquisition). For each training dam, it hides the SRTM
-  curve, re-runs the regionalization step
-  (regional-median ``b``, the selected multi-feature LR anchor for
-  ``A_cap``, plus the satellite 95th-percentile and log-log anchors for
-  comparison, to back-solve ``c``) using the other training dams as
-  training data, then
-  compares the predicted volumes with the SRTM-derived reference curve at
-  full, half and tenth pool (100%, 50% and 10% of ``A_DEM``).
+  curve and re-runs the regionalization step using the other training
+  dams as training data, with the regional ``b`` taken by the rule of the
+  released exponent (the median over those at or above the minimum
+  training capacity with complete features), the selected multi-feature LR
+  anchor for ``A_cap``, and the satellite 95th-percentile and log-log
+  anchors for comparison, to back-solve ``c``. It then compares the
+  predicted volumes with the SRTM-derived reference curve at full, half
+  and tenth pool (100%, 50% and 10% of ``A_DEM``).
 
 * :func:`dem_vs_sat_area_check`: per-dam comparison of the DEM-derived
   full-pool area ``footprint_area_km2`` against the satellite 95th
@@ -77,6 +78,9 @@ from .regionalization import (
     _fit_multi_anchor_lr,
     _predict_multi_anchor_lr,
     acap_regression_diagnostics,
+    exponent_training_set,
+    minimum_training_capacity,
+    regional_median_exponent,
 )
 from .reliability import training_mask, trusted_mask
 from .sensitivity import sensitivity_sweep
@@ -126,16 +130,25 @@ def loo_regionalization_eval(
     out_dir : directory to write ``regionalization_loo.csv`` into.
     test_area_fractions : evaluate V at these fractions of A_DEM.
 
+    Each fold assigns the regional exponent by the rule of the released
+    run, the median over the remaining training dams at or above the
+    minimum training capacity with complete features, at the capacity
+    threshold the full summary selects. The regression branch for ``b``
+    is not re-evaluated per fold.
+
     Returns the per-dam result DataFrame.
     """
     df = dams_with_fill(pd.read_csv(summary_csv))
-    # The LOO runs on the training population (trusted and post-2000, with the small-population fallback), the dams the procedure is trained on
+    df["reliable"] = trusted_mask(df)
+    # The LOO runs on the training population (trusted and built in or after 2000, with the small-population fallback), the dams the procedure is trained on
     df["training"] = training_mask(df)
     trusted = df[df["training"]].copy().reset_index(drop=True)
     if len(trusted) == 0:
         raise RuntimeError("No training dams in summary, nothing to validate.")
+    threshold_mcm, _, _ = minimum_training_capacity(df)
 
     rows = []
+    n_exponent_donors = []
     for i, row in trusted.iterrows():
         dam_id = row["dam_id"]
         capacity_m3 = float(row["capacity_mcm"]) * 1e6
@@ -148,7 +161,9 @@ def loo_regionalization_eval(
         b_srtm = float(row["b"])
 
         train = trusted.drop(index=i)
-        b_reg = float(train["b"].median())
+        exponent_train = exponent_training_set(train, threshold_mcm)
+        n_exponent_donors.append(len(exponent_train))
+        b_reg = regional_median_exponent(exponent_train)
         c_median = float(train["c"].median())
         fallback = _fit_a_cap_fallback(train)
         multi_coef = _fit_multi_anchor_lr(train)
@@ -230,15 +245,18 @@ def loo_regionalization_eval(
     out_path = os.path.join(out_dir, "regionalization_loo.csv")
     round_released_columns(out).to_csv(out_path, index=False)
 
-    _print_loo_summary(out, test_area_fractions, out_path)
+    _print_loo_summary(out, test_area_fractions, out_path, threshold_mcm, n_exponent_donors)
     return out
 
 
-def _print_loo_summary(out: pd.DataFrame, fracs, out_path: str) -> None:
+def _print_loo_summary(out: pd.DataFrame, fracs, out_path: str, threshold_mcm: float, n_donors: list) -> None:
     print("\n" + "=" * 70)
     print("  LOO REGIONALIZATION EVALUATION")
     print("=" * 70)
     print(f"  Dams evaluated: {len(out)}")
+    if n_donors:
+        print(f"  Exponent donors per fold: {min(n_donors)} to {max(n_donors)} training dams at or above "
+              f"{threshold_mcm:.1f} MCM with complete features")
     for recipe in ("current", "alt", "multi"):
         print(f"\n  Recipe: {recipe}")
         print("    Source breakdown:")

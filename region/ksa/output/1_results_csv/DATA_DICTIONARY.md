@@ -40,8 +40,9 @@ across all files.
   morphometric features, median 1.5065), `c` back-solved from catalog capacity
   via the multi-feature anchor). See `source` below.
 - **Error reporting.** Volume errors are multiplicative. They are computed in
-  base-10 log-ratio space and stored as `*_log10` columns (and as signed decimal
-  fractions, e.g. `0.29 = +29%`). Prose and tables report them mostly as
+  base-10 log-ratio space and stored in the columns whose name carries `log10`
+  (and, in `v_uncertainty.csv`, as the decimal fractions of the band bounds,
+  `V_frac_up` 0.29 = +29% and `V_frac_down` 0.33 = −33%). Prose and tables report them mostly as
   relative values, a percentage below 100% and a multiplicative factor at or
   above 100% (% = 10<sup>σ</sup> − 1, factor = 10<sup>σ</sup>), and some
   figures and tables also give the log10 value itself.
@@ -75,7 +76,7 @@ For Baish (`id_120000`), the capacity comes from the design documentation of the
 | `capacity_mcm` | Catalog design capacity, rounded to 4 decimals | MCM | float | never |
 | `c` | Power-law coefficient in V = c · A<sup>b</sup> (A in m², V in m³), rounded to 4 significant digits | - | float | never |
 | `b` | Power-law exponent in V = c · A<sup>b</sup>, with a lower bound of 1 on the released value (the unconstrained least-squares fit is in `eaves_summary.csv`), rounded to 4 decimals | - | float | never |
-| `c` (bounded dams) | For the dams whose fitted `b` falls below the bound, `b` is set to 1 and `c` is recalculated to preserve the recovered full-pool area and volume (`srtm_max_vol_mcm` at `footprint_area_km2`), so these adjusted coefficients differ from the unconstrained `c` in `eaves_summary.csv` | - | float | never |
+| `c` (bounded dams) | For the SRTM-derived dams whose fitted `b` falls below the bound, `b` is set to 1 and `c` is recalculated to preserve the recovered full-pool area and volume (`srtm_max_vol_mcm` at `footprint_area_km2`), so these adjusted coefficients differ from the unconstrained `c` in `eaves_summary.csv` | - | float | never |
 | `source` | Provenance | - | str | never |
 
 `source` controlled vocabulary: `srtm_derived` (320), `regi_multi` (206).
@@ -209,6 +210,8 @@ reads its features from that row.
 
 ## `threshold_analysis.csv`: capacity-threshold analysis behind the training cut of the regional exponent (39 rows)
 
+The minimum training capacity of the regional exponent is the lowest threshold at which at least 30 dams lie at or above it and at least 80% of them are reliable, else the lowest at which at least 20 dams lie at or above it and at least 70% are reliable, 1.0 MCM on this domain.
+
 | Column | Definition | Unit | dtype |
 | --- | --- | --- | --- |
 | `threshold_mcm` | Capacity cut-off | MCM | float |
@@ -224,9 +227,10 @@ A two-column `statistic,value` table of population summaries (dam counts by
 source/era, capacity percentiles, the regional `b` distribution, LOO anchor
 skill, sediment-budget summaries, and the `b`-clustering diagnostic). Values
 are strings/numbers. The key names are self-describing. Volume statistics are
-in MCM (`*_mcm`). Dimensionless skill metrics are in log10 units. The capacity,
-construction-year, dam-height and sediment statistics cover all 526 dams, and
-the statistics of the fill and of the fit cover the 501 dams with a flood fill.
+in MCM (`*_mcm`). Skill metrics whose key carries `log10` are in log10 units, and those whose key carries `frac` are decimal fractions (the suffixes `_050pct` and `_010pct` name the half- and tenth-pool level). The capacity,
+construction-year and dam-height statistics cover all 526 dams, the sediment
+statistics the 525 dams with a construction year, and the statistics of the
+fill and of the fit cover the 501 dams with a flood fill.
 `domain_characterization.json` beside the table holds the same statistics in
 the same order, each value typed as a number or a string, an empty value as
 null.
@@ -235,7 +239,7 @@ Selected keys: `n_dams_with_params=526`, `n_dams_summary=501` (the dams with
 a flood fill), `n_dams_failed_pipeline=28`, `n_params_source_srtm_derived=320`,
 `n_params_source_regi_multi=206`, `n_training=221`, `b_median=1.4772` (trusted,
 descriptive), `b_sigma_training=0.256` (the band's b-spread, training set),
-`b_cluster_best_gain_pct=13.75` (at `b_cluster_best_k=3`, with
+`b_cluster_best_gain_pct=13.41` (at `b_cluster_best_k=3`, with
 `b_cluster_best_loo_r2=0.0853`), `b_cluster_silhouette_max_k=2`,
 `loo_multi_anchor_within_2x_frac=0.8778` / `_within_3x_frac=0.9955`
 (stored as decimal fractions). The LOO rows cover the 221 training dams.
@@ -267,10 +271,10 @@ standardized features.
 | `k` | Number of clusters | count | int |
 | `silhouette` | Silhouette score | - | float |
 | `loo_sigma_delta_b` | LOO σ of Δb with clustering | - | float |
-| `loo_sigma_baseline` | LOO σ of Δb with the global-median baseline | - | float |
+| `loo_sigma_baseline` | LOO σ of Δb with the released exponent rule applied to the remaining training dams, the predictor without clustering | - | float |
 | `loo_relative_gain_pct` | Relative reduction in σ from clustering | % | float |
 | `loo_r2` | LOO R² of the per-cluster median of `b` at `k`, 1 minus the mean squared LOO error over the variance of `b` | - | float |
-| `n_trusted` | Training dams used (the trusted dams built in or after 2000) | count | int |
+| `n_training` | Training dams used (the trusted dams built in or after 2000) | count | int |
 | `pc1_var_share` | Variance share of the first principal component of the features, the same on every row | fraction | float |
 | `pc2_var_share` | Variance share of the second principal component of the features, the same on every row | fraction | float |
 | `pc1_spearman_b` | Spearman correlation of `b` with the first principal component, the same on every row | - | float |
@@ -308,17 +312,20 @@ against the SRTM-derived reference at full, half and tenth pool (100%, 50% and
 10% of the recovered full-pool area). Columns follow the pattern
 `<anchor>_<quantity>` where `<anchor> ∈ {current, alt, multi}`.
 
-| Column group | Definition | Unit |
-| --- | --- | --- |
-| `dam_id`, `capacity_mcm`, `A_DEM_km2`, `A_sat_P95_km2`, `n_sat_obs` | dam keys and inputs (catalog/SRTM/satellite) | mixed (MCM, km², count) |
-| `c_srtm`, `b_srtm` | SRTM-derived reference coefficients | - |
-| `b_reg`, `delta_b` | regional-median b and its deviation from `b_srtm` | - |
-| `current_source` / `alt_source` / `multi_source` | which anchor variant produced the row | - |
-| `*_A_cap_km2` | full-pool area A_cap of the anchor, at which the catalog capacity is placed | km² |
-| `*_c`, `*_log10_c_ratio` | anchor coefficient and its log10 ratio vs reference | - / log10 units |
-| `*_V_at_{100,050,010}pct_m3` | anchor volume at that pool fraction | **m³** |
-| `*_log10_V_ratio_at_{100,050,010}pct` | log10 volume ratio vs the SRTM reference | log10 units |
-| `V_srtm_at_{100,050,010}pct_m3` | SRTM-reference volume at that pool fraction | **m³** |
+| Column group | Definition | Unit | dtype | Missing |
+| --- | --- | --- | --- | --- |
+| `dam_id` | Persistent dam identifier | - | str | never |
+| `capacity_mcm`, `A_DEM_km2` | catalog design capacity and recovered full-pool area | MCM, km² | float | never |
+| `A_sat_P95_km2` | satellite 95th-percentile water area | km² | float | blank when the series holds five or fewer observations (4 rows) |
+| `n_sat_obs` | observations in the satellite series | count | int | never |
+| `c_srtm`, `b_srtm` | SRTM-derived reference coefficients | - | float | never |
+| `b_reg`, `delta_b` | regional median b of the fold (over the remaining training dams at or above the minimum training capacity with complete features, the rule of the released exponent) and its deviation from `b_srtm` | - | float | never |
+| `current_source` / `alt_source` / `multi_source` | which anchor variant produced the row | - | str | never |
+| `*_A_cap_km2` | full-pool area A_cap of the anchor, at which the catalog capacity is placed (the satellite anchor falls back to the capacity-only regression when `A_sat_P95_km2` is blank) | km² | float | never |
+| `*_c`, `*_log10_c_ratio` | anchor coefficient and its log10 ratio vs reference | - / log10 units | float | never |
+| `*_V_at_{100,050,010}pct_m3` | anchor volume at that pool fraction | **m³** | float | never |
+| `*_log10_V_ratio_at_{100,050,010}pct` | log10 volume ratio vs the SRTM reference | log10 units | float | never |
+| `V_srtm_at_{100,050,010}pct_m3` | SRTM-reference volume at that pool fraction | **m³** | float | never |
 
 Source vocabularies: `current_source ∈ {current_sat_p95 (195),
 current_sat_fallback (26)}` (over the 221 training-dam rows), `alt_source = alt_loglog_primary`,
@@ -328,7 +335,7 @@ current_sat_fallback (26)}` (over the 221 training-dam rows), `alt_source = alt_
 
 ## `validation/v_uncertainty.csv`: per-dam volume uncertainty band
 
-Combined per-dam volume uncertainty band at half, quarter and tenth pool (supplementary panel S2), from the exponent spread `b_sigma`, the catalog-capacity term and, for regionalized curves, the term of the predicted full-pool area.
+Combined per-dam volume uncertainty band at half, quarter and tenth pool (supplementary panel S2), from the exponent spread `b_sigma`, the catalog-capacity term and, for regionalized curves, the term of the predicted full-pool area. Half, quarter and tenth pool are the areas 0.5, 0.25 and 0.1 times `A_cap_km2`, unlike the levels of `regionalization_loo.csv`, which are fractions of the recovered full-pool area `A_DEM_km2`.
 
 | Column | Definition | Unit | dtype | Missing |
 | --- | --- | --- | --- | --- |
@@ -385,7 +392,7 @@ Variance-inflation factors, incremental leave-one-out skill and drop-one leave-o
 | --- | --- | --- | --- | --- |
 | `diagnostic` | Row type (`vif`, `condition_number`, `incremental_loo`, `incremental_loo_no_capacity`, `drop_one_loo`) | - | str | never |
 | `feature` | Feature name, the feature added (incremental rows) or removed (drop-one rows) | - | str | never |
-| `n_features` | Number of features in the regression of the row (incremental and drop-one rows) | count | int | blank for VIF rows |
+| `n_features` | Number of features in the regression of the row (condition-number, incremental and drop-one rows) | count | Int (nullable) | blank for VIF rows |
 | `value` | VIF / condition-number / LOO-RMS value | mixed | float | never |
 | `metric` | Metric label | - | str | never |
 | `delta_loo_rms_log10` | Reduction of the LOO RMS attributed to the feature, the model without it minus the model with it, so positive when the feature lowers the error | log10 units | float | blank for VIF and condition-number rows and for the first row of each incremental sequence |

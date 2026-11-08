@@ -1,8 +1,9 @@
 """Unit tests for the multi-feature LR regionalization recipe.
 
 Covers feature-vector construction, model fitting, prediction, the
-single-recipe back-solve and the choice of the reliability threshold. All
-checks run on small synthetic data.
+single-recipe back-solve, the choice of the reliability threshold and the
+training rule of the regional exponent. All checks run on small synthetic
+data.
 """
 
 from __future__ import annotations
@@ -15,11 +16,16 @@ import pytest
 
 from eaves.postprocess.regionalization import (
     _REGIONAL_FEATURES,
+    FALLBACK_REGIONAL_B,
+    FALLBACK_RELIABILITY_THRESHOLD_MCM,
     _fit_multi_anchor_lr,
     _log_feature_vector,
     _predict_multi_anchor_lr,
     acap_regression_diagnostics,
     choose_reliability_threshold,
+    exponent_training_set,
+    minimum_training_capacity,
+    regional_median_exponent,
 )
 
 # ---- Synthetic data generator ----
@@ -346,3 +352,64 @@ class TestChooseReliabilityThreshold:
     def test_empty_df_returns_none(self):
         df = pd.DataFrame(columns=["threshold_mcm", "frac_reliable", "n_above"])
         assert choose_reliability_threshold(df) is None
+
+
+# ---- The training rule of the regional exponent ----
+
+class TestExponentRule:
+
+    def test_exponent_training_set_applies_threshold_training_flag_and_completeness(self):
+        df = pd.DataFrame({
+            "capacity_mcm":          [0.5, 2.0, 3.0, 4.0, 1.0],
+            "training":              [True, True, False, True, True],
+            "valley_ratio":          [1.0, np.nan, 1.0, 1.0, 1.0],
+            "channel_slope":         [0.01] * 5,
+            "mean_catchment_slope":  [0.1] * 5,
+            "dam_height_m":          [10.0] * 5,
+            "b":                     [1.3, 1.4, 1.5, 1.6, np.nan],
+        }, index=list("ABCDE"))
+        out = exponent_training_set(df, 1.0)
+        assert list(out.index) == ["D"]
+
+    def test_exponent_training_set_keeps_dams_at_the_threshold(self):
+        df = pd.DataFrame({
+            "capacity_mcm":          [1.0, 0.999],
+            "training":              [True, True],
+            "valley_ratio":          [1.0, 1.0],
+            "channel_slope":         [0.01, 0.01],
+            "mean_catchment_slope":  [0.1, 0.1],
+            "dam_height_m":          [10.0, 10.0],
+            "b":                     [1.3, 1.4],
+        })
+        assert list(exponent_training_set(df, 1.0).index) == [0]
+
+    def test_regional_median_exponent_is_the_median_of_the_set(self):
+        train = pd.DataFrame({"b": [1.9, 1.2, 1.5]})
+        assert regional_median_exponent(train) == pytest.approx(1.5)
+
+    def test_regional_median_exponent_falls_back_on_an_empty_set(self):
+        assert regional_median_exponent(pd.DataFrame({"b": []})) == pytest.approx(FALLBACK_REGIONAL_B)
+
+    def test_minimum_training_capacity_sweeps_the_candidates_and_applies_the_rule(self):
+        capacity = np.concatenate([np.full(10, 0.5), np.full(40, 3.0), np.full(10, 25.0)])
+        reliable = np.concatenate([np.full(10, False), np.full(40, True), np.full(10, True)])
+        df = pd.DataFrame({"capacity_mcm": capacity, "reliable": reliable})
+        chosen, table, fallback = minimum_training_capacity(df)
+        assert chosen == pytest.approx(1.0)
+        assert not fallback
+        assert table["threshold_mcm"].iloc[0] == pytest.approx(1.0)
+        assert table["threshold_mcm"].iloc[-1] == pytest.approx(20.0)
+        assert len(table) == 39
+        at_one = table[table["threshold_mcm"] == 1.0].iloc[0]
+        assert at_one["n_above"] == 50 and at_one["n_reliable"] == 50
+        at_ten = table[table["threshold_mcm"] == 10.0].iloc[0]
+        assert at_ten["n_above"] == 10 and at_ten["frac_reliable"] == pytest.approx(1.0)
+        assert chosen == choose_reliability_threshold(table)
+
+    def test_minimum_training_capacity_falls_back_when_no_candidate_qualifies(self):
+        df = pd.DataFrame({"capacity_mcm": np.full(12, 5.0), "reliable": np.full(12, True)})
+        chosen, table, fallback = minimum_training_capacity(df)
+        assert fallback
+        assert chosen == pytest.approx(FALLBACK_RELIABILITY_THRESHOLD_MCM)
+        assert choose_reliability_threshold(table) is None
+        assert len(table) == 39

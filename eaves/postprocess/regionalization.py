@@ -322,6 +322,15 @@ def assign_quality(row):
 # Capacity threshold (MCM) applied when no tested threshold meets the reliability rule
 FALLBACK_RELIABILITY_THRESHOLD_MCM = 5.0
 
+# Exponent assigned when no training dam clears the capacity threshold with complete features
+FALLBACK_REGIONAL_B = 1.35
+
+# Lists the morphometric features a training dam must carry to set the regional exponent
+_EXPONENT_FEATURES = ("valley_ratio", "channel_slope", "mean_catchment_slope", "dam_height_m")
+
+# Candidate minimum training capacities (MCM) of the regional exponent
+_EXPONENT_THRESHOLDS_MCM = np.arange(1.0, 20.5, 0.5)
+
 
 def choose_reliability_threshold(threshold_df):
     """The lowest tested capacity threshold at which at least 80% of at least 30 dams are reliable, else the lowest at
@@ -331,6 +340,44 @@ def choose_reliability_threshold(threshold_df):
         if len(cand) > 0:
             return float(cand.iloc[0]["threshold_mcm"])
     return None
+
+
+def capacity_threshold_sweep(summary_df, thresholds=_EXPONENT_THRESHOLDS_MCM):
+    """The count and share of reliable dams at or above each candidate minimum training capacity, the rows of
+    ``threshold_analysis.csv``. ``summary_df`` carries the ``reliable`` column of :func:`trusted_mask`."""
+    rows = []
+    for T in thresholds:
+        above = summary_df[summary_df["capacity_mcm"] >= T]
+        n_above = len(above)
+        n_reliable = int(above["reliable"].sum()) if n_above > 0 else 0
+        frac = n_reliable / n_above if n_above > 0 else 0
+        rows.append({
+            "threshold_mcm": T, "n_above": n_above,
+            "n_reliable": n_reliable, "frac_reliable": frac,
+        })
+    return pd.DataFrame(rows)
+
+
+def minimum_training_capacity(summary_df):
+    """The minimum training capacity of the regional exponent, the threshold table it is read from, and whether the
+    fallback value stands in because no candidate meets the reliability rule."""
+    threshold_df = capacity_threshold_sweep(summary_df)
+    chosen = choose_reliability_threshold(threshold_df)
+    if chosen is None:
+        return FALLBACK_RELIABILITY_THRESHOLD_MCM, threshold_df, True
+    return chosen, threshold_df, False
+
+
+def exponent_training_set(df, threshold_mcm, features=_EXPONENT_FEATURES):
+    """The training dams at or above the minimum training capacity with a fitted exponent and complete features, the
+    dams that set the regional exponent. ``df`` carries the ``training`` column of :func:`training_mask`."""
+    train = df[(df["capacity_mcm"] >= threshold_mcm) & df["training"]]
+    return train.dropna(subset=list(features) + ["b"])
+
+
+def regional_median_exponent(train_clean):
+    """The median exponent of the exponent training set, or the fallback when the set is empty."""
+    return float(train_clean["b"].median()) if len(train_clean) > 0 else FALLBACK_REGIONAL_B
 
 
 def run_regionalization(summary_df):
@@ -365,33 +412,16 @@ def run_regionalization(summary_df):
     summary_df["training"] = training_mask(summary_df)
 
     # ---- Step B: minimum training capacity of the regional exponent ----
-    thresholds = np.arange(1.0, 20.5, 0.5)
-    threshold_results = []
-    for T in thresholds:
-        above = summary_df[summary_df["capacity_mcm"] >= T]
-        n_above = len(above)
-        n_reliable = int(above["reliable"].sum()) if n_above > 0 else 0
-        frac = n_reliable / n_above if n_above > 0 else 0
-        threshold_results.append({
-            "threshold_mcm": T, "n_above": n_above,
-            "n_reliable": n_reliable, "frac_reliable": frac,
-        })
-    threshold_df = pd.DataFrame(threshold_results)
-
-    chosen_threshold = choose_reliability_threshold(threshold_df)
-    if chosen_threshold is None:
-        chosen_threshold = FALLBACK_RELIABILITY_THRESHOLD_MCM
+    chosen_threshold, threshold_df, fallback = minimum_training_capacity(summary_df)
+    if fallback:
         print(f"  [WARN] Could not determine optimal threshold, using {chosen_threshold:g} MCM default.")
 
     print(f"\n  Chosen minimum training capacity for b: {chosen_threshold:.1f} MCM")
     round_released_columns(threshold_df).to_csv(os.path.join(_cfg.CSV_DIR, "threshold_analysis.csv"), index=False)
 
     # ---- Step C: regression for b ----
-    features = ["valley_ratio", "channel_slope", "mean_catchment_slope", "dam_height_m"]
-    train = summary_df[
-        (summary_df["capacity_mcm"] >= chosen_threshold) & (summary_df["training"])
-    ].copy()
-    train_clean = train.dropna(subset=features + ["b"])
+    features = list(_EXPONENT_FEATURES)
+    train_clean = exponent_training_set(summary_df, chosen_threshold)
 
     print(f"  Training set: {len(train_clean)} dams with complete features")
 
@@ -441,10 +471,10 @@ def run_regionalization(summary_df):
     else:
         print(f"  Too few training dams ({len(train_clean)}), using regional median b.")
 
-    regional_median_b = float(train_clean["b"].median()) if len(train_clean) > 0 else 1.35
+    regional_median_b = regional_median_exponent(train_clean)
     print(f"  Regional median b = {regional_median_b:.4f}")
 
-    # ---- Step D: multi-feature LR anchor for A_cap, trained on the full training set (trusted and post-2000) ----
+    # ---- Step D: multi-feature LR anchor for A_cap, trained on the full training set (trusted and built in or after 2000) ----
     trusted_full = summary_df[summary_df["training"]].copy()
     multi_fit = _fit_multi_anchor_lr_full(trusted_full)
     a_cap_multi_coef = multi_fit["coefs"] if multi_fit is not None else None

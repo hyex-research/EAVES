@@ -1,8 +1,8 @@
 """Command-line interface, exposed as ``eaves`` and ``python -m eaves``.
 
-* ``eaves --settings <settings.json>`` -- run the pipeline: preprocessing (river clip + dam snap), the per-dam worker pool, the summary/params/failure CSVs and regionalization
-* ``eaves info <settings.json>``       -- print the resolved configuration and output layout as JSON (read-only)
-* ``eaves mcp``                        -- serve read-only tools over the Model Context Protocol
+* ``eaves --settings <settings.json>`` runs the pipeline, the preprocessing (river clip and dam snap), the per-dam worker pool, the summary, parameter and failure CSVs and the regionalization
+* ``eaves info <settings.json>`` prints the resolved configuration and output layout as JSON (read-only)
+* ``eaves mcp`` serves read-only tools over the Model Context Protocol
 
 ``--only`` narrows the run to listed dams, ``--panels`` adds the publication
 panels, ``--plot-only`` and ``--panels-only`` re-enter from existing outputs,
@@ -239,8 +239,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--panels-only",
         action="store_true",
         help="Skip the EAV pipeline entirely and regenerate the panel "
-        "figures from the existing EAVES outputs. Implies a settings file "
-        "(or prior --output-dir) so the CSV paths are known.",
+        "figures from the existing EAVES outputs. Requires --settings.",
     )
 
     sub = parser.add_subparsers(
@@ -290,11 +289,14 @@ def cmd_mcp() -> int:
 
 def main(argv: list[str] | None = None):
     """Run the pipeline from the command line, or a read-only command and return its exit code."""
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
     if args.command == "info":
         return cmd_info(args)
     if args.command == "mcp":
         return cmd_mcp()
+    if not args.settings:
+        parser.error("--settings is required to run the pipeline")
 
     t0 = time.time()
 

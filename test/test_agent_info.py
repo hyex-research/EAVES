@@ -138,7 +138,8 @@ def test_resolved_config_resolves_paths_against_the_settings_file(settings) -> N
     assert out["output_layout"]["eav_tables"] == str(root / "output" / "1_results_csv" / "eav_tables")
     assert out["output_layout"]["report.md"] == str(root / "output" / "report.md")
     assert out["output_layout"]["domain_cache"] == str(root / "input" / "domain_inputs")
-    assert out["defaults_applied"] == {"bathymetry_eav_csv": None, "bathymetry_dam_id": None, "bathymetry_survey_date": None}
+    assert out["defaults_applied"] == {"bathymetry_eav_csv": None, "bathymetry_dam_id": None, "bathymetry_survey_date": None,
+                                       "dam_site_verdicts": None, "dam_at_site": False}
 
 
 def test_resolved_config_reports_the_defaults_of_the_keys_left_out(tmp_path) -> None:

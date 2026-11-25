@@ -63,9 +63,11 @@ def test_test_settings_load(test_settings_path: Path):
     {"target_country": ""},
     {"bathymetry_dam_id": "   "},
     {"country_name_col": 42},
+    {"dam_at_site": "yes"},
+    {"dam_at_site": 1},
 ])
 def test_settings_rejects_malformed(test_settings_path: Path, override):
-    """_validate_values fails loud on bad numeric or empty scalar inputs."""
+    """_validate_values fails loud on bad numeric, empty scalar or non-bool switch inputs."""
     base = json.loads(test_settings_path.read_text())
     base.update(override)
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:

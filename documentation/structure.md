@@ -35,7 +35,7 @@ The EAVES repository layout, top to bottom.
 ├── region/                      # Settings, inputs and outputs of the study areas, one folder per country
 │   └── ksa/                     # Saudi Arabia
 │       ├── ksa.json             # Settings of the Saudi Arabian run
-│       ├── input/               # Dam catalog with its list of excluded entries, water-extent series, sediment and evaporation inputs, GRDL curves, Baish design and sonar tables, preprocessing cache
+│       ├── input/               # Dam catalog with its list of excluded entries, site table of the dams, water-extent series, sediment and evaporation inputs, GRDL curves, Baish design and sonar tables, preprocessing cache
 │       └── output/              # Released tables, panels, check maps and report (see outputs.md)
 │
 ├── test/                        # Test suite and the 15-dam regression fixture

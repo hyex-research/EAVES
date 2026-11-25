@@ -722,8 +722,16 @@ def render_report_md(stats: dict, generated_at: str) -> str:
     A("1. **Preprocessing** (`eaves.preprocess`): the MERIT-Basins reaches of "
       "the country and of every reach that drains into it are clipped to a "
       "per-dam bounding box, reaches longer than 2 km are subdivided into "
-      "equal parts, and each dam takes the nearer endpoint of the nearest "
-      "reach part within 1 km of its catalog coordinate as its snapped node.")
+      "equal parts, and each dam takes a node of the nearest reach part "
+      "within 1 km of its catalog coordinate as its snapped node: the nearer "
+      "end, or the upper end where the nearer end is a junction its crest "
+      "does not reach or the end of the network." + (
+          " A dam that the site table puts on a stream the reaches do not "
+          "hold keeps its catalog coordinate alone." if _cfg.DAM_SITE_VERDICTS else "") + (
+          " A dam snaps only where its nearest reach part lies within its "
+          "crest length and 90 m, and it then stands at its foot, the point "
+          "of the reach nearest its catalog coordinate, or at the junction "
+          "it takes, with the reaches cut at the feet." if _cfg.DAM_AT_SITE else ""))
     A("2. **DEM clip and reprojection** (`eaves.pipeline.terrain`): the SRTM "
       "tile mosaic is clipped to a per-dam radius and reprojected to the "
       "appropriate UTM zone.")

@@ -115,14 +115,20 @@ def get_river_direction_from_segment(gdf_rivers, segment_id, dam_lon, dam_lat,
     The chord spans ``smooth_m`` along the reach on either side of the point
     of the reach nearest the dam, cut at the ends of the reach part. Reach
     vertices run from the outlet up the channel, so the chord points upstream.
-    Returns ``None`` for a missing or degenerate reach.
+    A ``segment_id`` that names no part but the COMID of a split reach takes
+    the parts of that reach joined from its lower end, so the chord is cut at
+    the ends of the reach. Returns ``None`` for a missing or degenerate reach.
     """
     mask = gdf_rivers["index"] == segment_id
     if mask.sum() == 0:
-        return None
-    seg = gdf_rivers.loc[mask].iloc[0]
-    line = seg.geometry
-    coords = list(line.coords)
+        names = gdf_rivers["index"].astype(str)
+        parts = gdf_rivers.loc[names.str.split("_part").str[0] == segment_id]
+        if parts.empty:
+            return None
+        parts = parts.iloc[np.argsort(parts["index"].astype(str).str.split("_part").str[1].astype(int).to_numpy())]
+        coords = [c for i, g in enumerate(parts.geometry) for c in list(g.coords)[(1 if i else 0):]]
+    else:
+        coords = list(gdf_rivers.loc[mask].iloc[0].geometry.coords)
     if len(coords) < 2:
         return None
 

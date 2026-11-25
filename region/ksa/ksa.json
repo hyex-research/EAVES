@@ -15,5 +15,7 @@
     "grdl_dir": "input/grdl",
     "sedimentation_dir": "input/ksa_dams/sedimentation_owe",
     "max_seg_len_m": 2000,
-    "max_snap_distance_m": 1000
+    "max_snap_distance_m": 1000,
+    "dam_site_verdicts": "input/ksa_dams/dam_site_verdicts.csv",
+    "dam_at_site": true
 }

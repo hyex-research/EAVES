@@ -37,11 +37,14 @@ _ALLOWED_KEYS = {
     "sedimentation_dir",
     "max_seg_len_m",
     "max_snap_distance_m",
+    "dam_site_verdicts",
+    "dam_at_site",
 }
 
 _POSITIVE_NUMERIC_KEYS = {"max_seg_len_m", "max_snap_distance_m"}
 _NON_EMPTY_STRING_KEYS = {"target_country", "country_name_col", "bathymetry_dam_id"}
 _YEAR_MONTH_KEYS = {"bathymetry_survey_date"}
+_BOOL_KEYS = {"dam_at_site"}
 
 
 def load_settings(path: str) -> dict:
@@ -71,7 +74,7 @@ def load_settings(path: str) -> dict:
 
 
 def _validate_values(path: str, settings: dict) -> None:
-    """Raise ``ValueError`` for malformed numeric knobs or empty scalar strings."""
+    """Raise ``ValueError`` for malformed numeric knobs, empty scalar strings or a switch that is not a bool."""
     for key in _POSITIVE_NUMERIC_KEYS & settings.keys():
         v = settings[key]
         if not isinstance(v, (int, float)) or isinstance(v, bool) or not v > 0:
@@ -84,6 +87,10 @@ def _validate_values(path: str, settings: dict) -> None:
         v = settings[key]
         if not isinstance(v, str) or not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", v):
             raise ValueError(f"{path}: {key!r} must be a year and month as YYYY-MM, got {v!r}")
+    for key in _BOOL_KEYS & settings.keys():
+        v = settings[key]
+        if not isinstance(v, bool):
+            raise ValueError(f"{path}: {key!r} must be true or false, got {v!r}")
 
 
 def _resolve_path(value, base: str, key: str):

@@ -65,7 +65,7 @@ Outputs land in `<output_dir>/` (`0_check_dams/`, `1_results_csv/` with `eav_tab
 
 Three things to know when running by hand:
 
-- The pipeline reuses the preprocessing cache, `rivers_split.geojson` and `dams_snapped.geojson` in `domain_dir`, whenever both files exist. A new catalog or river layer needs `--rebuild-domain`, which reads the MERIT-Basins and country layers.
+- The pipeline reuses the preprocessing cache, `rivers_split.geojson` and `dams_snapped.geojson` in `domain_dir`, whenever both files exist. A new catalog, river layer, site table or value of `dam_at_site` needs `--rebuild-domain`, which reads the MERIT-Basins and country layers.
 - `--only` merges its dams into the existing summary and failure tables instead of replacing them.
 - The report step adds the sediment risk columns to `eaves_summary.csv`.
 
@@ -88,7 +88,7 @@ The regression test is the correctness check after code changes. It runs the fix
 
 ## Compute and data reality
 
-- Cloning this repository is not sufficient to rerun the Saudi domain. The SRTM GL1 tiles, the MERIT-Basins reaches and unit catchments and the Natural Earth country layer are external and named in the settings (`srtm_dir`, `merit_rivers_shp`, `merit_basins_shp`, `country_shp`), see [documentation/data-dependencies.md](documentation/data-dependencies.md). The Saudi inputs that are not external datasets ship under `region/ksa/input/`: the dam catalog with the list of excluded entries and the reason for each, the water-extent series, the sediment and evaporation inputs, the GRDL curves, the Baish design and sonar tables and the preprocessing cache. With the cache in place, the pipeline reads the SRTM tiles, `--rebuild-domain` also reads the MERIT-Basins and country layers, and the panels step reads the country layer for the domain map of panel p1. The fixture runs from a clone alone. Never invent or hardcode data paths, take them from the settings file at hand.
+- Cloning this repository is not sufficient to rerun the Saudi domain. The SRTM GL1 tiles, the MERIT-Basins reaches and unit catchments and the Natural Earth country layer are external and named in the settings (`srtm_dir`, `merit_rivers_shp`, `merit_basins_shp`, `country_shp`), see [documentation/data-dependencies.md](documentation/data-dependencies.md). The Saudi inputs that are not external datasets ship under `region/ksa/input/`: the dam catalog with the list of excluded entries and the reason for each, the water-extent series, the sediment and evaporation inputs, the GRDL curves, the Baish design and sonar tables, the site table of the dams and the preprocessing cache. With the cache in place, the pipeline reads the SRTM tiles, `--rebuild-domain` also reads the MERIT-Basins and country layers, and the panels step reads the country layer for the domain map of panel p1. The fixture runs from a clone alone. Never invent or hardcode data paths, take them from the settings file at hand.
 - The pipeline step over the Saudi domain is heavy. A worker pool sized by the number of cores places and fills every dam, each within a time budget, which takes minutes on a many-core machine and hours on a few cores. Do not launch it casually, prefer the fixture for verification and let a human decide on production runs. `--sensitivity` and `--dem-mc` are heavier still.
 - A rerun of the Saudi domain rewrites the tracked outputs under `region/ksa/output/`.
 

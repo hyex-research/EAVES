@@ -82,6 +82,10 @@ MAX_SEG_LEN_M = 2000.0
 MAX_SNAP_DISTANCE_M = 1000.0
 # Buffer (degrees) applied around each dam when clipping the MERIT-Basins network
 DAM_BBOX_BUFFER_DEG = 0.3
+# Site table of the dams, an optional input of the preprocessing
+DAM_SITE_VERDICTS = None
+# Whether a dam stands only where a reach passes within its crest and one cell, and then at its site on that reach
+DAM_AT_SITE = False
 
 GRDL_NAME_MAP = {
     "baish": "id_120000",
@@ -113,6 +117,8 @@ def configure(
     sedimentation_dir: str | None = None,
     max_seg_len_m: float | None = None,
     max_snap_distance_m: float | None = None,
+    dam_site_verdicts: str | None = None,
+    dam_at_site: bool | None = None,
 ) -> None:
     """Override path variables after import.
 
@@ -154,6 +160,10 @@ def configure(
         _self.MAX_SEG_LEN_M = float(max_seg_len_m)
     if max_snap_distance_m is not None:
         _self.MAX_SNAP_DISTANCE_M = float(max_snap_distance_m)
+    if dam_site_verdicts is not None:
+        _self.DAM_SITE_VERDICTS = dam_site_verdicts
+    if dam_at_site is not None:
+        _self.DAM_AT_SITE = bool(dam_at_site)
 
     if output_dir is not None:
         _self.OUTPUT_DIR = output_dir

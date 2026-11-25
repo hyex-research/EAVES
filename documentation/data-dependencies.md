@@ -4,7 +4,7 @@ The repository includes the inputs of the Saudi Arabian run that are not externa
 
 ## Included assets
 
-`region/ksa/input/` holds the inputs of the Saudi application that are not external datasets, namely the dam catalog in its cleaned and transliterated form with the list of excluded entries and the reason for each, the filtered satellite water-extent series, the upstream catchment area, sediment yield and open-water evaporation of [Dash et al. (2025)](https://doi.org/10.1016/j.jenvman.2025.127199), the GRDL reference curves of the cross-reference dams, the design table and February 2025 sonar survey of Baish and the preprocessing cache. `region/ksa/output/` holds the released tables, check maps, panels and report. `test/fixture/` holds the 15-dam fixture with its inputs, among them the SRTM GL1 elevation clipped to the windows of its dams, and its reference outputs.
+`region/ksa/input/` holds the inputs of the Saudi application that are not external datasets, namely the dam catalog in its cleaned and transliterated form with the list of excluded entries and the reason for each, the filtered satellite water-extent series, the upstream catchment area, sediment yield and open-water evaporation of [Dash et al. (2025)](https://doi.org/10.1016/j.jenvman.2025.127199), the GRDL reference curves of the cross-reference dams, the design table and February 2025 sonar survey of Baish, the site table of the dams (`ksa_dams/dam_site_verdicts.csv`) and the preprocessing cache. `region/ksa/output/` holds the released tables, check maps, panels and report. `test/fixture/` holds the 15-dam fixture with its inputs, among them the SRTM GL1 elevation clipped to the windows of its dams, and its reference outputs.
 
 ## Licensing
 

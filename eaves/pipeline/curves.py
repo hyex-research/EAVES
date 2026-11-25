@@ -161,7 +161,7 @@ def process_dam(dam_row_data, gdf_rivers, srtm_data, srtm_transform, srtm_crs,
     seed_dist = wall_thickness + 4
 
     river_dir_px = None
-    # The river direction is read on the reach part nearest the dam, recorded by the preprocessing with the snap
+    # The river direction is read on the reach part nearest the dam, or on the whole reach of the dam with dam_at_site, recorded by the preprocessing with the snap
     seg_id = dam_row_data.get("closest_segment_id")
     if gdf_rivers is not None and seg_id is not None and str(seg_id) != "nan":
         dir_geo = get_river_direction_from_segment(

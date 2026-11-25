@@ -7,7 +7,7 @@ Three tiers, in order of cost. The continuous integration runs the smoke and uni
 | Tier | Files | Marker | Runtime | What it covers |
 | --- | --- | --- | --- | --- |
 | Smoke | `test_smoke.py` | (none) | seconds | Imports, settings loading and validation, and two postprocessing helpers on empty or unset input |
-| Unit | The other `test_*.py` files | (none) | seconds | The helpers of the domain preprocessing, the drainage and placement rules, the construction-year parser and the precision of the released tables, the regionalization and the leave-one-out evaluation of its exponent rule, the clustering helpers of panel s1, the uncertainty band, the goodness-of-fit statistics, the summary rows, the sediment budget, the void guard of the flood fill, the report formatting, the agent view with its MCP server and the command-line parser, on small synthetic data |
+| Unit | The other `test_*.py` files | (none) | seconds | The helpers of the domain preprocessing with the snap rule, the reach of a dam, its site and the cut of the network at the sites, the site table, the drainage and placement rules, the construction-year parser and the precision of the released tables, the regionalization and the leave-one-out evaluation of its exponent rule, the clustering helpers of panel s1, the uncertainty band, the goodness-of-fit statistics, the summary rows, the sediment budget, the void guard of the flood fill, the report formatting, the agent view with its MCP server and the command-line parser, on small synthetic data |
 | Regression | `test_regression.py`, the fixture class of `test_void_guard.py` | `slow` | minutes | The 15-dam fixture through the pipeline step, with every emitted CSV against its SHA-256 golden hash in `golden_hashes.json`, the summary against the parameter table, `--plot-only` and single-dam `--only` runs against the tables of the full run, and a gap cut into the SRTM window of a fixture dam |
 
 The run time of the regression tier grows as the core count falls.
@@ -85,7 +85,7 @@ Path('test/golden_hashes.json').write_text(json.dumps(h, indent=2, sort_keys=Tru
 
 ## Common pitfalls
 
-- **Stale domain cache.** The pipeline reuses the cached `rivers_split.geojson` and `dams_snapped.geojson` whenever both exist, so a change of the dam catalog or the river layer needs a rerun with `--rebuild-domain` and the local settings of [Settings](#settings).
+- **Stale domain cache.** The pipeline reuses the cached `rivers_split.geojson` and `dams_snapped.geojson` whenever both exist, so a change of the dam catalog, the river layer, the site table of the dams or `dam_at_site` needs a rerun with `--rebuild-domain` and the local settings of [Settings](#settings).
 - **Slow test takes longer than expected.** A single bad SRTM tile or a dam with a very large reservoir can dominate runtime. The fixture avoids the worst offenders. If you swap a dam, re-time the run.
 - **Floating-point drift between machines.** The golden hashes are byte-exact. Different NumPy / GDAL / SciPy versions can produce slightly different floats. A hash mismatch with identical-looking values points to library builds other than those of `environment.yml`. Compare the tables, and refresh the goldens only once the differences are understood.
 - **Check maps.** The regression test hashes the CSV tables only, so a change of a PNG under `0_check_dams/` passes it. Review the maps by eye after a change of the placement or the fill.

@@ -4,6 +4,88 @@ All notable changes to EAVES are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 The project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **A dam stands at its site on its reach** (`dam_at_site` in the
+  settings, `eaves.preprocess`). With the key, a dam snaps only where its
+  nearest reach part lies within its catalog crest length plus one cell of
+  the grid of the reaches (90 m), at most `max_snap_distance_m`. A dam
+  beyond that reach stays unsnapped, since no reach of the network passes
+  its wall. A dam that takes a junction, by its crest or by the verdict
+  `at_junction`, stands at it. Every other dam stands at its foot, the
+  point of its reach nearest its catalog point. It takes a node of the
+  network within 90 m of the foot along the reach, or the reach is cut at
+  the foot, held 1 m from its ends. A dam nearest to the head of a channel
+  stands at its foot too where that foot lies below the head. A dam whose
+  foot is the head itself stays unsnapped, since no piece of the reach lies
+  above it. A cut reach is split piece by piece
+  into equal parts no longer than `max_seg_len_m`, named along the reach.
+  `rivers_split.geojson` holds the cut network, and `snapped_segment_id`
+  names the part whose upper end is the site. `closest_segment_id` names
+  the reach of the dam, and the river direction at the wall reads its
+  parts joined, so its chord stays centered on the foot. Without the key
+  the preprocessing is unchanged. The Saudi settings set the key. On the
+  Saudi catalog, 20 dams that snapped before stay unsnapped. For 18 of
+  them the reach lies beyond the crest and one cell, among them Al-Bar,
+  Al-Malad and Ikrimah. The foot of the other two is the head of their
+  channel (Tala' Al-Shamali and Al-Hariq Bin Al-Washam). The other 304
+  snapped dams stand at a junction (6), at a node near their foot (30) or
+  at their foot on a cut reach (268). The river direction at the wall changes by more than 10°
+  for 40 of them, and by 49° at most. A rerun needs `--rebuild-domain`
+  once.
+- **A dam stays above a junction its crest does not reach**
+  (`eaves.preprocess`). A dam takes the nearer end of the reach part
+  nearest it. It passes a junction at the lower end only where its catalog
+  crest length reaches the junction, and otherwise it takes the upper end
+  of the part. A part whose upper end is the head of a channel keeps the
+  junction. Where the network ends, at the coast, a sink or an outlet, the
+  dam stands at the upstream node of the last part. The distance is
+  measured in the azimuthal equidistant projection centered on the dam in
+  place of its UTM zone, and the search window holds the full snap radius
+  north and south. On the Saudi catalog and without `dam_at_site`, the
+  snapped node of five dams moves from the junction to the upper end of
+  their part (Al-Salahaniyah, Tasha, Al-Janabin, Madhas and Al-Farah), and
+  their nearest part, which gives the river direction, stays. With
+  `dam_at_site`, which the Saudi settings set, these five dams stand at
+  their foot on their reach. `snap_distance_m` moves by 0.5 m at most on
+  the other snapped dams. A rerun needs `--rebuild-domain` once.
+- **Optional site table of the dams** (`dam_site_verdicts` in the
+  settings, `eaves.preprocess`). The site table takes the
+  verdicts `off_network`, `on_network`, `above_junction`, `at_junction`
+  and `open`. A dam with the verdict `off_network` stays unsnapped,
+  without river direction or snapped node. The image shows that dam and
+  its pool, or its catalog point in a valley apart from the reach, on a
+  stream the reaches do not hold. A verdict on the junction decides in
+  place of the crest length. The verdict `above_junction` keeps the dam at
+  the upper end of its part, or at its foot with `dam_at_site`, and
+  `at_junction` puts it at the junction. Such a
+  verdict changes nothing where the nearer end of the part is no
+  junction. A row without evidence, a dam named twice, another verdict or
+  a dam the catalog lacks stops the preprocessing. The Saudi settings name
+  the table under `region/ksa/input/`. It holds 96 rows: 63 `on_network`,
+  14 `off_network`, 6 `above_junction`, 6 `at_junction` and 7 `open`. The
+  14 dams `off_network` stay unsnapped (Sa'b, Khalis, Al-Hafirah,
+  Al-Shara'ih, Al-Maliyah, Al-Sharam, Al-Azizah, Al-Mahjar, Turif,
+  Al-Manadhah, Tabab, Al-Atah, Marid and Al-Musayriq),
+  and the verdict `above_junction` keeps Shahdan off the junction its crest
+  reaches, at its foot on its reach. Tests in `test/test_preprocess.py`.
+- **Saudi tables rerun with the dams at their sites**
+  (`region/ksa/output/`, `region/ksa/input/domain_inputs/`). 304 dams are
+  snapped in place of 338. The parameter table holds 317 SRTM-derived and
+  209 regionalized curves in place of 320 and 206, and 497 dams have a
+  flood fill in place of 501. Al-Ghil, Daghbaj and Faydat Al-Musallah no
+  longer pass the placement and fill checks and take a regionalized curve,
+  and Al-Sadarih, regionalized before, has no fill. The summary row changes
+  for 72 dams, and `c` or `b` for 50 of the 317 SRTM-derived curves. The
+  training set of the regionalization holds 219 dams in place of 221. The
+  regional exponent stays at 1.5065, and the retrained regression of the
+  full-pool area moves `c` of 204 regionalized dams, by 2% at the median
+  and 9% at most. The full-pool area that the released curve gives at the
+  design capacity stays within 10% for 517 dams and within a factor of 1.5
+  for all but Al-Artawiyah and Al-Ghil.
+
 ## [1.4.0] - 2026-11-04
 
 ### Added
@@ -880,6 +962,7 @@ downstream simulation.
   sediment-loss budget beyond the first-order estimate currently
   reported.
 
+[Unreleased]: https://github.com/hyex-research/EAVES/compare/v1.4.0...HEAD
 [1.4.0]: https://github.com/hyex-research/EAVES/releases/tag/v1.4.0
 [1.3.2]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.2
 [1.3.1]: https://github.com/hyex-research/EAVES/releases/tag/v1.3.1
